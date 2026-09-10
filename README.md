@@ -1,4 +1,4 @@
-# Lingua Mentis
+# LinguaMentis
 
 > **Think through language.**
 

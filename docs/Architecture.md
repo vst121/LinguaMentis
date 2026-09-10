@@ -1,78 +1,52 @@
-\# LinguaMentis — Architecture
+# LinguaMentis — Architecture
 
+**Version:** 1.0
 
+**Status:** Draft
 
-\*\*Version:\*\* 1.0
+**Project:** LinguaMentis
 
-\*\*Status:\*\* Draft
+**Primary Experience:** MindQuest
 
-\*\*Project:\*\* LinguaMentis
+---
 
-\*\*Primary Experience:\*\* MindQuest
-
-
-
-\---
-
-
-
-\# 1. Architecture Overview
-
-
+# 1. Architecture Overview
 
 LinguaMentis is an AI-powered, gamified intellectual debate platform for B2/C1 German learners.
 
+The V1 architecture follows a **modular monolith** approach:
 
+- Python 3.12
 
-The V1 architecture follows a \*\*modular monolith\*\* approach:
+- FastAPI
 
+- PostgreSQL
 
+- SQLAlchemy 2.x
 
-\* Python 3.12
+- Alembic
 
-\* FastAPI
+- Next.js
 
-\* PostgreSQL
+- TypeScript
 
-\* SQLAlchemy 2.x
+- React
 
-\* Alembic
+- Tailwind CSS
 
-\* Next.js
-
-\* TypeScript
-
-\* React
-
-\* Tailwind CSS
-
-\* OpenRouter for LLM access
-
-
+- OpenRouter for LLM access
 
 The architecture intentionally avoids unnecessary distributed infrastructure.
 
-
-
 The central architectural principle is:
 
+> **The application owns the MindQuest state. AI provides intelligence, not application control.**
 
+---
 
-> \*\*The application owns the MindQuest state. AI provides intelligence, not application control.\*\*
-
-
-
-\---
-
-
-
-\# 2. Architectural Goals
-
-
+# 2. Architectural Goals
 
 The architecture should provide:
-
-
 
 1\. Clear separation between domain logic and infrastructure.
 
@@ -98,469 +72,245 @@ The architecture should provide:
 
 12\. A clear path to future scaling without premature complexity.
 
+---
 
-
-\---
-
-
-
-\# 3. High-Level Architecture
-
-
+# 3. High-Level Architecture
 
 ```text
 
-&#x20;                        LINGUAMENTIS
-
-&#x20;                             │
-
-&#x20;                ┌────────────┴────────────┐
-
-&#x20;                │                         │
-
-&#x20;                ▼                         ▼
-
-&#x20;         Next.js Frontend          Python 3.12 Backend
-
-&#x20;                │                         │
-
-&#x20;                │                    FastAPI API
-
-&#x20;                │                         │
-
-&#x20;                │                  Application Layer
-
-&#x20;                │                         │
-
-&#x20;                │                  MindQuest Engine
-
-&#x20;                │                         │
-
-&#x20;                │             ┌───────────┴───────────┐
-
-&#x20;                │             │                       │
-
-&#x20;                │             ▼                       ▼
-
-&#x20;                │        Agent System           Evaluation
-
-&#x20;                │             │                  Pipeline
-
-&#x20;                │             │                 ┌─────┴─────┐
-
-&#x20;                │             │                 ▼           ▼
-
-&#x20;                │             │            Thinking      German
-
-&#x20;                │             │            Evaluator    Evaluator
-
-&#x20;                │             │                 │           │
-
-&#x20;                │             └─────────────────┴───────────┘
-
-&#x20;                │                               │
-
-&#x20;                │                               ▼
-
-&#x20;                │                         AI Gateway
-
-&#x20;                │                               │
-
-&#x20;                │                               ▼
-
-&#x20;                │                          OpenRouter
-
-&#x20;                │
-
-&#x20;                └────────────── HTTP API ────────────────┐
-
-&#x20;                                                           │
-
-&#x20;                                                           ▼
-
-&#x20;                                                      PostgreSQL
+                        LINGUAMENTIS
+                             │
+                ┌────────────┴────────────┐
+                │                         │
+                ▼                         ▼
+         Next.js Frontend          Python 3.12 Backend
+                │                         │
+                │                    FastAPI API
+                │                         │
+                │                  Application Layer
+                │                         │
+                │                  MindQuest Engine
+                │                         │
+                │             ┌───────────┴───────────┐
+                │             │                       │
+                │             ▼                       ▼
+                │        Agent System           Evaluation
+                │             │                  Pipeline
+                │             │                 ┌─────┴─────┐
+                │             │                 ▼           ▼
+                │             │            Thinking      German
+                │             │            Evaluator    Evaluator
+                │             │                 │           │
+                │             └─────────────────┴───────────┘
+                │                               │
+                │                               ▼
+                │                         AI Gateway
+                │                               │
+                │                               ▼
+                │                          OpenRouter
+                │
+                └────────────── HTTP API ────────────────┐
+                                                         │
+                                                         ▼
+                                                     PostgreSQL
 
 ```
 
+---
 
+# 4. Architectural Style
 
-\---
-
-
-
-\# 4. Architectural Style
-
-
-
-LinguaMentis V1 uses a \*\*modular monolith\*\*.
-
-
+LinguaMentis V1 uses a **modular monolith**.
 
 The backend is deployed as one application, but its internal architecture is divided into explicit modules.
-
-
 
 ```text
 
 API
-
-&#x20;│
-
-&#x20;▼
-
+│
+▼
 Application
-
-&#x20;│
-
-&#x20;▼
-
+│
+▼
 Domain
-
-&#x20;│
-
-&#x20;▼
+│
+▼
 
 Infrastructure
 
 ```
 
-
-
 AI integration is isolated behind an AI Gateway:
-
-
 
 ```text
 
 Agent
-
-&#x20; │
-
-&#x20; ▼
-
+ │
+ ▼
 LLM Client
-
-&#x20; │
-
-&#x20; ▼
-
+ │
+ ▼
 OpenRouter
 
 ```
 
-
-
 The domain does not depend on OpenRouter.
 
+---
 
-
-\---
-
-
-
-\# 5. Repository Structure
-
-
+# 5. Repository Structure
 
 ```text
 
 linguamentis/
-
 │
-
 ├── backend/
-
 │   ├── pyproject.toml
-
 │   ├── uv.lock
-
 │   ├── .env.example
-
 │   │
-
 │   ├── src/
-
 │   │   └── linguamentis/
-
 │   │       │
-
 │   │       ├── main.py
-
 │   │       │
-
 │   │       ├── api/
-
 │   │       │   ├── dependencies.py
-
 │   │       │   ├── router.py
-
 │   │       │   │
-
 │   │       │   └── v1/
-
 │   │       │       ├── mindquests.py
-
 │   │       │       ├── turns.py
-
 │   │       │       ├── evaluations.py
-
 │   │       │       ├── users.py
-
 │   │       │       └── learning.py
-
 │   │       │
-
 │   │       ├── application/
-
 │   │       │   │
-
 │   │       │   ├── mindquests/
-
 │   │       │   │   ├── commands.py
-
 │   │       │   │   ├── queries.py
-
 │   │       │   │   └── service.py
-
 │   │       │   │
-
 │   │       │   ├── turns/
-
 │   │       │   │   └── service.py
-
 │   │       │   │
-
 │   │       │   ├── evaluation/
-
 │   │       │   │   └── service.py
-
 │   │       │   │
-
 │   │       │   └── learning/
-
 │   │       │       └── service.py
-
 │   │       │
-
 │   │       ├── domain/
-
 │   │       │   │
-
 │   │       │   ├── users/
-
 │   │       │   │   ├── entities.py
-
 │   │       │   │   └── value\_objects.py
-
 │   │       │   │
-
 │   │       │   ├── mindquests/
-
 │   │       │   │   ├── entities.py
-
 │   │       │   │   ├── enums.py
-
 │   │       │   │   ├── value\_objects.py
-
 │   │       │   │   └── state\_machine.py
-
 │   │       │   │
-
 │   │       │   ├── hats/
-
 │   │       │   │   ├── contracts.py
-
 │   │       │   │   ├── definitions.py
-
 │   │       │   │   └── types.py
-
 │   │       │   │
-
 │   │       │   ├── evaluations/
-
 │   │       │   │   ├── thinking.py
-
 │   │       │   │   ├── german.py
-
 │   │       │   │   └── evidence.py
-
 │   │       │   │
-
 │   │       │   └── learning/
-
 │   │       │       └── profile.py
-
 │   │       │
-
 │   │       ├── agents/
-
 │   │       │   ├── base.py
-
 │   │       │   ├── registry.py
-
 │   │       │   ├── blue.py
-
 │   │       │   ├── white.py
-
 │   │       │   ├── red.py
-
 │   │       │   ├── black.py
-
 │   │       │   ├── yellow.py
-
 │   │       │   └── green.py
-
 │   │       │
-
 │   │       ├── ai/
-
 │   │       │   ├── client.py
-
 │   │       │   ├── models.py
-
 │   │       │   ├── prompts.py
-
 │   │       │   ├── gateway.py
-
 │   │       │   └── openrouter.py
-
 │   │       │
-
 │   │       ├── infrastructure/
-
 │   │       │   ├── database/
-
 │   │       │   │   ├── session.py
-
 │   │       │   │   ├── models.py
-
 │   │       │   │   └── repositories/
-
 │   │       │   │
-
 │   │       │   └── configuration.py
-
 │   │       │
-
 │   │       └── shared/
-
 │   │           ├── exceptions.py
-
 │   │           ├── logging.py
-
 │   │           └── result.py
-
 │   │
-
 │   └── tests/
-
 │       ├── unit/
-
 │       ├── integration/
-
 │       └── evaluation/
-
 │
-
 ├── frontend/
-
 │   ├── package.json
-
 │   ├── next.config.ts
-
 │   ├── tsconfig.json
-
 │   │
-
 │   └── src/
-
 │       ├── app/
-
 │       │   ├── page.tsx
-
 │       │   ├── mindquests/
-
 │       │   │   ├── page.tsx
-
 │       │   │   └── \[id]/
-
 │       │   │       ├── page.tsx
-
 │       │   │       └── reflection/
-
 │       │   │           └── page.tsx
-
 │       │   ├── learning/
-
 │       │   │   └── page.tsx
-
 │       │   └── history/
-
 │       │       └── page.tsx
-
 │       │
-
 │       ├── components/
-
 │       │   ├── mindquest/
-
 │       │   ├── hats/
-
 │       │   ├── evaluation/
-
 │       │   ├── reflection/
-
 │       │   └── ui/
-
 │       │
-
 │       ├── services/
-
 │       │   └── api/
-
 │       │
-
 │       ├── types/
-
 │       │
-
 │       └── lib/
-
 │
-
 ├── docs/
-
 │   ├── PRD.md
-
 │   ├── Architecture.md
-
 │   ├── HatContracts.md
-
 │   ├── EvaluationRubric.md
-
 │   └── AIContracts.md
-
 │
-
 ├── docker-compose.yml
-
 └── README.md
 
 ```
 
+---
 
-
-\---
-
-
-
-\# 6. Backend Architecture
-
-
+# 6. Backend Architecture
 
 The backend consists of five major areas:
-
-
 
 ```text
 
@@ -576,11 +326,7 @@ Infrastructure
 
 ```
 
-
-
 AI is isolated as a dedicated capability:
-
-
 
 ```text
 
@@ -588,45 +334,29 @@ AI Gateway
 
 ```
 
+---
 
-
-\---
-
-
-
-\# 7. API Layer
-
-
+# 7. API Layer
 
 The API layer is responsible only for HTTP concerns.
 
-
-
 Responsibilities:
 
+- HTTP routing
 
+- Request validation
 
-\* HTTP routing
+- Response serialization
 
-\* Request validation
+- Dependency injection
 
-\* Response serialization
+- HTTP error handling
 
-\* Dependency injection
-
-\* HTTP error handling
-
-\* API versioning
-
-
+- API versioning
 
 The API layer must not contain business rules.
 
-
-
 Example:
-
-
 
 ```text
 
@@ -634,43 +364,25 @@ POST /api/v1/mindquests/{id}/responses
 
 ```
 
-
-
 The endpoint delegates to the application layer:
-
-
 
 ```text
 
 FastAPI Endpoint
-
-&#x20;     ↓
-
+     ↓
 MindQuestService
-
-&#x20;     ↓
-
+     ↓
 MindQuestEngine
 
 ```
 
+---
 
-
-\---
-
-
-
-\# 8. Application Layer
-
-
+# 8. Application Layer
 
 The application layer coordinates use cases.
 
-
-
 Primary application services:
-
-
 
 ```text
 
@@ -684,99 +396,59 @@ LearningService
 
 ```
 
-
-
 The application layer coordinates domain objects, agents, evaluators, and repositories.
 
-
-
 Example:
-
-
 
 ```text
 
 Submit Response
-
-&#x20;     │
-
-&#x20;     ▼
-
+     │
+     ▼
 MindQuestService
-
-&#x20;     │
-
-&#x20;     ▼
-
+     │
+     ▼
 MindQuestEngine
-
-&#x20;     │
-
-&#x20;     ├── Validate state
-
-&#x20;     │
-
-&#x20;     ├── Persist response
-
-&#x20;     │
-
-&#x20;     ├── Evaluate thinking
-
-&#x20;     │
-
-&#x20;     ├── Evaluate German
-
-&#x20;     │
-
-&#x20;     ├── Generate feedback
-
-&#x20;     │
-
-&#x20;     ├── Determine next challenge
-
-&#x20;     │
-
-&#x20;     └── Persist result
+     │
+     ├── Validate state
+     │
+     ├── Persist response
+     │
+     ├── Evaluate thinking
+     │
+     ├── Evaluate German
+     │
+     ├── Generate feedback
+     │
+     ├── Determine next challenge
+     │
+     └── Persist result
 
 ```
 
+---
 
-
-\---
-
-
-
-\# 9. Domain Layer
-
-
+# 9. Domain Layer
 
 The domain layer contains the core business concepts of LinguaMentis.
 
-
-
 It must not depend on:
 
+- FastAPI
 
+- PostgreSQL
 
-\* FastAPI
+- SQLAlchemy
 
-\* PostgreSQL
+- OpenRouter
 
-\* SQLAlchemy
+- HTTP
 
-\* OpenRouter
+- Next.js
 
-\* HTTP
-
-\* Next.js
-
-\* specific LLM providers
-
-
+- specific LLM providers
 
 Core domain concepts:
-
-
 
 ```text
 
@@ -802,127 +474,77 @@ UserLearningProfile
 
 ```
 
+---
 
-
-\---
-
-
-
-\# 10. MindQuest Domain
-
-
+# 10. MindQuest Domain
 
 A MindQuest represents one complete intellectual exploration.
 
-
-
 Conceptually:
-
-
 
 ```python
 
 class MindQuest:
 
-&#x20;   id: UUID
+   id: UUID
 
-&#x20;   user\_id: UUID
+   user\_id: UUID
 
-&#x20;   topic: str
+   topic: str
 
-&#x20;   target\_level: LanguageLevel
+   target\_level: LanguageLevel
 
-&#x20;   status: MindQuestStatus
+   status: MindQuestStatus
 
-&#x20;   current\_hat: HatType | None
+   current\_hat: HatType | None
 
 ```
 
-
-
 The MindQuest domain is responsible for enforcing valid lifecycle transitions.
 
+---
 
-
-\---
-
-
-
-\# 11. MindQuest State Machine
-
-
+# 11. MindQuest State Machine
 
 The application uses an explicit state machine.
-
-
 
 ```text
 
 CREATED
-
-&#x20;  ↓
-
+  ↓
 TOPIC\_SELECTED
-
-&#x20;  ↓
-
+  ↓
 IN\_PROGRESS
-
-&#x20;  ↓
-
+  ↓
 HAT\_ACTIVE
-
-&#x20;  ↓
-
+  ↓
 HAT\_COMPLETED
-
-&#x20;  ↓
-
+  ↓
 HAT\_ACTIVE
-
-&#x20;  ↓
+  ↓
 
 ...
 
-&#x20;  ↓
-
+  ↓
 ALL\_HATS\_COMPLETED
-
-&#x20;  ↓
-
+  ↓
 FINAL\_EVALUATION
-
-&#x20;  ↓
-
+  ↓
 COMPLETED
 
 ```
 
-
-
 The state machine is deterministic and application-controlled.
-
-
 
 The LLM cannot directly change the state.
 
+---
 
-
-\---
-
-
-
-\# 12. MindQuest Engine
-
-
+# 12. MindQuest Engine
 
 The `MindQuestEngine` coordinates the complete MindQuest lifecycle.
 
-
-
 Conceptual interface:
-
-
 
 ```python
 
@@ -930,115 +552,86 @@ class MindQuestEngine:
 
 
 
-&#x20;   async def start(
+   async def start(
 
-&#x20;       self,
+       self,
 
-&#x20;       mindquest\_id: UUID,
+       mindquest\_id: UUID,
 
-&#x20;   ) -> MindQuestResult:
+   ) -> MindQuestResult:
 
-&#x20;       ...
-
-
-
-&#x20;   async def submit\_response(
-
-&#x20;       self,
-
-&#x20;       mindquest\_id: UUID,
-
-&#x20;       response: str,
-
-&#x20;   ) -> TurnResult:
-
-&#x20;       ...
+       ...
 
 
 
-&#x20;   async def advance(
+   async def submit\_response(
 
-&#x20;       self,
+       self,
 
-&#x20;       mindquest\_id: UUID,
+       mindquest\_id: UUID,
 
-&#x20;   ) -> MindQuestResult:
+       response: str,
 
-&#x20;       ...
+   ) -> TurnResult:
+
+       ...
 
 
 
-&#x20;   async def complete(
+   async def advance(
 
-&#x20;       self,
+       self,
 
-&#x20;       mindquest\_id: UUID,
+       mindquest\_id: UUID,
 
-&#x20;   ) -> FinalReflection:
+   ) -> MindQuestResult:
 
-&#x20;       ...
+       ...
+
+
+
+   async def complete(
+
+       self,
+
+       mindquest\_id: UUID,
+
+   ) -> FinalReflection:
+
+       ...
 
 ```
 
-
-
 The engine is the main orchestration boundary between application state and AI capabilities.
 
+---
 
-
-\---
-
-
-
-\# 13. Six Thinking Hat Agents
-
-
+# 13. Six Thinking Hat Agents
 
 The agent architecture is:
-
-
 
 ```text
 
 HatAgent
-
-&#x20;   │
-
-&#x20;   ├── WhiteHatAgent
-
-&#x20;   ├── RedHatAgent
-
-&#x20;   ├── BlackHatAgent
-
-&#x20;   ├── YellowHatAgent
-
-&#x20;   ├── GreenHatAgent
-
-&#x20;   └── BlueHatAgent
+   │
+   ├── WhiteHatAgent
+   ├── RedHatAgent
+   ├── BlackHatAgent
+   ├── YellowHatAgent
+   ├── GreenHatAgent
+   └── BlueHatAgent
 
 ```
 
-
-
 Each agent has a specific responsibility.
-
-
 
 Agents do not directly modify domain state.
 
+---
 
-
-\---
-
-
-
-\# 14. Hat Agent Interface
-
-
+# 14. Hat Agent Interface
 
 Conceptual interface:
-
-
 
 ```python
 
@@ -1046,77 +639,54 @@ class HatAgent(ABC):
 
 
 
-&#x20;   @property
+   @property
 
-&#x20;   @abstractmethod
+   @abstractmethod
 
-&#x20;   def hat(self) -> HatType:
+   def hat(self) -> HatType:
 
-&#x20;       ...
+       ...
 
 
 
-&#x20;   @abstractmethod
+   @abstractmethod
 
-&#x20;   async def create\_challenge(
+   async def create\_challenge(
 
-&#x20;       self,
+       self,
 
-&#x20;       context: MindQuestContext,
+       context: MindQuestContext,
 
-&#x20;   ) -> HatChallenge:
+   ) -> HatChallenge:
 
-&#x20;       ...
+       ...
 
 ```
 
-
-
 The agent receives controlled context.
-
-
 
 It should not receive unrestricted database access.
 
+---
 
-
-\---
-
-
-
-\# 15. Agent Registry
-
-
+# 15. Agent Registry
 
 Agents are resolved through an `AgentRegistry`.
-
-
 
 ```text
 
 AgentRegistry
-
-&#x20;     │
-
-&#x20;     ├── WHITE  → WhiteHatAgent
-
-&#x20;     ├── RED    → RedHatAgent
-
-&#x20;     ├── BLACK  → BlackHatAgent
-
-&#x20;     ├── YELLOW → YellowHatAgent
-
-&#x20;     ├── GREEN  → GreenHatAgent
-
-&#x20;     └── BLUE   → BlueHatAgent
+     │
+     ├── WHITE  → WhiteHatAgent
+     ├── RED    → RedHatAgent
+     ├── BLACK  → BlackHatAgent
+     ├── YELLOW → YellowHatAgent
+     ├── GREEN  → GreenHatAgent
+     └── BLUE   → BlueHatAgent
 
 ```
 
-
-
 Conceptually:
-
-
 
 ```python
 
@@ -1128,23 +698,13 @@ challenge = await agent.create\_challenge(context)
 
 ```
 
-
-
 This avoids coupling the Blue Agent to concrete agent implementations.
 
+---
 
-
-\---
-
-
-
-\# 16. Hat Contracts
-
-
+# 16. Hat Contracts
 
 Each hat has an explicit contract.
-
-
 
 ```python
 
@@ -1152,215 +712,157 @@ Each hat has an explicit contract.
 
 class HatContract:
 
-&#x20;   hat: HatType
+   hat: HatType
 
-&#x20;   goal: str
+   goal: str
 
-&#x20;   should: tuple\[str, ...]
+   should: tuple\[str, ...]
 
-&#x20;   should\_not: tuple\[str, ...]
+   should\_not: tuple\[str, ...]
 
-&#x20;   dimensions: tuple\[str, ...]
+   dimensions: tuple\[str, ...]
 
 ```
 
-
-
 Example:
-
-
 
 ```python
 
 BLACK\_HAT\_CONTRACT = HatContract(
 
-&#x20;   hat=HatType.BLACK,
+   hat=HatType.BLACK,
 
-&#x20;   goal="Identify risks, weaknesses and negative consequences.",
+   goal="Identify risks, weaknesses and negative consequences.",
 
-&#x20;   should=(
+   should=(
 
-&#x20;       "Challenge assumptions",
+       "Challenge assumptions",
 
-&#x20;       "Identify potential problems",
+       "Identify potential problems",
 
-&#x20;       "Explore consequences",
+       "Explore consequences",
 
-&#x20;       "Demand specificity",
+       "Demand specificity",
 
-&#x20;   ),
+   ),
 
-&#x20;   should\_not=(
+   should\_not=(
 
-&#x20;       "Propose solutions",
+       "Propose solutions",
 
-&#x20;       "Focus on benefits",
+       "Focus on benefits",
 
-&#x20;       "Express emotions",
+       "Express emotions",
 
-&#x20;   ),
+   ),
 
-&#x20;   dimensions=(
+   dimensions=(
 
-&#x20;       "risk\_identification",
+       "risk\_identification",
 
-&#x20;       "causal\_reasoning",
+       "causal\_reasoning",
 
-&#x20;       "consequence\_analysis",
+       "consequence\_analysis",
 
-&#x20;       "specificity",
+       "specificity",
 
-&#x20;       "hat\_adherence",
+       "hat\_adherence",
 
-&#x20;   ),
+   ),
 
 )
 
 ```
 
-
-
 Contracts are used by both the agent and the evaluation system.
 
+---
 
-
-\---
-
-
-
-\# 17. Blue Agent
-
-
+# 17. Blue Agent
 
 The Blue Agent is the process orchestrator.
 
-
-
 Responsibilities:
 
+- Start MindQuest
 
+- Introduce topic
 
-\* Start MindQuest
+- Select/manage hats
 
-\* Introduce topic
+- Explain challenges
 
-\* Select/manage hats
+- Track progress
 
-\* Explain challenges
+- Coordinate Hat Agents
 
-\* Track progress
+- Decide when a phase is sufficiently explored
 
-\* Coordinate Hat Agents
+- Transition between hats
 
-\* Decide when a phase is sufficiently explored
+- Detect completion
 
-\* Transition between hats
-
-\* Detect completion
-
-\* Trigger final reflection
-
-
+- Trigger final reflection
 
 The Blue Agent must not become the user's primary thinking agent.
 
+---
 
-
-\---
-
-
-
-\# 18. Evaluation Architecture
-
-
+# 18. Evaluation Architecture
 
 Thinking and German evaluation are independent.
 
-
-
 ```text
 
-&#x20;                    User Response
-
-&#x20;                          │
-
-&#x20;            ┌─────────────┴─────────────┐
-
-&#x20;            ▼                           ▼
-
-&#x20;    Thinking Evaluator           German Evaluator
-
-&#x20;            │                           │
-
-&#x20;            ▼                           ▼
-
-&#x20;  ThinkingEvaluation            GermanEvaluation
-
-&#x20;            │                           │
-
-&#x20;            └─────────────┬─────────────┘
-
-&#x20;                          ▼
-
-&#x20;                        Evidence
-
-&#x20;                          │
-
-&#x20;                          ▼
-
-&#x20;                       Feedback
+                    User Response
+                          │
+            ┌─────────────┴─────────────┐
+            ▼                           ▼
+    Thinking Evaluator           German Evaluator
+            │                           │
+            ▼                           ▼
+  ThinkingEvaluation            GermanEvaluation
+            │                           │
+            └─────────────┬─────────────┘
+                          ▼
+                        Evidence
+                          │
+                          ▼
+                       Feedback
 
 ```
 
-
-
 The system must never replace these with one combined score.
 
+---
 
-
-\---
-
-
-
-\# 19. Thinking Evaluator
-
-
+# 19. Thinking Evaluator
 
 The Thinking Evaluator evaluates intellectual performance.
 
-
-
 Dimensions depend on the active hat.
-
-
 
 Possible dimensions:
 
+- Hat adherence
 
+- Relevance
 
-\* Hat adherence
+- Depth
 
-\* Relevance
+- Reasoning
 
-\* Depth
+- Specificity
 
-\* Reasoning
+- Causal reasoning
 
-\* Specificity
+- Consequence analysis
 
-\* Causal reasoning
+- Creativity
 
-\* Consequence analysis
-
-\* Creativity
-
-\* Perspective awareness
-
-
+- Perspective awareness
 
 For Black Hat:
-
-
 
 ```text
 
@@ -1376,23 +878,13 @@ Hat adherence
 
 ```
 
+---
 
-
-\---
-
-
-
-\# 20. German Evaluator
-
-
+# 20. German Evaluator
 
 The German Evaluator independently evaluates language quality.
 
-
-
 Dimensions:
-
-
 
 ```text
 
@@ -1412,11 +904,7 @@ Precision
 
 ```
 
-
-
 The evaluator should distinguish:
-
-
 
 ```text
 
@@ -1430,23 +918,13 @@ Advanced and natural
 
 ```
 
+---
 
-
-\---
-
-
-
-\# 21. Evidence
-
-
+# 21. Evidence
 
 Evidence is a first-class domain concept.
 
-
-
 An evaluation should not only contain:
-
-
 
 ```text
 
@@ -1454,91 +932,59 @@ Score = 78
 
 ```
 
-
-
 It should explain why.
-
-
 
 Thinking evidence:
 
-
-
 ```text
 
-\- Identified a genuine risk
+- Identified a genuine risk
 
-\- Explained a consequence
+- Explained a consequence
 
-\- Stayed within Black Hat
+- Stayed within Black Hat
 
-\- Challenged an assumption
+- Challenged an assumption
 
 ```
-
-
 
 German evidence:
 
-
-
 ```text
 
-\- Correct conditional construction
+- Correct conditional construction
 
-\- Appropriate B2 vocabulary
+- Appropriate B2 vocabulary
 
-\- Incorrect word order
+- Incorrect word order
 
-\- Unnatural expression
+- Unnatural expression
 
 ```
 
-
-
 Evidence is persisted and contributes to the user's learning history.
 
+---
 
-
-\---
-
-
-
-\# 22. AI Gateway
-
-
+# 22. AI Gateway
 
 All LLM communication goes through an abstraction.
-
-
 
 ```text
 
 Agent
-
-&#x20;  ↓
-
+  ↓
 ILLMClient
-
-&#x20;  ↓
-
+  ↓
 OpenRouterClient
-
-&#x20;  ↓
-
+  ↓
 OpenRouter API
 
 ```
 
-
-
 Agents must never directly depend on OpenRouter.
 
-
-
 Conceptual interface:
-
-
 
 ```python
 
@@ -1546,31 +992,27 @@ class LLMClient(Protocol):
 
 
 
-&#x20;   async def generate\_structured(
+   async def generate\_structured(
 
-&#x20;       self,
+       self,
 
-&#x20;       \*,
+       *,
 
-&#x20;       system\_prompt: str,
+       system\_prompt: str,
 
-&#x20;       user\_prompt: str,
+       user\_prompt: str,
 
-&#x20;       response\_model: type\[T],
+       response\_model: type\[T],
 
-&#x20;       model: str,
+       model: str,
 
-&#x20;   ) -> T:
+   ) -> T:
 
-&#x20;       ...
+       ...
 
 ```
 
-
-
 Implementation:
-
-
 
 ```text
 
@@ -1578,27 +1020,15 @@ OpenRouterClient
 
 ```
 
-
-
 This allows another provider to be introduced later without changing domain or agent logic.
 
+---
 
-
-\---
-
-
-
-\# 23. OpenRouter Model Configuration
-
-
+# 23. OpenRouter Model Configuration
 
 Models should be configurable.
 
-
-
 Example environment variables:
-
-
 
 ```text
 
@@ -1614,31 +1044,17 @@ AI\_MODEL\_REFLECTION
 
 ```
 
-
-
 The application should never assume that a particular model is permanently responsible for a task.
-
-
 
 This makes model experimentation and evaluation possible.
 
+---
 
-
-\---
-
-
-
-\# 24. Structured AI Outputs
-
-
+# 24. Structured AI Outputs
 
 Important AI interactions must use structured outputs.
 
-
-
 Primary AI contracts:
-
-
 
 ```text
 
@@ -1654,111 +1070,89 @@ FinalReflection
 
 ```
 
-
-
 Example:
-
-
 
 ```python
 
 class HatChallenge(BaseModel):
 
-&#x20;   question: str
+   question: str
 
-&#x20;   instruction: str
+   instruction: str
 
-&#x20;   expected\_thinking\_mode: HatType
+   expected\_thinking\_mode: HatType
 
-&#x20;   difficulty: int
+   difficulty: int
 
 ```
 
-
-
 Thinking:
-
-
 
 ```python
 
 class ThinkingEvaluation(BaseModel):
 
-&#x20;   score: int
+   score: int
 
-&#x20;   hat\_adherence: int
+   hat\_adherence: int
 
-&#x20;   reasoning: int
+   reasoning: int
 
-&#x20;   depth: int
+   depth: int
 
-&#x20;   specificity: int
+   specificity: int
 
 
 
-&#x20;   evidence: list\[Evidence]
+   evidence: list\[Evidence]
 
-&#x20;   strengths: list\[str]
+   strengths: list\[str]
 
-&#x20;   weaknesses: list\[str]
+   weaknesses: list\[str]
 
-&#x20;   recommendations: list\[str]
+   recommendations: list\[str]
 
 ```
 
-
-
 German:
-
-
 
 ```python
 
 class GermanEvaluation(BaseModel):
 
-&#x20;   score: int
+   score: int
 
-&#x20;   grammar: int
+   grammar: int
 
-&#x20;   vocabulary: int
+   vocabulary: int
 
-&#x20;   sentence\_structure: int
+   sentence\_structure: int
 
-&#x20;   naturalness: int
+   naturalness: int
 
-&#x20;   level\_appropriateness: int
+   level\_appropriateness: int
 
 
 
-&#x20;   evidence: list\[Evidence]
+   evidence: list\[Evidence]
 
-&#x20;   corrections: list\[Correction]
+   corrections: list\[Correction]
 
-&#x20;   strengths: list\[str]
+   strengths: list\[str]
 
-&#x20;   weaknesses: list\[str]
+   weaknesses: list\[str]
 
-&#x20;   recommendations: list\[str]
+   recommendations: list\[str]
 
 ```
 
+---
 
-
-\---
-
-
-
-\# 25. AI Context
-
-
+# 25. AI Context
 
 Agents should receive a controlled `MindQuestContext`.
 
-
-
 The context may contain:
-
-
 
 ```text
 
@@ -1780,11 +1174,7 @@ Current progress
 
 ```
 
-
-
 Agents should not receive unrestricted access to:
-
-
 
 ```text
 
@@ -1798,27 +1188,15 @@ Infrastructure
 
 ```
 
-
-
 This keeps agent behavior bounded.
 
+---
 
-
-\---
-
-
-
-\# 26. Persistence Architecture
-
-
+# 26. Persistence Architecture
 
 PostgreSQL is the V1 persistence layer.
 
-
-
 Initial tables:
-
-
 
 ```text
 
@@ -1842,105 +1220,59 @@ final\_reflections
 
 ```
 
-
-
 Relationships:
-
-
 
 ```text
 
 User
-
-&#x20;│
-
-&#x20;├── MindQuest
-
-&#x20;│      │
-
-&#x20;│      ├── HatRound
-
-&#x20;│      │      │
-
-&#x20;│      │      └── Turn
-
-&#x20;│      │             ├── Response
-
-&#x20;│      │             ├── ThinkingEvaluation
-
-&#x20;│      │             └── GermanEvaluation
-
-&#x20;│      │                    └── Evidence
-
-&#x20;│      │
-
-&#x20;│      └── FinalReflection
-
-&#x20;│
-
-&#x20;└── UserActivity
+│
+├── MindQuest
+│      │
+│      ├── HatRound
+│      │      │
+│      │      └── Turn
+│      │             ├── Response
+│      │             ├── ThinkingEvaluation
+│      │             └── GermanEvaluation
+│      │                    └── Evidence
+│      │
+│      └── FinalReflection
+│
+└── UserActivity
 
 ```
 
+---
 
-
-\---
-
-
-
-\# 27. Database Technology
-
-
+# 27. Database Technology
 
 Recommended:
 
+- PostgreSQL
 
+- SQLAlchemy 2.x
 
-\* PostgreSQL
+- Alembic
 
-\* SQLAlchemy 2.x
-
-\* Alembic
-
-\* Async database access
-
-
+- Async database access
 
 The domain model should remain independent from SQLAlchemy models where practical.
 
-
-
 Repository interfaces belong to the application/domain boundary.
-
-
 
 SQLAlchemy implementations belong to infrastructure.
 
+---
 
-
-\---
-
-
-
-\# 28. User
-
-
+# 28. User
 
 A `User` entity exists in V1.
 
-
-
 Authentication is explicitly out of scope.
-
-
 
 V1 assumes one predefined user.
 
-
-
 All user-owned data must reference:
-
-
 
 ```text
 
@@ -1948,103 +1280,72 @@ UserId
 
 ```
 
-
-
 This provides a clean path toward multiple users later without redesigning the domain.
 
+---
 
-
-\---
-
-
-
-\# 29. User Learning Profile
-
-
+# 29. User Learning Profile
 
 The learning profile is derived from the user's accumulated journey.
-
-
 
 ```text
 
 MindQuest History
 
-&#x20;      ↓
+      ↓
 
 Evaluations
 
-&#x20;      ↓
+      ↓
 
 Evidence
 
-&#x20;      ↓
+      ↓
 
 Learning Profile Service
 
-&#x20;      ↓
+      ↓
 
 UserLearningProfile
 
 ```
 
-
-
 Possible dimensions:
-
-
 
 ```text
 
 Thinking
 
-&#x20;├── Critical Thinking
+├── Critical Thinking
 
-&#x20;├── Creativity
+├── Creativity
 
-&#x20;├── Reasoning
+├── Reasoning
 
-&#x20;├── Perspective Shifting
+├── Perspective Shifting
 
-&#x20;└── Depth
+└── Depth
 
 
 
 German
-
-&#x20;├── Grammar
-
-&#x20;├── Vocabulary
-
-&#x20;├── Naturalness
-
-&#x20;├── Sentence Structure
-
-&#x20;└── Advanced Expression
+├── Grammar
+├── Vocabulary
+├── Naturalness
+├── Sentence Structure
+└── Advanced Expression
 
 ```
 
-
-
 The profile should not be manually maintained as the source of truth.
 
+---
 
-
-\---
-
-
-
-\# 30. User Activity
-
-
+# 30. User Activity
 
 Activities provide a chronological view of the learning journey.
 
-
-
 Possible types:
-
-
 
 ```text
 
@@ -2068,69 +1369,43 @@ MindQuestCompleted
 
 ```
 
-
-
 `UserActivity` is not the authoritative source of domain state.
-
-
 
 The domain entities remain authoritative.
 
+---
 
-
-\---
-
-
-
-\# 31. Complete Learning Journey
-
-
+# 31. Complete Learning Journey
 
 The system must preserve historical learning data.
 
-
-
 It should not store only the latest score.
 
-
-
 Example:
-
-
 
 ```text
 
 MindQuest 1
-
-&#x20;├── Responses
-
-&#x20;├── Thinking Evaluations
-
-&#x20;├── German Evaluations
-
-&#x20;└── Reflection
-
+├── Responses
+├── Thinking Evaluations
+├── German Evaluations
+└── Reflection
 
 
 MindQuest 2
-
-&#x20;├── Responses
-
-&#x20;├── Thinking Evaluations
-
-&#x20;├── German Evaluations
-
-&#x20;└── Reflection
-
+├── Responses
+├── Thinking Evaluations
+├── German Evaluations
+└── Reflection
 
 
 MindQuest 3
 
-&#x20;└── ...
+└── ...
 
 
 
-&#x20;         ↓
+         ↓
 
 
 
@@ -2138,27 +1413,15 @@ Derived Learning Profile
 
 ```
 
-
-
 This enables progress analysis over time.
 
+---
 
-
-\---
-
-
-
-\# 32. API Design
-
-
+# 32. API Design
 
 The initial API should remain small.
 
-
-
-\## MindQuest
-
-
+## MindQuest
 
 ```http
 
@@ -2178,11 +1441,7 @@ GET    /api/v1/mindquests/{id}/reflection
 
 ```
 
-
-
-\## Learning
-
-
+## Learning
 
 ```http
 
@@ -2194,109 +1453,58 @@ GET /api/v1/users/{user\_id}/mindquests
 
 ```
 
-
-
 The API should expose use cases rather than internal implementation details.
 
+---
 
-
-\---
-
-
-
-\# 33. Response Processing Flow
-
-
+# 33. Response Processing Flow
 
 When the user submits a response:
-
-
 
 ```text
 
 POST /mindquests/{id}/responses
-
-&#x20;               │
-
-&#x20;               ▼
-
-&#x20;       MindQuestService
-
-&#x20;               │
-
-&#x20;               ▼
-
-&#x20;        Validate State
-
-&#x20;               │
-
-&#x20;               ▼
-
-&#x20;       Persist User Response
-
-&#x20;               │
-
-&#x20;       ┌───────┴────────┐
-
-&#x20;       ▼                ▼
-
+               │
+               ▼
+       MindQuestService
+               │
+               ▼
+        Validate State
+               │
+               ▼
+       Persist User Response
+               │
+       ┌───────┴────────┐
+       ▼                ▼
 Thinking Evaluator   German Evaluator
-
-&#x20;       │                │
-
-&#x20;       └───────┬────────┘
-
-&#x20;               ▼
-
-&#x20;            Evidence
-
-&#x20;               │
-
-&#x20;               ▼
-
-&#x20;            Feedback
-
-&#x20;               │
-
-&#x20;               ▼
-
-&#x20;       Next Challenge
-
-&#x20;               │
-
-&#x20;               ▼
-
-&#x20;       Persist MindQuest
-
-&#x20;               │
-
-&#x20;               ▼
-
-&#x20;         API Response
+       │                │
+       └───────┬────────┘
+               ▼
+            Evidence
+               │
+               ▼
+            Feedback
+               │
+               ▼
+       Next Challenge
+               │
+               ▼
+       Persist MindQuest
+               │
+               ▼
+         API Response
 
 ```
 
+---
 
-
-\---
-
-
-
-\# 34. Parallel Evaluation
-
-
+# 34. Parallel Evaluation
 
 Thinking and German evaluation are independent.
 
-
-
 Python async execution should therefore allow parallel evaluation.
 
-
-
 Conceptually:
-
-
 
 ```python
 
@@ -2308,59 +1516,41 @@ german\_task = evaluate\_german(...)
 
 thinking, german = await asyncio.gather(
 
-&#x20;   thinking\_task,
+   thinking\_task,
 
-&#x20;   german\_task,
+   german\_task,
 
 )
 
 ```
 
-
-
 This reduces overall response latency compared with sequential evaluation.
 
+---
 
-
-\---
-
-
-
-\# 35. Failure Handling
-
-
+# 35. Failure Handling
 
 AI failures must not corrupt the MindQuest.
 
-
-
 Example:
-
-
 
 ```text
 
 User Response
 
-&#x20;     ↓
+     ↓
 
 Persist Response
 
-&#x20;     ↓
+     ↓
 
 OpenRouter Failure
 
 ```
 
-
-
 The response should remain persisted.
 
-
-
 The system should distinguish:
-
-
 
 ```text
 
@@ -2374,161 +1564,90 @@ Evaluation completed
 
 ```
 
-
-
 The LLM is therefore not required for maintaining core application consistency.
 
+---
 
-
-\---
-
-
-
-\# 36. Frontend Architecture
-
-
+# 36. Frontend Architecture
 
 The frontend uses:
 
+- Next.js
 
+- TypeScript
 
-\* Next.js
+- React
 
-\* TypeScript
-
-\* React
-
-\* Tailwind CSS
-
-
+- Tailwind CSS
 
 Suggested structure:
-
-
 
 ```text
 
 frontend/src/
 
-
-
 ├── app/
-
 │
-
 ├── components/
-
 │   ├── mindquest/
-
 │   ├── hats/
-
 │   ├── evaluation/
-
 │   ├── reflection/
-
 │   └── ui/
-
 │
-
 ├── services/
-
 │   └── api/
-
 │
-
 ├── types/
-
 │
-
 └── lib/
 
 ```
 
+---
 
-
-\---
-
-
-
-\# 37. MindQuest UI Components
-
-
+# 37. MindQuest UI Components
 
 ```text
 
 components/
 
 │
-
 ├── mindquest/
-
 │   ├── MindQuestHeader
-
 │   ├── MindQuestProgress
-
 │   ├── ChallengeCard
-
 │   ├── ResponseEditor
-
 │   └── MindQuestTimeline
-
 │
-
 ├── hats/
-
 │   ├── HatIndicator
-
 │   ├── HatProgress
-
 │   └── HatChallenge
-
 │
-
 ├── evaluation/
-
 │   ├── ThinkingEvaluation
-
 │   ├── GermanEvaluation
-
 │   ├── EvidenceList
-
 │   ├── CorrectionList
-
 │   └── RecommendationList
-
 │
-
 └── reflection/
-
-&#x20;   ├── ThinkingReflection
-
-&#x20;   ├── GermanReflection
-
-&#x20;   └── ProgressComparison
+   ├── ThinkingReflection
+   ├── GermanReflection
+   └── ProgressComparison
 
 ```
 
-
-
 The frontend structure mirrors the product domain.
 
+---
 
-
-\---
-
-
-
-\# 38. Frontend State
-
-
+# 38. Frontend State
 
 The backend remains authoritative for MindQuest state.
 
-
-
 Backend owns:
-
-
 
 ```text
 
@@ -2546,11 +1665,7 @@ Progress
 
 ```
 
-
-
 Frontend owns temporary UI state:
-
-
 
 ```text
 
@@ -2566,125 +1681,70 @@ Temporary interaction state
 
 ```
 
-
-
 This prevents client/server state divergence.
 
+---
 
-
-\---
-
-
-
-\# 39. V1 Interaction Model
-
-
+# 39. V1 Interaction Model
 
 The initial interaction is synchronous from the user's perspective.
-
-
 
 ```text
 
 User writes response
-
-&#x20;       ↓
-
+       ↓
 Submit
-
-&#x20;       ↓
-
+       ↓
 Thinking evaluation
-
 \+
-
 German evaluation
-
-&#x20;       ↓
-
+       ↓
 Feedback
-
-&#x20;       ↓
-
+       ↓
 Next challenge
 
 ```
 
-
-
 The system may internally perform multiple asynchronous operations, but the user experiences one coherent turn.
 
+---
 
-
-\---
-
-
-
-\# 40. Docker Architecture
-
-
+# 40. Docker Architecture
 
 Development environment:
-
-
 
 ```text
 
 Docker Compose
-
 │
-
 ├── frontend
-
 │
-
 ├── backend
-
 │
-
 └── postgres
 
 ```
 
-
-
 OpenRouter remains an external API:
-
-
 
 ```text
 
 Backend
-
-&#x20;  │
-
-&#x20;  ▼
-
+  │
+  ▼
 OpenRouter
 
 ```
 
-
-
 No local LLM infrastructure is required for V1.
 
+---
 
-
-\---
-
-
-
-\# 41. Configuration
-
-
+# 41. Configuration
 
 Configuration is environment-based.
 
-
-
 Example:
-
-
 
 ```text
 
@@ -2716,27 +1776,15 @@ LOG\_LEVEL
 
 ```
 
-
-
 Use Pydantic Settings for backend configuration.
-
-
 
 The OpenRouter API key must remain server-side and must never be exposed to Next.js.
 
+---
 
-
-\---
-
-
-
-\# 42. Testing Architecture
-
-
+# 42. Testing Architecture
 
 Testing is divided into three levels.
-
-
 
 ```text
 
@@ -2750,105 +1798,64 @@ tests/
 
 ```
 
-
-
-\## Unit Tests
-
-
+## Unit Tests
 
 Test:
 
+- Domain rules
 
+- State transitions
 
-\* Domain rules
+- Hat Contracts
 
-\* State transitions
+- Evaluation calculations
 
-\* Hat Contracts
-
-\* Evaluation calculations
-
-\* Learning profile calculations
-
-
+- Learning profile calculations
 
 No real LLM calls.
 
-
-
-\## Integration Tests
-
-
+## Integration Tests
 
 Test:
 
+- FastAPI
 
+- PostgreSQL
 
-\* FastAPI
+- Repositories
 
-\* PostgreSQL
+- MindQuest workflows
 
-\* Repositories
+- AI gateway integration using mocks where appropriate
 
-\* MindQuest workflows
-
-\* AI gateway integration using mocks where appropriate
-
-
-
-\## Evaluation Tests
-
-
+## Evaluation Tests
 
 Test real AI behavior against controlled datasets.
 
+---
 
-
-\---
-
-
-
-\# 43. Evaluation Harness
-
-
+# 43. Evaluation Harness
 
 The evaluation harness is a major future capability of LinguaMentis.
 
-
-
 Suggested structure:
-
-
 
 ```text
 
 evaluation/
-
 │
-
 ├── datasets/
-
 │   ├── thinking/
-
 │   └── german/
-
 │
-
 ├── cases/
-
 ├── runners/
-
 ├── metrics/
-
 └── reports/
 
 ```
 
-
-
 Each test case can contain:
-
-
 
 ```text
 
@@ -2866,127 +1873,87 @@ Expected Evidence
 
 ```
 
-
-
 The harness can measure:
 
+### Thinking
 
+- Hat adherence accuracy
 
-\### Thinking
+- Evaluation consistency
 
+- Score stability
 
+- False positives
 
-\* Hat adherence accuracy
+- False negatives
 
-\* Evaluation consistency
+### German
 
-\* Score stability
+- Correction accuracy
 
-\* False positives
+- Grammar detection
 
-\* False negatives
+- Naturalness detection
 
+- Vocabulary assessment
 
+- Score consistency
 
-\### German
+### System
 
+- Latency
 
+- Cost
 
-\* Correction accuracy
+- Model performance
 
-\* Grammar detection
+- Prompt regression
 
-\* Naturalness detection
+---
 
-\* Vocabulary assessment
-
-\* Score consistency
-
-
-
-\### System
-
-
-
-\* Latency
-
-\* Cost
-
-\* Model performance
-
-\* Prompt regression
-
-
-
-\---
-
-
-
-\# 44. Model and Prompt Regression
-
-
+# 44. Model and Prompt Regression
 
 The architecture should make it possible to compare:
-
-
 
 ```text
 
 Model A + Prompt V1
 
-&#x20;       vs
+       vs
 
 Model A + Prompt V2
 
 ```
 
-
-
 or:
-
-
 
 ```text
 
 Model A
 
-&#x20;  vs
+  vs
 
 Model B
 
 ```
 
-
-
 against the same evaluation dataset.
-
-
 
 This makes the AI system measurable rather than relying only on subjective impressions.
 
+---
 
-
-\---
-
-
-
-\# 45. Security Boundaries
-
-
+# 45. Security Boundaries
 
 Even though authentication is out of scope for V1, important boundaries should exist.
 
-
-
 OpenRouter credentials:
-
-
 
 ```text
 
 Browser
 
-&#x20;  X
+  X
 
 OpenRouter API Key
 
@@ -2994,37 +1961,23 @@ OpenRouter API Key
 
 Backend
 
-&#x20;  ↓
+  ↓
 
 OpenRouter
 
 ```
 
-
-
 The browser must never receive the OpenRouter API key.
-
-
 
 AI prompts should also be treated as server-side implementation details.
 
+---
 
-
-\---
-
-
-
-\# 46. Observability
-
-
+# 46. Observability
 
 V1 should have basic structured logging.
 
-
-
 Useful fields:
-
-
 
 ```text
 
@@ -3048,129 +2001,69 @@ evaluation\_type
 
 ```
 
-
-
 Avoid logging sensitive or unnecessary user content.
-
-
 
 AI calls should provide enough metadata to investigate:
 
+- failures
 
+- latency
 
-\* failures
+- model behavior
 
-\* latency
+- token/cost trends
 
-\* model behavior
+---
 
-\* token/cost trends
-
-
-
-\---
-
-
-
-\# 47. Architectural Principles
-
-
+# 47. Architectural Principles
 
 LinguaMentis follows these principles:
 
-
-
-\### Principle 1 — Application owns state
-
-
+### Principle 1 — Application owns state
 
 The LLM never owns authoritative application state.
 
-
-
-\### Principle 2 — Agents are bounded
-
-
+### Principle 2 — Agents are bounded
 
 Each agent has a clear Hat Contract.
 
-
-
-\### Principle 3 — Agents are not evaluators
-
-
+### Principle 3 — Agents are not evaluators
 
 The agent that challenges the user should not judge its own performance.
 
-
-
-\### Principle 4 — Thinking and German are independent
-
-
+### Principle 4 — Thinking and German are independent
 
 They have separate scores, rubrics, evidence, and evaluation pipelines.
 
-
-
-\### Principle 5 — Structured AI
-
-
+### Principle 5 — Structured AI
 
 Important AI interactions use typed structured outputs.
 
-
-
-\### Principle 6 — Provider independence
-
-
+### Principle 6 — Provider independence
 
 Agents depend on `LLMClient`, not OpenRouter.
 
-
-
-\### Principle 7 — Evidence over scores
-
-
+### Principle 7 — Evidence over scores
 
 Evaluation must explain why a score was given.
 
-
-
-\### Principle 8 — Domain first
-
-
+### Principle 8 — Domain first
 
 Business rules belong in the domain/application layers.
 
-
-
-\### Principle 9 — Preserve the journey
-
-
+### Principle 9 — Preserve the journey
 
 Historical MindQuests and evaluations are retained.
 
-
-
-\### Principle 10 — Simplicity first
-
-
+### Principle 10 — Simplicity first
 
 Do not introduce distributed infrastructure until the product requires it.
 
+---
 
-
-\---
-
-
-
-\# 48. Explicitly Out of Scope for V1
-
-
+# 48. Explicitly Out of Scope for V1
 
 The following are intentionally excluded:
-
-
 
 ```text
 
@@ -3208,309 +2101,165 @@ Separate evaluation microservice
 
 ```
 
-
-
 These may become appropriate later, but they are not architectural requirements for the initial product.
 
+---
 
-
-\---
-
-
-
-\# 49. Future Evolution
-
-
+# 49. Future Evolution
 
 The architecture allows future evolution without changing the core domain.
 
-
-
 Possible future additions:
-
-
 
 ```text
 
-&#x20;               LinguaMentis V1
-
-&#x20;                      │
-
-&#x20;            ┌─────────┴─────────┐
-
-&#x20;            ▼                   ▼
-
-&#x20;       Voice Layer        Advanced Analytics
-
-&#x20;            │                   │
-
-&#x20;            ▼                   ▼
-
-&#x20;         STT/TTS          Learning Insights
-
-&#x20;            │
-
-&#x20;            ▼
-
-&#x20;    Speaking Evaluation
+               LinguaMentis V1
+                      │
+            ┌─────────┴─────────┐
+            ▼                   ▼
+       Voice Layer        Advanced Analytics
+            │                   │
+            ▼                   ▼
+         STT/TTS          Learning Insights
+            │
+            ▼
+    Speaking Evaluation
 
 ```
 
-
-
 If scale eventually requires it, individual capabilities can later be extracted from the modular monolith.
-
-
 
 The initial architecture should not assume that extraction is necessary.
 
+---
 
-
-\---
-
-
-
-\# 50. First Vertical Slice
-
-
+# 50. First Vertical Slice
 
 The first implementation should focus on one complete Black Hat experience.
-
-
 
 ```text
 
 Blue Agent
-
-&#x20;     ↓
-
+     ↓
 Select Topic
-
-&#x20;     ↓
-
+     ↓
 Black Hat Agent
-
-&#x20;     ↓
-
+     ↓
 Generate Challenge
-
-&#x20;     ↓
-
+     ↓
 User Response
-
-&#x20;     ↓
-
+     ↓
 Thinking Evaluator
-
-&#x20;     +
-
+     +
 German Evaluator
-
-&#x20;     ↓
-
+     ↓
 Evidence
-
-&#x20;     ↓
-
+     ↓
 Feedback
-
-&#x20;     ↓
-
+     ↓
 Next Challenge
-
-&#x20;     ↓
-
+     ↓
 Repeat
-
-&#x20;     ↓
-
+     ↓
 Blue Final Reflection
 
 ```
 
-
-
 This validates the most important architectural boundaries before implementing all six hats.
 
+---
 
-
-\---
-
-
-
-\# 51. Recommended Implementation Order
-
-
+# 51. Recommended Implementation Order
 
 ```text
 
 1\. Project setup
-
-&#x20;      ↓
-
+      ↓
 2\. PostgreSQL + SQLAlchemy + Alembic
-
-&#x20;      ↓
-
+      ↓
 3\. Domain entities
-
-&#x20;      ↓
-
+      ↓
 4\. MindQuest state machine
-
-&#x20;      ↓
-
+      ↓
 5\. Hat Contracts
-
-&#x20;      ↓
-
+      ↓
 6\. AI/Pydantic contracts
-
-&#x20;      ↓
-
+      ↓
 7\. LLM Gateway
-
-&#x20;      ↓
-
+      ↓
 8\. OpenRouter integration
-
-&#x20;      ↓
-
+      ↓
 9\. BlackHatAgent
-
-&#x20;      ↓
-
+      ↓
 10\. ThinkingEvaluator
-
-&#x20;      ↓
-
+      ↓
 11\. GermanEvaluator
-
-&#x20;      ↓
-
+      ↓
 12\. Evidence persistence
-
-&#x20;      ↓
-
+      ↓
 13\. MindQuest Engine
-
-&#x20;      ↓
-
+      ↓
 14\. FastAPI endpoints
-
-&#x20;      ↓
-
+      ↓
 15\. Next.js MindQuest UI
-
-&#x20;      ↓
-
+      ↓
 16\. Complete Black Hat vertical slice
-
-&#x20;      ↓
-
+      ↓
 17\. Remaining five hats
-
-&#x20;      ↓
-
+      ↓
 18\. Blue orchestration
-
-&#x20;      ↓
-
+      ↓
 19\. Gamification
-
-&#x20;      ↓
-
+      ↓
 20\. Evaluation Harness
-
-&#x20;      ↓
-
+      ↓
 21\. Voice
 
 ```
 
+---
 
+# 52. Final Architecture Statement
 
-\---
-
-
-
-\# 52. Final Architecture Statement
-
-
-
-LinguaMentis is a \*\*modular monolith with an AI-native domain architecture\*\*.
-
-
+LinguaMentis is a **modular monolith with an AI-native domain architecture**.
 
 Its core architecture can be summarized as:
-
-
 
 ```text
 
 Next.js
 
-&#x20;  │
-
-&#x20;  ▼
-
+  │
+  ▼
 FastAPI
-
-&#x20;  │
-
-&#x20;  ▼
-
+  │
+  ▼
 Application Layer
-
-&#x20;  │
-
-&#x20;  ├───────────────┐
-
-&#x20;  ▼               ▼
-
+  │
+  ├───────────────┐
+  ▼               ▼
 MindQuest       Evaluation
-
 Engine          Pipeline
-
-&#x20;  │               │
-
-&#x20;  ▼               ├── Thinking Evaluator
-
-Agents             └── German Evaluator
-
-&#x20;  │
-
-&#x20;  ▼
-
+  │               │
+  ▼               ├── Thinking Evaluator
+Agents            └── German Evaluator
+  │
+  ▼
 AI Gateway
-
-&#x20;  │
-
-&#x20;  ▼
-
+  │
+  ▼
 OpenRouter
-
-&#x20;  │
-
-&#x20;  ▼
-
+  │
+  ▼
 PostgreSQL
 
 ```
 
-
-
 The most important architectural rule is:
 
-
-
-> \*\*LinguaMentis is an AI-enabled application, not an LLM-controlled application.\*\*
-
-
+> **LinguaMentis is an AI-enabled application, not an LLM-controlled application.**
 
 The application owns:
-
-
 
 ```text
 
@@ -3528,11 +2277,7 @@ Learning history
 
 ```
 
-
-
 AI provides:
-
-
 
 ```text
 
@@ -3552,9 +2297,4 @@ Reflection
 
 ```
 
-
-
 This separation gives LinguaMentis a strong foundation for production-quality development while keeping V1 intentionally simple.
-
-
-
