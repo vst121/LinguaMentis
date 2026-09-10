@@ -29,21 +29,13 @@ Instead of following traditional language lessons, users enter a **MindQuest** �
 ```text
 
 Think
-
   ↓
-
 Express
-
   ↓
-
 Challenge
-
   ↓
-
 Evaluate
-
   ↓
-
 Improve
 
 ```
@@ -57,33 +49,19 @@ A MindQuest follows this flow:
 ```text
 
 Choose Topic
-
      ↓
-
 Blue Agent
-
      ↓
-
 Six Thinking Hats
-
      ↓
-
 User responds in German
-
      ↓
-
 Thinking Evaluation + German Evaluation
-
      ↓
-
 Evidence + Feedback
-
      ↓
-
 Next Challenge
-
      ↓
-
 Final Reflection
 
 ```
@@ -193,45 +171,25 @@ LinguaMentis uses a **modular monolith** for V1.
 ```text
 
 Next.js
-
    │
-
    ▼
-
 FastAPI
-
    │
-
    ▼
-
 MindQuest Engine
-
    │
-
    ├── Six Hat Agents
-
    │
-
    ├── Thinking Evaluator
-
    └── German Evaluator
-
    │
-
    ▼
-
 AI Gateway
-
    │
-
    ▼
-
 OpenRouter
-
    │
-
    ▼
-
 PostgreSQL
 
 ```
@@ -321,61 +279,33 @@ The key architectural principle is:
 ```text
 
 linguamentis/
-
 │
-
 ├── backend/
-
 │   ├── src/
-
 │   │   └── linguamentis/
-
 │   │       ├── api/
-
 │   │       ├── application/
-
 │   │       ├── domain/
-
 │   │       ├── agents/
-
 │   │       ├── ai/
-
 │   │       └── infrastructure/
-
 │   │
-
 │   └── tests/
-
 │
-
 ├── frontend/
-
 │   └── src/
-
 │       ├── app/
-
 │       ├── components/
-
 │       ├── services/
-
 │       └── types/
-
 │
-
 ├── docs/
-
 │   ├── PRD.md
-
 │   ├── Architecture.md
-
 │   ├── HatContracts.md
-
 │   ├── EvaluationRubric.md
-
 │   └── AIContracts.md
-
 │
-
 └── docker-compose.yml
 
 ```
@@ -459,99 +389,65 @@ Development starts with a complete **Black Hat MindQuest**:
 ```text
 
 Blue Agent
-
     ↓
-
 Topic
-
     ↓
-
 Black Hat Agent
-
     ↓
-
 Challenge
-
     ↓
-
 User Response
-
     ↓
-
 Thinking Evaluator
-
     +
-
 German Evaluator
-
     ↓
-
 Evidence
-
     ↓
-
 Feedback
-
     ↓
-
 Next Challenge
-
     ↓
-
 Final Reflection
 
 ```
 
 
-
 Once this flow works end-to-end, the remaining hats can be added.
-
 
 
 ---
 
 
-
 ## Running Locally
 
 
-
 ### Backend
-
 
 
 ```bash
 
 cd backend
 
-
-
 uv sync
-
-
 
 uv run uvicorn linguamentis.main:app --reload
 
 ```
 
 
-
 ### Frontend
-
 
 
 ```bash
 
 cd frontend
 
-
-
 npm install
 
 npm run dev
 
 ```
-
 
 
 ### Database
@@ -569,17 +465,13 @@ docker compose up -d postgres
 ```
 
 
-
 ---
-
 
 
 ## Environment Variables
 
 
-
 Create a `.env` file for the backend.
-
 
 
 ```env
@@ -611,17 +503,13 @@ AI\_MODEL\_REFLECTION=...
 The OpenRouter API key is **server-side only** and must never be exposed to the frontend.
 
 
-
 ---
-
 
 
 ## Testing
 
 
-
 Run unit and integration tests:
-
 
 
 ```bash
@@ -633,9 +521,7 @@ uv run pytest
 ```
 
 
-
 AI evaluation tests are kept separately:
-
 
 
 ```text
@@ -645,57 +531,43 @@ backend/tests/evaluation/
 ```
 
 
-
 These will eventually provide a regression harness for comparing prompts, models, and evaluator quality.
 
 
-
 ---
-
 
 
 ## Product Philosophy
 
 
-
 LinguaMentis should not become:
-
 
 
 > A German-learning chatbot with AI features.
 
 
-
 It should become:
-
 
 
 > **An intellectual experience where German is the language through which users learn to think, argue, question, and express ideas.**
 
 
-
 ---
-
 
 
 ## Status
 
 
-
 **Current:** Architecture and product definition
-
 
 
 **Next milestone:** Implement the Black Hat vertical slice.
 
 
-
 ---
 
 
-
 ## License
-
 
 
 TBD
