@@ -583,21 +583,13 @@ It is not the source of truth.
 ```text
 
 Responses
-
    ↓
-
 Evaluations
-
    ↓
-
 Evidence
-
    ↓
-
 Historical Analysis
-
    ↓
-
 UserLearningProfile
 
 ```
