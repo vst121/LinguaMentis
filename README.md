@@ -584,7 +584,7 @@ Create a `.env` file for the backend.
 
 ```env
 
-DATABASE\_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/linguamentis
+DATABASE\_URL=postgresql+asyncpg://postgres:postgres@localhost:5438/linguamentis
 
 
 
