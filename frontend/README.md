@@ -1,406 +1,236 @@
-\# LinguaMentis Frontend
+# LinguaMentis Frontend
 
-
-
-> \*\*Think through language.\*\*
-
-
+> **Think through language.**
 
 The LinguaMentis frontend is the interactive web experience for MindQuest.
 
-
-
 It provides the learner with a focused environment to:
 
+- explore a topic
 
+- think through the Six Thinking Hats
 
-\* explore a topic
+- respond in German
 
-\* think through the Six Thinking Hats
+- receive independent Thinking and German evaluations
 
-\* respond in German
+- track progress
 
-\* receive independent Thinking and German evaluations
+- review evidence and corrections
 
-\* track progress
+- complete the final reflection
 
-\* review evidence and corrections
-
-\* complete the final reflection
-
-\* explore their learning journey
-
-
+- explore their learning journey
 
 The frontend is intentionally thin.
 
+**The backend owns MindQuest state.**
 
+---
 
-\*\*The backend owns MindQuest state.\*\*
-
-
-
-\---
-
-
-
-\# Architecture
-
-
+# Architecture
 
 ```text
 
 ┌──────────────────────────────────────────┐
-
 │              Next.js App                 │
-
 │                                          │
-
 │  Pages / Routes                          │
-
 │       ↓                                  │
-
 │  MindQuest Components                    │
-
 │       ↓                                  │
-
 │  API Services                            │
-
 └──────────────────┬───────────────────────┘
-
-&#x20;                  │ HTTP
-
-&#x20;                  ▼
-
-&#x20;       ┌──────────────────────┐
-
-&#x20;       │   LinguaMentis API   │
-
-&#x20;       └──────────────────────┘
+                   │ HTTP
+                   ▼
+       ┌──────────────────────┐
+       │   LinguaMentis API   │
+       └──────────────────────┘
 
 ```
 
-
-
 The frontend owns:
 
+- UI state
 
+- response drafts
 
-\* UI state
+- dialogs
 
-\* response drafts
+- loading states
 
-\* dialogs
+- animations
 
-\* loading states
+- display preferences
 
-\* animations
-
-\* display preferences
-
-\* temporary interaction state
-
-
+- temporary interaction state
 
 The backend owns:
 
+- MindQuest lifecycle
 
+- current Hat
 
-\* MindQuest lifecycle
+- turns
 
-\* current Hat
+- responses
 
-\* turns
+- scores
 
-\* responses
+- evaluations
 
-\* scores
+- completion
 
-\* evaluations
+- learning history
 
-\* completion
+---
 
-\* learning history
-
-
-
-\---
-
-
-
-\# Technology Stack
-
-
+# Technology Stack
 
 | Area            | Technology                            |
-
 | --------------- | ------------------------------------- |
-
 | Framework       | Next.js                               |
-
 | Language        | TypeScript                            |
-
 | UI              | React                                 |
-
 | Styling         | Tailwind CSS                          |
-
 | API             | LinguaMentis FastAPI backend          |
-
 | State           | Server state + local UI state         |
-
 | Package Manager | npm / pnpm / project-selected manager |
-
-
 
 The frontend should remain lightweight and avoid unnecessary state-management infrastructure in V1.
 
+---
 
-
-\---
-
-
-
-\# Project Structure
-
-
+# Project Structure
 
 ```text
 
 frontend/
-
 ├── package.json
-
 ├── tsconfig.json
-
 ├── next.config.ts
-
 ├── README.md
-
 │
-
 └── src/
-
-&#x20;   ├── app/
-
-&#x20;   │   ├── page.tsx
-
-&#x20;   │   │
-
-&#x20;   │   ├── mindquests/
-
-&#x20;   │   │   ├── page.tsx
-
-&#x20;   │   │   └── \[id]/
-
-&#x20;   │   │       ├── page.tsx
-
-&#x20;   │   │       └── reflection/
-
-&#x20;   │   │           └── page.tsx
-
-&#x20;   │   │
-
-&#x20;   │   ├── learning/
-
-&#x20;   │   │   └── page.tsx
-
-&#x20;   │   │
-
-&#x20;   │   └── history/
-
-&#x20;   │       └── page.tsx
-
-&#x20;   │
-
-&#x20;   ├── components/
-
-&#x20;   │   ├── mindquest/
-
-&#x20;   │   │   ├── MindQuestHeader.tsx
-
-&#x20;   │   │   ├── MindQuestProgress.tsx
-
-&#x20;   │   │   ├── ChallengeCard.tsx
-
-&#x20;   │   │   ├── ResponseEditor.tsx
-
-&#x20;   │   │   └── MindQuestTimeline.tsx
-
-&#x20;   │   │
-
-&#x20;   │   ├── hats/
-
-&#x20;   │   │   ├── HatIndicator.tsx
-
-&#x20;   │   │   ├── HatProgress.tsx
-
-&#x20;   │   │   └── HatChallenge.tsx
-
-&#x20;   │   │
-
-&#x20;   │   ├── evaluation/
-
-&#x20;   │   │   ├── ThinkingEvaluation.tsx
-
-&#x20;   │   │   ├── GermanEvaluation.tsx
-
-&#x20;   │   │   ├── EvidenceList.tsx
-
-&#x20;   │   │   ├── CorrectionList.tsx
-
-&#x20;   │   │   └── RecommendationList.tsx
-
-&#x20;   │   │
-
-&#x20;   │   ├── reflection/
-
-&#x20;   │   │   ├── ThinkingReflection.tsx
-
-&#x20;   │   │   ├── GermanReflection.tsx
-
-&#x20;   │   │   └── ProgressComparison.tsx
-
-&#x20;   │   │
-
-&#x20;   │   └── ui/
-
-&#x20;   │
-
-&#x20;   ├── services/
-
-&#x20;   │   └── api/
-
-&#x20;   │
-
-&#x20;   ├── types/
-
-&#x20;   │
-
-&#x20;   └── lib/
+   ├── app/
+   │   ├── page.tsx
+   │   │
+   │   ├── mindquests/
+   │   │   ├── page.tsx
+   │   │   └── \[id]/
+   │   │       ├── page.tsx
+   │   │       └── reflection/
+   │   │           └── page.tsx
+   │   │
+   │   ├── learning/
+   │   │   └── page.tsx
+   │   │
+   │   └── history/
+   │       └── page.tsx
+   │
+   ├── components/
+   │   ├── mindquest/
+   │   │   ├── MindQuestHeader.tsx
+   │   │   ├── MindQuestProgress.tsx
+   │   │   ├── ChallengeCard.tsx
+   │   │   ├── ResponseEditor.tsx
+   │   │   └── MindQuestTimeline.tsx
+   │   │
+   │   ├── hats/
+   │   │   ├── HatIndicator.tsx
+   │   │   ├── HatProgress.tsx
+   │   │   └── HatChallenge.tsx
+   │   │
+   │   ├── evaluation/
+   │   │   ├── ThinkingEvaluation.tsx
+   │   │   ├── GermanEvaluation.tsx
+   │   │   ├── EvidenceList.tsx
+   │   │   ├── CorrectionList.tsx
+   │   │   └── RecommendationList.tsx
+   │   │
+   │   ├── reflection/
+   │   │   ├── ThinkingReflection.tsx
+   │   │   ├── GermanReflection.tsx
+   │   │   └── ProgressComparison.tsx
+   │   │
+   │   └── ui/
+   │
+   ├── services/
+   │   └── api/
+   │
+   ├── types/
+   │
+   └── lib/
 
 ```
 
+---
 
-
-\---
-
-
-
-\# Core Experience
-
-
+# Core Experience
 
 The primary frontend experience is the MindQuest page.
-
-
 
 ```text
 
 ┌─────────────────────────────────────────┐
-
 │ MindQuest                               │
-
 │ Topic: Should AI be regulated?          │
-
 ├─────────────────────────────────────────┤
-
 │                                         │
-
 │       CURRENT HAT: BLACK                │
-
 │                                         │
-
 │  What could go wrong?                   │
-
 │                                         │
-
 │  ┌───────────────────────────────────┐  │
-
 │  │ Challenge                         │  │
-
 │  │ Welche konkreten Risiken ...?     │  │
-
 │  └───────────────────────────────────┘  │
-
 │                                         │
-
 │  ┌───────────────────────────────────┐  │
-
 │  │ Your response...                  │  │
-
 │  │                                   │  │
-
 │  └───────────────────────────────────┘  │
-
 │                                         │
-
-│             \[ Submit Response ]          │
-
+│             \[ Submit Response ]        │
 │                                         │
-
 ├─────────────────────────────────────────┤
-
-│ Progress: White ✓  Red ✓  Black ●       │
-
+│ Progress: White ✓  Red ✓  Black ●      │
 │          Yellow ○  Green ○              │
-
 └─────────────────────────────────────────┘
 
 ```
 
-
-
 The interface should keep the learner focused on the current thinking task.
 
+---
 
-
-\---
-
-
-
-\# MindQuest Page
-
-
+# MindQuest Page
 
 The MindQuest page is the core interaction surface.
 
-
-
 It should communicate:
 
+- current topic
 
+- current Hat
 
-\* current topic
+- current challenge
 
-\* current Hat
+- learner response
 
-\* current challenge
+- progress
 
-\* learner response
+- evaluation state
 
-\* progress
-
-\* evaluation state
-
-\* next action
-
-
+- next action
 
 The page should avoid unnecessary UI elements that distract from thinking.
 
+---
 
-
-\---
-
-
-
-\# Six Hats UI
-
-
+# Six Hats UI
 
 The Six Hats should be visually distinguishable while keeping the interface cognitively simple.
-
-
 
 ```text
 
@@ -418,11 +248,7 @@ Blue
 
 ```
 
-
-
 Possible states:
-
-
 
 ```text
 
@@ -434,45 +260,27 @@ Possible states:
 
 ```
 
-
-
 The frontend should receive the authoritative state from the backend.
-
-
 
 It should not independently decide which Hat is active.
 
+---
 
-
-\---
-
-
-
-\# Challenge Card
-
-
+# Challenge Card
 
 `ChallengeCard` displays the current AI-generated challenge.
 
-
-
 It should show:
 
+- Hat
 
+- question
 
-\* Hat
+- instruction
 
-\* question
-
-\* instruction
-
-\* difficulty when useful
-
-
+- difficulty when useful
 
 Example:
-
-
 
 ```text
 
@@ -492,147 +300,84 @@ wenn Unternehmen KI stärker einsetzen?
 
 ```
 
-
-
 The frontend should not generate or modify the challenge.
 
+---
 
-
-\---
-
-
-
-\# Response Editor
-
-
+# Response Editor
 
 `ResponseEditor` allows the learner to write their response in German.
 
-
-
 Responsibilities:
 
+- text input
 
+- character/word information when useful
 
-\* text input
+- submit action
 
-\* character/word information when useful
+- loading state
 
-\* submit action
+- validation
 
-\* loading state
+- error state
 
-\* validation
-
-\* error state
-
-\* draft preservation during UI transitions
-
-
+- draft preservation during UI transitions
 
 The response should be submitted to the backend before evaluation begins.
 
+---
 
-
-\---
-
-
-
-\# Evaluation UI
-
-
+# Evaluation UI
 
 Evaluation should clearly separate the two dimensions.
-
-
 
 ```text
 
 ┌─────────────────────────────────────────┐
-
 │ Thinking Quality                  78/100│
-
 ├─────────────────────────────────────────┤
-
 │ Hat Adherence                     82    │
-
 │ Relevance                         90    │
-
 │ Reasoning                         78    │
-
 │ Depth                             68    │
-
 │ Specificity                       74    │
-
 │                                         │
-
 │ Evidence                                │
-
 │ ✓ Identified a concrete risk            │
-
 │ ✓ Explained a causal relationship       │
-
 │                                         │
-
 │ Recommendation                          │
-
 │ Explore the second-order consequence.   │
-
 └─────────────────────────────────────────┘
 
 
-
 ┌─────────────────────────────────────────┐
-
 │ German Quality                    81/100│
-
 ├─────────────────────────────────────────┤
-
 │ Grammar                           88    │
-
 │ Vocabulary                        76    │
-
 │ Sentence Structure                82    │
-
 │ Naturalness                       82    │
-
 │ Level Appropriateness             78    │
-
 │                                         │
-
-│ Corrections                            │
-
+│ Corrections                             │
 │ ...                                     │
-
 └─────────────────────────────────────────┘
 
 ```
 
-
-
 The UI must not present these as one combined score.
 
+---
 
-
-\---
-
-
-
-\# Evidence
-
-
+# Evidence
 
 Evidence is a first-class UI element.
 
-
-
 A score should be understandable.
 
-
-
 Instead of:
-
-
 
 ```text
 
@@ -640,11 +385,7 @@ Thinking: 78
 
 ```
 
-
-
 show:
-
-
 
 ```text
 
@@ -662,27 +403,15 @@ Why?
 
 ```
 
-
-
 This makes evaluation useful for learning rather than merely gamified scoring.
 
+---
 
-
-\---
-
-
-
-\# German Corrections
-
-
+# German Corrections
 
 Corrections should be concise and actionable.
 
-
-
 Example:
-
-
 
 ```text
 
@@ -704,173 +433,106 @@ Why:
 
 ```
 
-
-
 The frontend should display corrections without overwhelming the learner.
 
+---
 
-
-\---
-
-
-
-\# Feedback Order
-
-
+# Feedback Order
 
 The experience should normally follow:
-
-
 
 ```text
 
 Thinking Feedback
-
-&#x20;      ↓
-
+      ↓
 German Feedback
-
-&#x20;      ↓
-
+      ↓
 Next Challenge
 
 ```
 
-
-
 This reflects the product philosophy:
 
+> **Thinking first. Language second.**
 
+---
 
-> \*\*Thinking first. Language second.\*\*
-
-
-
-\---
-
-
-
-\# Final Reflection
-
-
+# Final Reflection
 
 When all Hats are complete, the frontend displays the Blue Agent's final reflection.
 
-
-
 The reflection should contain two independent sections.
 
+## Thinking
 
+- overall thinking performance
 
-\## Thinking
+- strongest Hats
 
+- weakest Hats
 
+- evidence
 
-\* overall thinking performance
+- recurring patterns
 
-\* strongest Hats
+- recommendations
 
-\* weakest Hats
+- progress compared with previous MindQuests
 
-\* evidence
+## German
 
-\* recurring patterns
+- overall German performance
 
-\* recommendations
+- grammar strengths
 
-\* progress compared with previous MindQuests
+- vocabulary weaknesses
 
+- naturalness
 
+- important corrections
 
-\## German
+- recommended expressions
 
+- B2/C1 recommendations
 
+- progress over time
 
-\* overall German performance
+---
 
-\* grammar strengths
-
-\* vocabulary weaknesses
-
-\* naturalness
-
-\* important corrections
-
-\* recommended expressions
-
-\* B2/C1 recommendations
-
-\* progress over time
-
-
-
-\---
-
-
-
-\# Learning Page
-
-
+# Learning Page
 
 The learning page represents the learner's accumulated development.
 
-
-
 Possible sections:
-
-
 
 ```text
 
 Thinking Development
-
 ├── Hat performance
-
 ├── Reasoning trends
-
 ├── Depth trends
-
 └── Perspective strengths
 
 
-
 German Development
-
 ├── Grammar
-
 ├── Vocabulary
-
 ├── Naturalness
-
 └── Level progression
 
 ```
 
-
-
 The frontend should consume the derived learning profile from the backend.
-
-
 
 It should not calculate authoritative learning metrics independently.
 
+---
 
-
-\---
-
-
-
-\# History Page
-
-
+# History Page
 
 The history page shows the learner's complete journey.
 
-
-
 Example:
-
-
 
 ```text
 
@@ -908,39 +570,27 @@ German: 85
 
 ```
 
-
-
 Selecting a MindQuest should allow the learner to revisit:
 
+- topic
 
+- Hat progression
 
-\* topic
+- responses
 
-\* Hat progression
+- evaluations
 
-\* responses
+- evidence
 
-\* evaluations
+- corrections
 
-\* evidence
+- final reflection
 
-\* corrections
+---
 
-\* final reflection
-
-
-
-\---
-
-
-
-\# API Layer
-
-
+# API Layer
 
 Frontend API calls should be isolated under:
-
-
 
 ```text
 
@@ -948,67 +598,43 @@ src/services/api/
 
 ```
 
-
-
 Example:
-
-
 
 ```text
 
 services/api/
-
 ├── client.ts
-
 ├── mindquests.ts
-
 ├── turns.ts
-
 ├── evaluations.ts
-
 ├── users.ts
-
 └── learning.ts
 
 ```
 
-
-
 Components should not contain raw `fetch()` calls to backend endpoints.
 
-
-
 Preferred:
-
-
 
 ```text
 
 Component
 
-&#x20;   ↓
+   ↓
 
 API Service
 
-&#x20;   ↓
+   ↓
 
 Backend API
 
 ```
 
+---
 
-
-\---
-
-
-
-\# Types
-
-
+# Types
 
 API/domain response types should be centralized under:
-
-
 
 ```text
 
@@ -1016,11 +642,7 @@ src/types/
 
 ```
 
-
-
 Important types include:
-
-
 
 ```text
 
@@ -1050,117 +672,72 @@ LearningProfile
 
 ```
 
-
-
 Frontend types should reflect backend contracts.
-
-
 
 Avoid duplicating business rules in TypeScript.
 
+---
 
-
-\---
-
-
-
-\# State Management
-
-
+# State Management
 
 V1 intentionally keeps state management simple.
 
-
-
-\### Backend state
-
-
+### Backend state
 
 The backend is authoritative for:
 
+- current Hat
 
+- current turn
 
-\* current Hat
+- MindQuest state
 
-\* current turn
+- scores
 
-\* MindQuest state
+- evaluations
 
-\* scores
+- completion
 
-\* evaluations
-
-\* completion
-
-
-
-\### Frontend state
-
-
+### Frontend state
 
 The frontend owns temporary state such as:
 
+- response draft
 
+- modal visibility
 
-\* response draft
+- loading indicators
 
-\* modal visibility
+- UI animations
 
-\* loading indicators
-
-\* UI animations
-
-\* temporary error state
-
-
+- temporary error state
 
 Conceptually:
-
-
 
 ```text
 
 Server State
-
-&#x20;   ↓
-
+   ↓
 Backend API
-
-&#x20;   ↓
-
+   ↓
 Frontend View
 
 
-
 Local UI State
-
-&#x20;   ↓
-
+   ↓
 React
 
 ```
 
-
-
 Do not introduce a global state framework unless a concrete requirement appears.
 
+---
 
-
-\---
-
-
-
-\# Loading States
-
-
+# Loading States
 
 AI interactions may take time.
 
-
-
 The UI should clearly communicate states such as:
-
-
 
 ```text
 
@@ -1174,303 +751,179 @@ Preparing your next challenge...
 
 ```
 
-
-
 The learner should never be left wondering whether the application is still working.
 
+---
 
-
-\---
-
-
-
-\# Error Handling
-
-
+# Error Handling
 
 The frontend should handle:
 
+- network errors
 
+- backend validation errors
 
-\* network errors
+- MindQuest state conflicts
 
-\* backend validation errors
+- AI evaluation delays/failures
 
-\* MindQuest state conflicts
+- unavailable MindQuest
 
-\* AI evaluation delays/failures
-
-\* unavailable MindQuest
-
-\* failed submissions
-
-
+- failed submissions
 
 A failed evaluation should not imply that the learner's response was lost.
 
-
-
 If the response was persisted successfully, the UI should preserve that state.
 
+---
 
-
-\---
-
-
-
-\# Accessibility
-
-
+# Accessibility
 
 The interface should support:
 
+- keyboard navigation
 
+- semantic HTML
 
-\* keyboard navigation
+- visible focus states
 
-\* semantic HTML
+- readable contrast
 
-\* visible focus states
+- accessible form labels
 
-\* readable contrast
+- screen-reader-friendly feedback
 
-\* accessible form labels
-
-\* screen-reader-friendly feedback
-
-\* clear error messages
-
-
+- clear error messages
 
 The intellectual experience should not depend entirely on visual styling.
 
+---
 
-
-\---
-
-
-
-\# Responsive Design
-
-
+# Responsive Design
 
 The core MindQuest experience should work on:
 
+- desktop
 
+- tablet
 
-\* desktop
+- mobile
 
-\* tablet
-
-\* mobile
-
-
-
-However, V1 priority is the \*\*desktop/web learning experience\*\*.
-
-
+However, V1 priority is the **desktop/web learning experience**.
 
 Responsive behavior should preserve:
-
-
 
 ```text
 
 Current Hat
-
-&#x20;     ↓
-
+     ↓
 Challenge
-
-&#x20;     ↓
-
+     ↓
 Response
-
-&#x20;     ↓
-
+     ↓
 Evaluation
 
 ```
 
-
-
 without unnecessary navigation complexity.
 
+---
 
+# Frontend Principles
 
-\---
-
-
-
-\# Frontend Principles
-
-
-
-\### Keep the learner in cognitive mode
-
-
+### Keep the learner in cognitive mode
 
 The UI should help the learner think rather than distract them.
 
-
-
-\### Make the current Hat obvious
-
-
+### Make the current Hat obvious
 
 The learner should always know:
 
-
-
 > What kind of thinking am I doing now?
 
-
-
-\### Separate thinking from language
-
-
+### Separate thinking from language
 
 Never visually merge Thinking Quality and German Quality into one score.
 
-
-
-\### Show evidence
-
-
+### Show evidence
 
 Scores should be explainable.
 
-
-
-\### Keep the interface focused
-
-
+### Keep the interface focused
 
 Avoid unnecessary dashboards during active thinking.
 
-
-
-\### Backend is authoritative
-
-
+### Backend is authoritative
 
 Do not duplicate MindQuest business logic in React.
 
-
-
-\### Keep V1 simple
-
-
+### Keep V1 simple
 
 Avoid unnecessary:
 
+- global state frameworks
 
+- complex design systems
 
-\* global state frameworks
+- real-time infrastructure
 
-\* complex design systems
+- client-side AI calls
 
-\* real-time infrastructure
+- AI SDK coupling
 
-\* client-side AI calls
-
-\* AI SDK coupling
-
-\* offline synchronization
-
-
+- offline synchronization
 
 unless a real requirement emerges.
 
+---
 
-
-\---
-
-
-
-\# Security
-
-
+# Security
 
 The OpenRouter API key must never be exposed to the frontend.
 
-
-
 AI calls always follow:
-
-
 
 ```text
 
 Browser
-
-&#x20;  ↓
-
+  ↓
 Backend
-
-&#x20;  ↓
-
+  ↓
 LLM Gateway
-
-&#x20;  ↓
-
+  ↓
 OpenRouter
 
 ```
-
-
 
 Never:
 
-
-
 ```text
 
 Browser
-
-&#x20;  ↓
-
+  ↓
 OpenRouter
 
 ```
 
-
-
 Environment variables containing secrets must remain server-side.
 
+---
 
+# Local Development
 
-\---
-
-
-
-\# Local Development
-
-
-
-\## Requirements
-
-
+## Requirements
 
 Install:
 
+- Node.js
 
+- npm or the package manager selected by the project
 
-\* Node.js
+- running LinguaMentis backend
 
-\* npm or the package manager selected by the project
+---
 
-\* running LinguaMentis backend
-
-
-
-\---
-
-
-
-\## Install Dependencies
-
-
+## Install Dependencies
 
 ```bash
 
@@ -1478,19 +931,11 @@ npm install
 
 ```
 
+---
 
-
-\---
-
-
-
-\## Environment
-
-
+## Environment
 
 Create:
-
-
 
 ```text
 
@@ -1498,11 +943,7 @@ Create:
 
 ```
 
-
-
 Example:
-
-
 
 ```env
 
@@ -1510,15 +951,9 @@ NEXT\_PUBLIC\_API\_BASE\_URL=http://localhost:8000
 
 ```
 
-
-
-Only public configuration belongs in `NEXT\_PUBLIC\_\*`.
-
-
+Only public configuration belongs in `NEXT\_PUBLIC\_*`.
 
 Never put:
-
-
 
 ```text
 
@@ -1526,19 +961,11 @@ OPENROUTER\_API\_KEY
 
 ```
 
-
-
 or other server secrets in the frontend environment.
 
+---
 
-
-\---
-
-
-
-\## Start Development Server
-
-
+## Start Development Server
 
 ```bash
 
@@ -1546,187 +973,106 @@ npm run dev
 
 ```
 
-
-
 The application should then communicate with the local FastAPI backend.
 
+---
 
-
-\---
-
-
-
-\# Typical Development Flow
-
-
+# Typical Development Flow
 
 ```text
 
 Start PostgreSQL
-
-&#x20;     ↓
-
+     ↓
 Start Backend
-
-&#x20;     ↓
-
+     ↓
 Start Frontend
-
-&#x20;     ↓
-
+     ↓
 Create MindQuest
-
-&#x20;     ↓
-
+     ↓
 Start MindQuest
-
-&#x20;     ↓
-
+     ↓
 Receive Hat Challenge
-
-&#x20;     ↓
-
+     ↓
 Write German response
-
-&#x20;     ↓
-
+     ↓
 Submit
-
-&#x20;     ↓
-
+     ↓
 View Thinking Evaluation
-
-&#x20;     ↓
-
+     ↓
 View German Evaluation
-
-&#x20;     ↓
-
+     ↓
 Continue
 
 ```
 
+---
 
-
-\---
-
-
-
-\# V1 Pages
-
-
+# V1 Pages
 
 Initial pages:
-
-
 
 ```text
 
 /
-
-&#x20;   Landing / Home
-
+   Landing / Home
 
 
 /mindquests
-
-&#x20;   MindQuest list
-
+   MindQuest list
 
 
 /mindquests/{id}
-
-&#x20;   Active MindQuest
-
+   Active MindQuest
 
 
 /mindquests/{id}/reflection
-
-&#x20;   Final reflection
-
+   Final reflection
 
 
 /learning
-
-&#x20;   Learning profile
-
+   Learning profile
 
 
 /history
-
-&#x20;   Learning journey
+   Learning journey
 
 ```
 
+---
 
-
-\---
-
-
-
-\# V1 Vertical Slice
-
-
+# V1 Vertical Slice
 
 The first frontend vertical slice should support:
-
-
 
 ```text
 
 MindQuest
-
-&#x20;   ↓
-
+   ↓
 Black Hat
-
-&#x20;   ↓
-
+   ↓
 Challenge
-
-&#x20;   ↓
-
+   ↓
 Response Editor
-
-&#x20;   ↓
-
+   ↓
 Submit
-
-&#x20;   ↓
-
+   ↓
 Thinking Evaluation
-
-&#x20;   ↓
-
+   ↓
 German Evaluation
-
-&#x20;   ↓
-
+   ↓
 Evidence
-
-&#x20;   ↓
-
+   ↓
 Next Challenge
 
 ```
 
-
-
 This should work end-to-end before building the complete learning dashboard.
 
+---
 
-
-\---
-
-
-
-\# Related Documents
-
-
+# Related Documents
 
 From the repository root:
-
-
 
 ```text
 
@@ -1742,43 +1088,24 @@ Architecture.md
 
 ```
 
-
-
 These define the product vision, cognitive contracts, evaluation methodology, architecture, and overall project.
 
+---
 
+# Status
 
-\---
-
-
-
-\# Status
-
-
-
-\*\*V1 — Architecture and implementation in progress.\*\*
-
-
+**V1 — Architecture and implementation in progress.**
 
 The immediate priority is a focused, polished MindQuest experience before expanding secondary screens.
 
+---
 
+## Product Philosophy
 
-\---
-
-
-
-\## Product Philosophy
-
-
-
-> \*\*Language is the medium.
+> Language is the medium.
 
 > Thinking is the skill.
 
 > Perspective is the method.
 
-> Growth is the outcome.\*\*
-
-
-
+> Growth is the outcome.
