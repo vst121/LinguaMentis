@@ -412,21 +412,13 @@ Agents communicate with the LLM through an abstraction.
 ```text
 
 Agent
-
  ↓
-
 ILLMClient
-
  ↓
-
 LLM Gateway
-
  ↓
-
 OpenRouterClient
-
  ↓
-
 OpenRouter
 
 ```

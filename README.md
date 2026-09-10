@@ -129,7 +129,7 @@ MindQuest Engine
    ├── Six Hat Agents
    │
    ├── Thinking Evaluator
-   └── German Evaluator
+   ├── German Evaluator
    │
    ▼
 AI Gateway
