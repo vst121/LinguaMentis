@@ -1,30 +1,16 @@
-# LinguaMentis
-
-
+# Lingua Mentis
 
 > **Think through language.**
 
-
-
 LinguaMentis is a gamified AI debate experience for **B2/C1 German learners**.
-
-
 
 It combines **German language development** with **structured thinking** using Edward de Bono's **Six Thinking Hats**.
 
-
-
 Instead of following traditional language lessons, users enter a **MindQuest** — an intellectual challenge where they explore a complex topic from different perspectives and express their thoughts in German.
-
-
 
 ---
 
-
-
 ## Core Experience
-
-
 
 ```text
 
@@ -40,11 +26,7 @@ Improve
 
 ```
 
-
-
 A MindQuest follows this flow:
-
-
 
 ```text
 
@@ -66,107 +48,73 @@ Final Reflection
 
 ```
 
-
-
 ---
-
-
 
 ## Six Thinking Hats
 
-
-
-| Hat       | Focus                                   |
+| Hat | Focus |
 
 | --------- | --------------------------------------- |
 
-| ⚪ White   | Facts, information, evidence            |
+| ⚪ White | Facts, information, evidence |
 
-| 🔴 Red    | Feelings, intuition, reactions          |
+| 🔴 Red | Feelings, intuition, reactions |
 
-| ⚫ Black   | Risks, weaknesses, consequences         |
+| ⚫ Black | Risks, weaknesses, consequences |
 
-| 🟡 Yellow | Benefits, opportunities, value          |
+| 🟡 Yellow | Benefits, opportunities, value |
 
-| 🟢 Green  | Creativity, alternatives, possibilities |
+| 🟢 Green | Creativity, alternatives, possibilities |
 
-| 🔵 Blue   | Process, orchestration, reflection      |
-
-
+| 🔵 Blue | Process, orchestration, reflection |
 
 The **Blue Agent** orchestrates the MindQuest and produces the final reflection.
 
-
-
 ---
-
-
 
 ## Two Independent Evaluations
 
-
-
 Every response is evaluated in two separate dimensions:
-
-
 
 ### Thinking Quality
 
+- Hat adherence
 
+- Reasoning
 
-* Hat adherence
+- Depth
 
-* Reasoning
+- Relevance
 
-* Depth
+- Specificity
 
-* Relevance
+- Critical thinking
 
-* Specificity
-
-* Critical thinking
-
-* Creativity where appropriate
-
-
+- Creativity where appropriate
 
 ### German Quality
 
+- Grammar
 
+- Vocabulary
 
-* Grammar
+- Sentence structure
 
-* Vocabulary
+- Naturalness
 
-* Sentence structure
+- Fluency
 
-* Naturalness
-
-* Fluency
-
-* B2/C1 appropriateness
-
-
+- B2/C1 appropriateness
 
 The two scores are **never combined into a single score**.
 
-
-
 Every important evaluation also provides **evidence** explaining the score.
-
-
 
 ---
 
-
-
 ## Architecture
 
-
-
 LinguaMentis uses a **modular monolith** for V1.
-
-
 
 ```text
 
@@ -194,87 +142,57 @@ PostgreSQL
 
 ```
 
-
-
 The key architectural principle is:
-
-
 
 > **The application owns the state. AI provides intelligence, not application control.**
 
-
-
 ---
-
-
 
 ## Technology Stack
 
-
-
 ### Backend
 
+- Python 3.12
 
+- FastAPI
 
-* Python 3.12
+- SQLAlchemy 2.x
 
-* FastAPI
+- Alembic
 
-* SQLAlchemy 2.x
+- PostgreSQL
 
-* Alembic
-
-* PostgreSQL
-
-* Pydantic
-
-
+- Pydantic
 
 ### Frontend
 
+- Next.js
 
+- TypeScript
 
-* Next.js
+- React
 
-* TypeScript
-
-* React
-
-* Tailwind CSS
-
-
+- Tailwind CSS
 
 ### AI
 
+- OpenRouter
 
+- Structured LLM outputs
 
-* OpenRouter
-
-* Structured LLM outputs
-
-* Configurable models
-
-
+- Configurable models
 
 ### Development
 
+- uv
 
+- Docker Compose
 
-* uv
-
-* Docker Compose
-
-* pytest
-
-
+- pytest
 
 ---
 
-
-
 ## Project Structure
-
-
 
 ```text
 
@@ -310,81 +228,59 @@ linguamentis/
 
 ```
 
-
-
 ---
-
-
 
 ## V1 Scope
 
-
-
 The first version focuses on:
 
+- Text-based MindQuests
 
+- Six Thinking Hats
 
-* Text-based MindQuests
+- Blue Agent orchestration
 
-* Six Thinking Hats
+- Independent Thinking evaluation
 
-* Blue Agent orchestration
+- Independent German evaluation
 
-* Independent Thinking evaluation
+- Evidence-based feedback
 
-* Independent German evaluation
+- Persistent learning history
 
-* Evidence-based feedback
+- Final MindQuest reflection
 
-* Persistent learning history
-
-* Final MindQuest reflection
-
-* Basic gamification
-
-
+- Basic gamification
 
 ### Not in V1
 
+- Authentication
 
+- Mobile application
 
-* Authentication
+- Voice interaction
 
-* Mobile application
+- Kafka
 
-* Voice interaction
+- Microservices
 
-* Kafka
+- Redis
 
-* Microservices
+- Celery
 
-* Redis
+- Vector database
 
-* Celery
+- Event sourcing
 
-* Vector database
-
-* Event sourcing
-
-* Payments
-
-
+- Payments
 
 The goal is to build a **complete, high-quality vertical slice before adding infrastructure complexity**.
 
-
-
 ---
-
-
 
 ## First Vertical Slice
 
-
-
 Development starts with a complete **Black Hat MindQuest**:
-
-
 
 ```text
 
@@ -412,18 +308,13 @@ Final Reflection
 
 ```
 
-
 Once this flow works end-to-end, the remaining hats can be added.
-
 
 ---
 
-
 ## Running Locally
 
-
 ### Backend
-
 
 ```bash
 
@@ -435,9 +326,7 @@ uv run uvicorn linguamentis.main:app --reload
 
 ```
 
-
 ### Frontend
-
 
 ```bash
 
@@ -449,14 +338,9 @@ npm run dev
 
 ```
 
-
 ### Database
 
-
-
 PostgreSQL can be started with:
-
-
 
 ```bash
 
@@ -464,15 +348,11 @@ docker compose up -d postgres
 
 ```
 
-
 ---
-
 
 ## Environment Variables
 
-
 Create a `.env` file for the backend.
-
 
 ```env
 
@@ -498,19 +378,13 @@ AI\_MODEL\_REFLECTION=...
 
 ```
 
-
-
 The OpenRouter API key is **server-side only** and must never be exposed to the frontend.
-
 
 ---
 
-
 ## Testing
 
-
 Run unit and integration tests:
-
 
 ```bash
 
@@ -520,9 +394,7 @@ uv run pytest
 
 ```
 
-
 AI evaluation tests are kept separately:
-
 
 ```text
 
@@ -530,47 +402,30 @@ backend/tests/evaluation/
 
 ```
 
-
 These will eventually provide a regression harness for comparing prompts, models, and evaluator quality.
 
-
 ---
-
 
 ## Product Philosophy
 
-
 LinguaMentis should not become:
-
 
 > A German-learning chatbot with AI features.
 
-
 It should become:
-
 
 > **An intellectual experience where German is the language through which users learn to think, argue, question, and express ideas.**
 
-
 ---
-
 
 ## Status
 
-
 **Current:** Architecture and product definition
-
 
 **Next milestone:** Implement the Black Hat vertical slice.
 
-
 ---
-
 
 ## License
 
-
 TBD
-
-
-
