@@ -26,11 +26,11 @@ class Settings(BaseSettings):
     openrouter_app_title: str = "LinguaMentis"
 
     # Per-capability model configuration (Architecture.md #23)
-    ai_model_blue: str = "openai/gpt-4o-mini"
-    ai_model_hat: str = "openai/gpt-4o-mini"
-    ai_model_thinking_evaluator: str = "openai/gpt-4o"
-    ai_model_german_evaluator: str = "openai/gpt-4o"
-    ai_model_reflection: str = "openai/gpt-4o-mini"
+    ai_model_blue: str = "google/gemma-4-26b-a4b-it:free"
+    ai_model_hat: str = "google/gemma-4-26b-a4b-it:free"
+    ai_model_thinking_evaluator: str = "google/gemma-4-26b-a4b-it:free"
+    ai_model_german_evaluator: str = "google/gemma-4-26b-a4b-it:free"
+    ai_model_reflection: str = "google/gemma-4-26b-a4b-it:free"
 
     ai_request_timeout_seconds: float = 60.0
     ai_max_retries: int = 2
