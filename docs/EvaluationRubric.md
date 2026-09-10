@@ -115,7 +115,7 @@ class ThinkingEvaluation(BaseModel):
 
 
 
-   hat\_adherence: int
+   hat_adherence: int
 
    relevance: int
 
@@ -153,11 +153,11 @@ class GermanEvaluation(BaseModel):
 
    vocabulary: int
 
-   sentence\_structure: int
+   sentence_structure: int
 
    naturalness: int
 
-   level\_appropriateness: int
+   level_appropriateness: int
 
 
 
@@ -1177,7 +1177,7 @@ A test case may contain:
   "response": "...",
 
   "expected": {
-    "hat\_adherence": "high",
+    "hat_adherence": "high",
 
     "reasoning": "medium",
 

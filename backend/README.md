@@ -283,17 +283,17 @@ The application owns the lifecycle.
 
 CREATED
   ↓
-TOPIC\_SELECTED
+TOPIC_SELECTED
   ↓
-IN\_PROGRESS
+IN_PROGRESS
   ↓
-HAT\_ACTIVE
+HAT_ACTIVE
   ↓
-HAT\_COMPLETED
+HAT_COMPLETED
   ↓
-ALL\_HATS\_COMPLETED
+ALL_HATS_COMPLETED
   ↓
-FINAL\_EVALUATION
+FINAL_EVALUATION
   ↓
 COMPLETED
 
@@ -471,7 +471,7 @@ class HatChallenge(BaseModel):
 
    instruction: str
 
-   expected\_thinking\_mode: HatType
+   expected_thinking_mode: HatType
 
    difficulty: int
 
@@ -624,11 +624,11 @@ GET    /api/v1/mindquests/{id}/reflection
 
 
 
-GET    /api/v1/users/{user\_id}/learning-profile
+GET    /api/v1/users/{user_id}/learning-profile
 
-GET    /api/v1/users/{user\_id}/activities
+GET    /api/v1/users/{user_id}/activities
 
-GET    /api/v1/users/{user\_id}/mindquests
+GET    /api/v1/users/{user_id}/mindquests
 
 ```
 
@@ -686,21 +686,21 @@ Important operations should include structured metadata such as:
 
 ```text
 
-request\_id
+request_id
 
-user\_id
+user_id
 
-mindquest\_id
+mindquest_id
 
 hat
 
-turn\_id
+turn_id
 
 operation
 
 model
 
-evaluation\_type
+evaluation_type
 
 latency
 
@@ -815,15 +815,15 @@ Typical configuration:
 
 ```env
 
-DATABASE\_URL=postgresql+asyncpg://linguamentis:linguamentis@localhost:5432/linguamentis
+DATABASE_URL=postgresql+asyncpg://linguamentis:linguamentis@localhost:5432/linguamentis
 
 
 
-OPENROUTER\_API\_KEY=your-key
+OPENROUTER_API_KEY=your-key
 
 
 
-OPENROUTER\_MODEL=your-model
+OPENROUTER_MODEL=your-model
 
 ```
 
@@ -972,13 +972,3 @@ These documents define the product, cognitive contracts, evaluation methodology,
 The immediate priority is a reliable end-to-end vertical slice before expanding the system.
 
 ---
-
-## Product Philosophy
-
-> \*\*Language is the medium.
-
-> Thinking is the skill.
-
-> Perspective is the method.
-
-> Growth is the outcome.\*\*

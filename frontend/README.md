@@ -947,17 +947,17 @@ Example:
 
 ```env
 
-NEXT\_PUBLIC\_API\_BASE\_URL=http://localhost:8000
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 
 ```
 
-Only public configuration belongs in `NEXT\_PUBLIC\_*`.
+Only public configuration belongs in `NEXT_PUBLIC_*`.
 
 Never put:
 
 ```text
 
-OPENROUTER\_API\_KEY
+OPENROUTER_API_KEY
 
 ```
 

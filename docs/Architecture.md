@@ -48,29 +48,29 @@ The central architectural principle is:
 
 The architecture should provide:
 
-1\. Clear separation between domain logic and infrastructure.
+1. Clear separation between domain logic and infrastructure.
 
-2\. Explicit MindQuest state management.
+2. Explicit MindQuest state management.
 
-3\. Independent Thinking and German evaluation.
+3. Independent Thinking and German evaluation.
 
-4\. Strict behavioral boundaries for Six Thinking Hat agents.
+4. Strict behavioral boundaries for Six Thinking Hat agents.
 
-5\. Structured AI outputs.
+5. Structured AI outputs.
 
-6\. Persistent learning history.
+6. Persistent learning history.
 
-7\. Evidence-based evaluation.
+7. Evidence-based evaluation.
 
-8\. Replaceable LLM providers/models.
+8. Replaceable LLM providers/models.
 
-9\. Testable AI behavior.
+9. Testable AI behavior.
 
-10\. A foundation for a future evaluation harness.
+10. A foundation for a future evaluation harness.
 
-11\. Simple V1 deployment and development.
+11. Simple V1 deployment and development.
 
-12\. A clear path to future scaling without premature complexity.
+12. A clear path to future scaling without premature complexity.
 
 ---
 
@@ -205,13 +205,13 @@ linguamentis/
 │   │       │   │
 │   │       │   ├── users/
 │   │       │   │   ├── entities.py
-│   │       │   │   └── value\_objects.py
+│   │       │   │   └── value_objects.py
 │   │       │   │
 │   │       │   ├── mindquests/
 │   │       │   │   ├── entities.py
 │   │       │   │   ├── enums.py
-│   │       │   │   ├── value\_objects.py
-│   │       │   │   └── state\_machine.py
+│   │       │   │   ├── value_objects.py
+│   │       │   │   └── state_machine.py
 │   │       │   │
 │   │       │   ├── hats/
 │   │       │   │   ├── contracts.py
@@ -488,15 +488,15 @@ class MindQuest:
 
    id: UUID
 
-   user\_id: UUID
+   user_id: UUID
 
    topic: str
 
-   target\_level: LanguageLevel
+   target_level: LanguageLevel
 
    status: MindQuestStatus
 
-   current\_hat: HatType | None
+   current_hat: HatType | None
 
 ```
 
@@ -512,23 +512,23 @@ The application uses an explicit state machine.
 
 CREATED
   ↓
-TOPIC\_SELECTED
+TOPIC_SELECTED
   ↓
-IN\_PROGRESS
+IN_PROGRESS
   ↓
-HAT\_ACTIVE
+HAT_ACTIVE
   ↓
-HAT\_COMPLETED
+HAT_COMPLETED
   ↓
-HAT\_ACTIVE
+HAT_ACTIVE
   ↓
 
 ...
 
   ↓
-ALL\_HATS\_COMPLETED
+ALL_HATS_COMPLETED
   ↓
-FINAL\_EVALUATION
+FINAL_EVALUATION
   ↓
 COMPLETED
 
@@ -556,7 +556,7 @@ class MindQuestEngine:
 
        self,
 
-       mindquest\_id: UUID,
+       mindquest_id: UUID,
 
    ) -> MindQuestResult:
 
@@ -564,11 +564,11 @@ class MindQuestEngine:
 
 
 
-   async def submit\_response(
+   async def submit_response(
 
        self,
 
-       mindquest\_id: UUID,
+       mindquest_id: UUID,
 
        response: str,
 
@@ -582,7 +582,7 @@ class MindQuestEngine:
 
        self,
 
-       mindquest\_id: UUID,
+       mindquest_id: UUID,
 
    ) -> MindQuestResult:
 
@@ -594,7 +594,7 @@ class MindQuestEngine:
 
        self,
 
-       mindquest\_id: UUID,
+       mindquest_id: UUID,
 
    ) -> FinalReflection:
 
@@ -651,7 +651,7 @@ class HatAgent(ABC):
 
    @abstractmethod
 
-   async def create\_challenge(
+   async def create_challenge(
 
        self,
 
@@ -694,7 +694,7 @@ agent = registry.get(HatType.BLACK)
 
 
 
-challenge = await agent.create\_challenge(context)
+challenge = await agent.create_challenge(context)
 
 ```
 
@@ -718,7 +718,7 @@ class HatContract:
 
    should: tuple\[str, ...]
 
-   should\_not: tuple\[str, ...]
+   should_not: tuple\[str, ...]
 
    dimensions: tuple\[str, ...]
 
@@ -728,7 +728,7 @@ Example:
 
 ```python
 
-BLACK\_HAT\_CONTRACT = HatContract(
+BLACK_HAT_CONTRACT = HatContract(
 
    hat=HatType.BLACK,
 
@@ -746,7 +746,7 @@ BLACK\_HAT\_CONTRACT = HatContract(
 
    ),
 
-   should\_not=(
+   should_not=(
 
        "Propose solutions",
 
@@ -758,15 +758,15 @@ BLACK\_HAT\_CONTRACT = HatContract(
 
    dimensions=(
 
-       "risk\_identification",
+       "risk_identification",
 
-       "causal\_reasoning",
+       "causal_reasoning",
 
-       "consequence\_analysis",
+       "consequence_analysis",
 
        "specificity",
 
-       "hat\_adherence",
+       "hat_adherence",
 
    ),
 
@@ -992,17 +992,17 @@ class LLMClient(Protocol):
 
 
 
-   async def generate\_structured(
+   async def generate_structured(
 
        self,
 
        *,
 
-       system\_prompt: str,
+       system_prompt: str,
 
-       user\_prompt: str,
+       user_prompt: str,
 
-       response\_model: type\[T],
+       response_model: type\[T],
 
        model: str,
 
@@ -1032,15 +1032,15 @@ Example environment variables:
 
 ```text
 
-AI\_MODEL\_BLUE
+AI_MODEL_BLUE
 
-AI\_MODEL\_HAT
+AI_MODEL_HAT
 
-AI\_MODEL\_THINKING\_EVALUATOR
+AI_MODEL_THINKING_EVALUATOR
 
-AI\_MODEL\_GERMAN\_EVALUATOR
+AI_MODEL_GERMAN_EVALUATOR
 
-AI\_MODEL\_REFLECTION
+AI_MODEL_REFLECTION
 
 ```
 
@@ -1080,7 +1080,7 @@ class HatChallenge(BaseModel):
 
    instruction: str
 
-   expected\_thinking\_mode: HatType
+   expected_thinking_mode: HatType
 
    difficulty: int
 
@@ -1094,7 +1094,7 @@ class ThinkingEvaluation(BaseModel):
 
    score: int
 
-   hat\_adherence: int
+   hat_adherence: int
 
    reasoning: int
 
@@ -1126,11 +1126,11 @@ class GermanEvaluation(BaseModel):
 
    vocabulary: int
 
-   sentence\_structure: int
+   sentence_structure: int
 
    naturalness: int
 
-   level\_appropriateness: int
+   level_appropriateness: int
 
 
 
@@ -1202,21 +1202,21 @@ Initial tables:
 
 users
 
-mind\_quests
+mind_quests
 
-hat\_rounds
+hat_rounds
 
 turns
 
-thinking\_evaluations
+thinking_evaluations
 
-german\_evaluations
+german_evaluations
 
 evidence
 
-user\_activities
+user_activities
 
-final\_reflections
+final_reflections
 
 ```
 
@@ -1427,11 +1427,11 @@ GET    /api/v1/mindquests/{id}/reflection
 
 ```http
 
-GET /api/v1/users/{user\_id}/learning-profile
+GET /api/v1/users/{user_id}/learning-profile
 
-GET /api/v1/users/{user\_id}/activities
+GET /api/v1/users/{user_id}/activities
 
-GET /api/v1/users/{user\_id}/mindquests
+GET /api/v1/users/{user_id}/mindquests
 
 ```
 
@@ -1490,17 +1490,17 @@ Conceptually:
 
 ```python
 
-thinking\_task = evaluate\_thinking(...)
+thinking_task = evaluate_thinking(...)
 
-german\_task = evaluate\_german(...)
+german_task = evaluate_german(...)
 
 
 
 thinking, german = await asyncio.gather(
 
-   thinking\_task,
+   thinking_task,
 
-   german\_task,
+   german_task,
 
 )
 
@@ -1724,31 +1724,31 @@ Example:
 
 ```text
 
-DATABASE\_URL
+DATABASE_URL
 
 
 
-OPENROUTER\_API\_KEY
+OPENROUTER_API_KEY
 
-OPENROUTER\_BASE\_URL
+OPENROUTER_BASE_URL
 
 
 
-AI\_MODEL\_BLUE
+AI_MODEL_BLUE
 
-AI\_MODEL\_HAT
+AI_MODEL_HAT
 
-AI\_MODEL\_THINKING\_EVALUATOR
+AI_MODEL_THINKING_EVALUATOR
 
-AI\_MODEL\_GERMAN\_EVALUATOR
+AI_MODEL_GERMAN_EVALUATOR
 
-AI\_MODEL\_REFLECTION
+AI_MODEL_REFLECTION
 
 
 
 ENVIRONMENT
 
-LOG\_LEVEL
+LOG_LEVEL
 
 ```
 
@@ -1955,13 +1955,13 @@ Useful fields:
 
 ```text
 
-request\_id
+request_id
 
-mindquest\_id
+mindquest_id
 
-user\_id
+user_id
 
-turn\_id
+turn_id
 
 hat
 
@@ -1971,7 +1971,7 @@ operation
 
 latency
 
-evaluation\_type
+evaluation_type
 
 ```
 
@@ -2147,47 +2147,47 @@ This validates the most important architectural boundaries before implementing a
 
 ```text
 
-1\. Project setup
+1. Project setup
       ↓
-2\. PostgreSQL + SQLAlchemy + Alembic
+2. PostgreSQL + SQLAlchemy + Alembic
       ↓
-3\. Domain entities
+3. Domain entities
       ↓
-4\. MindQuest state machine
+4. MindQuest state machine
       ↓
-5\. Hat Contracts
+5. Hat Contracts
       ↓
-6\. AI/Pydantic contracts
+6. AI/Pydantic contracts
       ↓
-7\. LLM Gateway
+7. LLM Gateway
       ↓
-8\. OpenRouter integration
+8. OpenRouter integration
       ↓
-9\. BlackHatAgent
+9. BlackHatAgent
       ↓
-10\. ThinkingEvaluator
+10. ThinkingEvaluator
       ↓
-11\. GermanEvaluator
+11. GermanEvaluator
       ↓
-12\. Evidence persistence
+12. Evidence persistence
       ↓
-13\. MindQuest Engine
+13. MindQuest Engine
       ↓
-14\. FastAPI endpoints
+14. FastAPI endpoints
       ↓
-15\. Next.js MindQuest UI
+15. Next.js MindQuest UI
       ↓
-16\. Complete Black Hat vertical slice
+16. Complete Black Hat vertical slice
       ↓
-17\. Remaining five hats
+17. Remaining five hats
       ↓
-18\. Blue orchestration
+18. Blue orchestration
       ↓
-19\. Gamification
+19. Gamification
       ↓
-20\. Evaluation Harness
+20. Evaluation Harness
       ↓
-21\. Voice
+21. Voice
 
 ```
 

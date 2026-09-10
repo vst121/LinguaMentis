@@ -356,25 +356,25 @@ Create a `.env` file for the backend.
 
 ```env
 
-DATABASE\_URL=postgresql+asyncpg://postgres:postgres@localhost:5438/linguamentis
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5438/linguamentis
 
 
 
-OPENROUTER\_API\_KEY=your-api-key
+OPENROUTER_API_KEY=your-api-key
 
-OPENROUTER\_BASE\_URL=https://openrouter.ai/api/v1
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 
 
 
-AI\_MODEL\_BLUE=...
+AI_MODEL_BLUE=...
 
-AI\_MODEL\_HAT=...
+AI_MODEL_HAT=...
 
-AI\_MODEL\_THINKING\_EVALUATOR=...
+AI_MODEL_THINKING_EVALUATOR=...
 
-AI\_MODEL\_GERMAN\_EVALUATOR=...
+AI_MODEL_GERMAN_EVALUATOR=...
 
-AI\_MODEL\_REFLECTION=...
+AI_MODEL_REFLECTION=...
 
 ```
 

@@ -121,33 +121,33 @@ Conceptually:
 
 class HatContract:
 
-   hat\_type: HatType
+   hat_type: HatType
 
    name: str
 
    goal: str
 
-   thinking\_mode: str
+   thinking_mode: str
 
 
 
    should: list\[str]
 
-   should\_not: list\[str]
+   should_not: list\[str]
 
 
 
-   thinking\_dimensions: list\[str]
+   thinking_dimensions: list\[str]
 
 
 
-   question\_strategy: str
+   question_strategy: str
 
-   feedback\_strategy: str
+   feedback_strategy: str
 
 
 
-   completion\_signals: list\[str]
+   completion_signals: list\[str]
 
 ```
 
@@ -1095,7 +1095,7 @@ class HatChallenge(BaseModel):
 
    instruction: str
 
-   expected\_thinking\_mode: HatType
+   expected_thinking_mode: HatType
 
    difficulty: int
 
@@ -1111,7 +1111,7 @@ Example:
 
   "instruction": "Bleibe beim Black Hat und konzentriere dich auf mögliche Konsequenzen.",
 
-  "expected\_thinking\_mode": "BLACK",
+  "expected_thinking_mode": "BLACK",
 
   "difficulty": 3
 }
@@ -1129,31 +1129,31 @@ Conceptual context:
 
 class MindQuestContext:
 
-   mindquest\_id: UUID
+   mindquest_id: UUID
 
    topic: str
 
-   target\_level: LanguageLevel
+   target_level: LanguageLevel
 
 
 
-   current\_hat: HatType
+   current_hat: HatType
 
-   current\_turn: int
-
-
-
-   previous\_responses: list\[TurnContext]
+   current_turn: int
 
 
 
-   completed\_hats: list\[HatType]
+   previous_responses: list\[TurnContext]
 
 
 
-   learner\_strengths: list\[str]
+   completed_hats: list\[HatType]
 
-   learner\_weaknesses: list\[str]
+
+
+   learner_strengths: list\[str]
+
+   learner_weaknesses: list\[str]
 
 ```
 
@@ -1457,15 +1457,15 @@ Example conceptual test:
 
 ```python
 
-def test\_black\_hat\_must\_focus\_on\_risk():
+def test_black_hat_must_focus_on_risk():
 
-   contract = black\_hat\_contract()
+   contract = black_hat_contract()
 
 
 
    assert "risk" in contract.goal.lower()
 
-   assert "benefits" in contract.should\_not
+   assert "benefits" in contract.should_not
 
 ```
 
