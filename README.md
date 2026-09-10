@@ -18,7 +18,7 @@ Instead of following traditional language lessons, users enter a **MindQuest** �
 
 
 
-\---
+---
 
 
 
@@ -30,19 +30,19 @@ Instead of following traditional language lessons, users enter a **MindQuest** �
 
 Think
 
-&#x20; ↓
+  ↓
 
 Express
 
-&#x20; ↓
+  ↓
 
 Challenge
 
-&#x20; ↓
+  ↓
 
 Evaluate
 
-&#x20; ↓
+  ↓
 
 Improve
 
@@ -58,31 +58,31 @@ A MindQuest follows this flow:
 
 Choose Topic
 
-&#x20;    ↓
+     ↓
 
 Blue Agent
 
-&#x20;    ↓
+     ↓
 
 Six Thinking Hats
 
-&#x20;    ↓
+     ↓
 
 User responds in German
 
-&#x20;    ↓
+     ↓
 
 Thinking Evaluation + German Evaluation
 
-&#x20;    ↓
+     ↓
 
 Evidence + Feedback
 
-&#x20;    ↓
+     ↓
 
 Next Challenge
 
-&#x20;    ↓
+     ↓
 
 Final Reflection
 
@@ -90,7 +90,7 @@ Final Reflection
 
 
 
-\---
+---
 
 
 
@@ -120,7 +120,7 @@ The **Blue Agent** orchestrates the MindQuest and produces the final reflection.
 
 
 
-\---
+---
 
 
 
@@ -178,7 +178,7 @@ Every important evaluation also provides **evidence** explaining the score.
 
 
 
-\---
+---
 
 
 
@@ -194,43 +194,43 @@ LinguaMentis uses a **modular monolith** for V1.
 
 Next.js
 
-&#x20;  │
+   │
 
-&#x20;  ▼
+   ▼
 
 FastAPI
 
-&#x20;  │
+   │
 
-&#x20;  ▼
+   ▼
 
 MindQuest Engine
 
-&#x20;  │
+   │
 
-&#x20;  ├── Six Hat Agents
+   ├── Six Hat Agents
 
-&#x20;  │
+   │
 
-&#x20;  ├── Thinking Evaluator
+   ├── Thinking Evaluator
 
-&#x20;  └── German Evaluator
+   └── German Evaluator
 
-&#x20;  │
+   │
 
-&#x20;  ▼
+   ▼
 
 AI Gateway
 
-&#x20;  │
+   │
 
-&#x20;  ▼
+   ▼
 
 OpenRouter
 
-&#x20;  │
+   │
 
-&#x20;  ▼
+   ▼
 
 PostgreSQL
 
@@ -246,7 +246,7 @@ The key architectural principle is:
 
 
 
-\---
+---
 
 
 
@@ -310,7 +310,7 @@ The key architectural principle is:
 
 
 
-\---
+---
 
 
 
@@ -382,7 +382,7 @@ linguamentis/
 
 
 
-\---
+---
 
 
 
@@ -444,7 +444,7 @@ The goal is to build a **complete, high-quality vertical slice before adding inf
 
 
 
-\---
+---
 
 
 
@@ -460,43 +460,43 @@ Development starts with a complete **Black Hat MindQuest**:
 
 Blue Agent
 
-&#x20;   ↓
+    ↓
 
 Topic
 
-&#x20;   ↓
+    ↓
 
 Black Hat Agent
 
-&#x20;   ↓
+    ↓
 
 Challenge
 
-&#x20;   ↓
+    ↓
 
 User Response
 
-&#x20;   ↓
+    ↓
 
 Thinking Evaluator
 
-&#x20;   +
+    +
 
 German Evaluator
 
-&#x20;   ↓
+    ↓
 
 Evidence
 
-&#x20;   ↓
+    ↓
 
 Feedback
 
-&#x20;   ↓
+    ↓
 
 Next Challenge
 
-&#x20;   ↓
+    ↓
 
 Final Reflection
 
@@ -508,7 +508,7 @@ Once this flow works end-to-end, the remaining hats can be added.
 
 
 
-\---
+---
 
 
 
@@ -570,7 +570,7 @@ docker compose up -d postgres
 
 
 
-\---
+---
 
 
 
@@ -612,7 +612,7 @@ The OpenRouter API key is **server-side only** and must never be exposed to the 
 
 
 
-\---
+---
 
 
 
@@ -650,7 +650,7 @@ These will eventually provide a regression harness for comparing prompts, models
 
 
 
-\---
+---
 
 
 
@@ -674,7 +674,7 @@ It should become:
 
 
 
-\---
+---
 
 
 
@@ -690,7 +690,7 @@ It should become:
 
 
 
-\---
+---
 
 
 
