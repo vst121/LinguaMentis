@@ -1,20 +1,20 @@
-\# LinguaMentis
+# LinguaMentis
 
 
 
-> \*\*Think through language.\*\*
+> **Think through language.**
 
 
 
-LinguaMentis is a gamified AI debate experience for \*\*B2/C1 German learners\*\*.
+LinguaMentis is a gamified AI debate experience for **B2/C1 German learners**.
 
 
 
-It combines \*\*German language development\*\* with \*\*structured thinking\*\* using Edward de Bono's \*\*Six Thinking Hats\*\*.
+It combines **German language development** with **structured thinking** using Edward de Bono's **Six Thinking Hats**.
 
 
 
-Instead of following traditional language lessons, users enter a \*\*MindQuest\*\* — an intellectual challenge where they explore a complex topic from different perspectives and express their thoughts in German.
+Instead of following traditional language lessons, users enter a **MindQuest** — an intellectual challenge where they explore a complex topic from different perspectives and express their thoughts in German.
 
 
 
@@ -22,7 +22,7 @@ Instead of following traditional language lessons, users enter a \*\*MindQuest\*
 
 
 
-\## Core Experience
+## Core Experience
 
 
 
@@ -94,7 +94,7 @@ Final Reflection
 
 
 
-\## Six Thinking Hats
+## Six Thinking Hats
 
 
 
@@ -116,7 +116,7 @@ Final Reflection
 
 
 
-The \*\*Blue Agent\*\* orchestrates the MindQuest and produces the final reflection.
+The **Blue Agent** orchestrates the MindQuest and produces the final reflection.
 
 
 
@@ -124,7 +124,7 @@ The \*\*Blue Agent\*\* orchestrates the MindQuest and produces the final reflect
 
 
 
-\## Two Independent Evaluations
+## Two Independent Evaluations
 
 
 
@@ -132,49 +132,49 @@ Every response is evaluated in two separate dimensions:
 
 
 
-\### Thinking Quality
+### Thinking Quality
 
 
 
-\* Hat adherence
+* Hat adherence
 
-\* Reasoning
+* Reasoning
 
-\* Depth
+* Depth
 
-\* Relevance
+* Relevance
 
-\* Specificity
+* Specificity
 
-\* Critical thinking
+* Critical thinking
 
-\* Creativity where appropriate
-
-
-
-\### German Quality
+* Creativity where appropriate
 
 
 
-\* Grammar
-
-\* Vocabulary
-
-\* Sentence structure
-
-\* Naturalness
-
-\* Fluency
-
-\* B2/C1 appropriateness
+### German Quality
 
 
 
-The two scores are \*\*never combined into a single score\*\*.
+* Grammar
+
+* Vocabulary
+
+* Sentence structure
+
+* Naturalness
+
+* Fluency
+
+* B2/C1 appropriateness
 
 
 
-Every important evaluation also provides \*\*evidence\*\* explaining the score.
+The two scores are **never combined into a single score**.
+
+
+
+Every important evaluation also provides **evidence** explaining the score.
 
 
 
@@ -182,11 +182,11 @@ Every important evaluation also provides \*\*evidence\*\* explaining the score.
 
 
 
-\## Architecture
+## Architecture
 
 
 
-LinguaMentis uses a \*\*modular monolith\*\* for V1.
+LinguaMentis uses a **modular monolith** for V1.
 
 
 
@@ -242,7 +242,7 @@ The key architectural principle is:
 
 
 
-> \*\*The application owns the state. AI provides intelligence, not application control.\*\*
+> **The application owns the state. AI provides intelligence, not application control.**
 
 
 
@@ -250,63 +250,63 @@ The key architectural principle is:
 
 
 
-\## Technology Stack
+## Technology Stack
 
 
 
-\### Backend
+### Backend
 
 
 
-\* Python 3.12
+* Python 3.12
 
-\* FastAPI
+* FastAPI
 
-\* SQLAlchemy 2.x
+* SQLAlchemy 2.x
 
-\* Alembic
+* Alembic
 
-\* PostgreSQL
+* PostgreSQL
 
-\* Pydantic
-
-
-
-\### Frontend
+* Pydantic
 
 
 
-\* Next.js
-
-\* TypeScript
-
-\* React
-
-\* Tailwind CSS
+### Frontend
 
 
 
-\### AI
+* Next.js
+
+* TypeScript
+
+* React
+
+* Tailwind CSS
 
 
 
-\* OpenRouter
-
-\* Structured LLM outputs
-
-\* Configurable models
+### AI
 
 
 
-\### Development
+* OpenRouter
+
+* Structured LLM outputs
+
+* Configurable models
 
 
 
-\* uv
+### Development
 
-\* Docker Compose
 
-\* pytest
+
+* uv
+
+* Docker Compose
+
+* pytest
 
 
 
@@ -314,7 +314,7 @@ The key architectural principle is:
 
 
 
-\## Project Structure
+## Project Structure
 
 
 
@@ -386,7 +386,7 @@ linguamentis/
 
 
 
-\## V1 Scope
+## V1 Scope
 
 
 
@@ -394,53 +394,53 @@ The first version focuses on:
 
 
 
-\* Text-based MindQuests
+* Text-based MindQuests
 
-\* Six Thinking Hats
+* Six Thinking Hats
 
-\* Blue Agent orchestration
+* Blue Agent orchestration
 
-\* Independent Thinking evaluation
+* Independent Thinking evaluation
 
-\* Independent German evaluation
+* Independent German evaluation
 
-\* Evidence-based feedback
+* Evidence-based feedback
 
-\* Persistent learning history
+* Persistent learning history
 
-\* Final MindQuest reflection
+* Final MindQuest reflection
 
-\* Basic gamification
-
-
-
-\### Not in V1
+* Basic gamification
 
 
 
-\* Authentication
-
-\* Mobile application
-
-\* Voice interaction
-
-\* Kafka
-
-\* Microservices
-
-\* Redis
-
-\* Celery
-
-\* Vector database
-
-\* Event sourcing
-
-\* Payments
+### Not in V1
 
 
 
-The goal is to build a \*\*complete, high-quality vertical slice before adding infrastructure complexity\*\*.
+* Authentication
+
+* Mobile application
+
+* Voice interaction
+
+* Kafka
+
+* Microservices
+
+* Redis
+
+* Celery
+
+* Vector database
+
+* Event sourcing
+
+* Payments
+
+
+
+The goal is to build a **complete, high-quality vertical slice before adding infrastructure complexity**.
 
 
 
@@ -448,11 +448,11 @@ The goal is to build a \*\*complete, high-quality vertical slice before adding i
 
 
 
-\## First Vertical Slice
+## First Vertical Slice
 
 
 
-Development starts with a complete \*\*Black Hat MindQuest\*\*:
+Development starts with a complete **Black Hat MindQuest**:
 
 
 
@@ -512,11 +512,11 @@ Once this flow works end-to-end, the remaining hats can be added.
 
 
 
-\## Running Locally
+## Running Locally
 
 
 
-\### Backend
+### Backend
 
 
 
@@ -536,7 +536,7 @@ uv run uvicorn linguamentis.main:app --reload
 
 
 
-\### Frontend
+### Frontend
 
 
 
@@ -554,7 +554,7 @@ npm run dev
 
 
 
-\### Database
+### Database
 
 
 
@@ -574,7 +574,7 @@ docker compose up -d postgres
 
 
 
-\## Environment Variables
+## Environment Variables
 
 
 
@@ -608,7 +608,7 @@ AI\_MODEL\_REFLECTION=...
 
 
 
-The OpenRouter API key is \*\*server-side only\*\* and must never be exposed to the frontend.
+The OpenRouter API key is **server-side only** and must never be exposed to the frontend.
 
 
 
@@ -616,7 +616,7 @@ The OpenRouter API key is \*\*server-side only\*\* and must never be exposed to 
 
 
 
-\## Testing
+## Testing
 
 
 
@@ -654,7 +654,7 @@ These will eventually provide a regression harness for comparing prompts, models
 
 
 
-\## Product Philosophy
+## Product Philosophy
 
 
 
@@ -670,7 +670,7 @@ It should become:
 
 
 
-> \*\*An intellectual experience where German is the language through which users learn to think, argue, question, and express ideas.\*\*
+> **An intellectual experience where German is the language through which users learn to think, argue, question, and express ideas.**
 
 
 
@@ -678,15 +678,15 @@ It should become:
 
 
 
-\## Status
+## Status
 
 
 
-\*\*Current:\*\* Architecture and product definition
+**Current:** Architecture and product definition
 
 
 
-\*\*Next milestone:\*\* Implement the Black Hat vertical slice.
+**Next milestone:** Implement the Black Hat vertical slice.
 
 
 
@@ -694,7 +694,7 @@ It should become:
 
 
 
-\## License
+## License
 
 
 
