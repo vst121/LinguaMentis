@@ -1,0 +1,16 @@
+services:
+
+  postgres:
+    image: postgres:17
+    container_name: linguamentis-postgres
+    environment:
+      POSTGRES_DB: linguamentis
+      POSTGRES_USER: linguamentis
+      POSTGRES_PASSWORD: linguamentis
+    ports:
+      - "5438:5432"
+    volumes:
+      - linguamentis-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  linguamentis-postgres-data:
