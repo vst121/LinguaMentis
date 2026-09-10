@@ -1291,21 +1291,13 @@ The learning profile is derived from the user's accumulated journey.
 ```text
 
 MindQuest History
-
       ↓
-
 Evaluations
-
       ↓
-
 Evidence
-
       ↓
-
 Learning Profile Service
-
       ↓
-
 UserLearningProfile
 
 ```
@@ -1315,15 +1307,10 @@ Possible dimensions:
 ```text
 
 Thinking
-
 ├── Critical Thinking
-
 ├── Creativity
-
 ├── Reasoning
-
 ├── Perspective Shifting
-
 └── Depth
 
 
@@ -1400,14 +1387,9 @@ MindQuest 2
 
 
 MindQuest 3
-
 └── ...
 
-
-
          ↓
-
-
 
 Derived Learning Profile
 
@@ -1537,13 +1519,9 @@ Example:
 ```text
 
 User Response
-
      ↓
-
 Persist Response
-
      ↓
-
 OpenRouter Failure
 
 ```
@@ -1585,7 +1563,6 @@ Suggested structure:
 ```text
 
 frontend/src/
-
 ├── app/
 │
 ├── components/
@@ -1611,7 +1588,6 @@ frontend/src/
 ```text
 
 components/
-
 │
 ├── mindquest/
 │   ├── MindQuestHeader
@@ -1791,9 +1767,7 @@ Testing is divided into three levels.
 tests/
 
 ├── unit/
-
 ├── integration/
-
 └── evaluation/
 
 ```
