@@ -21,6 +21,6 @@ export interface UserActivity {
   user_id: string;
   activity_type: string;
   mindquest_id?: string | null;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
   created_at: string;
 }

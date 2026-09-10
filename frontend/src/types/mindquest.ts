@@ -79,10 +79,18 @@ export interface SubmitResponseResponse {
   round_should_complete: boolean;
 }
 
+export interface FinalReflection {
+  score?: number;
+  summary?: string;
+  strengths?: string[];
+  learner_weaknesses?: string[];
+  [key: string]: unknown;
+}
+
 export interface AdvanceMindQuestResponse {
   mindquest: MindQuest;
   next_hat?: HatType | null;
   is_completed: boolean;
   initial_turn?: Turn | null;
-  final_reflection?: any | null;
+  final_reflection?: FinalReflection | null;
 }
