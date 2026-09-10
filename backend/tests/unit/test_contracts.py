@@ -2,12 +2,6 @@
 
 from linguamentis.agents.registry import AgentRegistry
 from linguamentis.domain.hats.contracts import (
-    BLACK_HAT_CONTRACT,
-    BLUE_HAT_CONTRACT,
-    GREEN_HAT_CONTRACT,
-    RED_HAT_CONTRACT,
-    WHITE_HAT_CONTRACT,
-    YELLOW_HAT_CONTRACT,
     get_hat_contract,
 )
 from linguamentis.domain.hats.types import HatType

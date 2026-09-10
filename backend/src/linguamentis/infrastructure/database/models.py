@@ -32,8 +32,8 @@ class UserModel(Base):
     target_level: Mapped[str] = mapped_column(String(2), nullable=False, default="B2")
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    mindquests: Mapped[list["MindQuestModel"]] = relationship(back_populates="user")
-    activities: Mapped[list["UserActivityModel"]] = relationship(back_populates="user")
+    mindquests: Mapped[list[MindQuestModel]] = relationship(back_populates="user")
+    activities: Mapped[list[UserActivityModel]] = relationship(back_populates="user")
 
 
 class MindQuestModel(Base):
@@ -52,11 +52,13 @@ class MindQuestModel(Base):
     updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
     completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
-    user: Mapped["UserModel"] = relationship(back_populates="mindquests")
-    hat_rounds: Mapped[list["HatRoundModel"]] = relationship(
-        back_populates="mindquest", order_by="HatRoundModel.sequence_index", cascade="all, delete-orphan"
+    user: Mapped[UserModel] = relationship(back_populates="mindquests")
+    hat_rounds: Mapped[list[HatRoundModel]] = relationship(
+        back_populates="mindquest", 
+        order_by="HatRoundModel.sequence_index", 
+        cascade="all, delete-orphan"
     )
-    final_reflection: Mapped["FinalReflectionModel | None"] = relationship(
+    final_reflection: Mapped[FinalReflectionModel | None] = relationship(
         back_populates="mindquest", uselist=False, cascade="all, delete-orphan"
     )
 
@@ -75,8 +77,8 @@ class HatRoundModel(Base):
     started_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
-    mindquest: Mapped["MindQuestModel"] = relationship(back_populates="hat_rounds")
-    turns: Mapped[list["TurnModel"]] = relationship(
+    mindquest: Mapped[MindQuestModel] = relationship(back_populates="hat_rounds")
+    turns: Mapped[list[TurnModel]] = relationship(
         back_populates="hat_round", order_by="TurnModel.turn_number", cascade="all, delete-orphan"
     )
 
@@ -99,11 +101,11 @@ class TurnModel(Base):
     responded_at: Mapped[datetime | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    hat_round: Mapped["HatRoundModel"] = relationship(back_populates="turns")
-    thinking_evaluation: Mapped["ThinkingEvaluationModel | None"] = relationship(
+    hat_round: Mapped[HatRoundModel] = relationship(back_populates="turns")
+    thinking_evaluation: Mapped[ThinkingEvaluationModel | None] = relationship(
         back_populates="turn", uselist=False, cascade="all, delete-orphan"
     )
-    german_evaluation: Mapped["GermanEvaluationModel | None"] = relationship(
+    german_evaluation: Mapped[GermanEvaluationModel | None] = relationship(
         back_populates="turn", uselist=False, cascade="all, delete-orphan"
     )
 
@@ -127,8 +129,8 @@ class ThinkingEvaluationModel(Base):
     recommendations: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    turn: Mapped["TurnModel"] = relationship(back_populates="thinking_evaluation")
-    evidence: Mapped[list["EvidenceModel"]] = relationship(
+    turn: Mapped[TurnModel] = relationship(back_populates="thinking_evaluation")
+    evidence: Mapped[list[EvidenceModel]] = relationship(
         back_populates="thinking_evaluation",
         cascade="all, delete-orphan",
         foreign_keys="EvidenceModel.thinking_evaluation_id",
@@ -153,8 +155,8 @@ class GermanEvaluationModel(Base):
     recommendations: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    turn: Mapped["TurnModel"] = relationship(back_populates="german_evaluation")
-    evidence: Mapped[list["EvidenceModel"]] = relationship(
+    turn: Mapped[TurnModel] = relationship(back_populates="german_evaluation")
+    evidence: Mapped[list[EvidenceModel]] = relationship(
         back_populates="german_evaluation",
         cascade="all, delete-orphan",
         foreign_keys="EvidenceModel.german_evaluation_id",
@@ -177,10 +179,10 @@ class EvidenceModel(Base):
     observation: Mapped[str] = mapped_column(Text, nullable=False)
     impact: Mapped[str] = mapped_column(Text, nullable=False)
 
-    thinking_evaluation: Mapped["ThinkingEvaluationModel | None"] = relationship(
+    thinking_evaluation: Mapped[ThinkingEvaluationModel | None] = relationship(
         back_populates="evidence", foreign_keys=[thinking_evaluation_id]
     )
-    german_evaluation: Mapped["GermanEvaluationModel | None"] = relationship(
+    german_evaluation: Mapped[GermanEvaluationModel | None] = relationship(
         back_populates="evidence", foreign_keys=[german_evaluation_id]
     )
 
@@ -199,7 +201,7 @@ class FinalReflectionModel(Base):
     closing_message: Mapped[str] = mapped_column(Text, nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    mindquest: Mapped["MindQuestModel"] = relationship(back_populates="final_reflection")
+    mindquest: Mapped[MindQuestModel] = relationship(back_populates="final_reflection")
 
 
 class UserActivityModel(Base):
@@ -218,6 +220,6 @@ class UserActivityModel(Base):
     payload: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    user: Mapped["UserModel"] = relationship(back_populates="activities")
+    user: Mapped[UserModel] = relationship(back_populates="activities")
 
     __table_args__ = (Index("ix_user_activities_user_id_created_at", "user_id", "created_at"),)

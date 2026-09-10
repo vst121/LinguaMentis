@@ -7,7 +7,7 @@ Per Architecture.md #42:
 
 from __future__ import annotations
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from uuid import UUID
 
 import pytest
@@ -33,7 +33,6 @@ from linguamentis.domain.hats.types import HatType
 from linguamentis.infrastructure.configuration import Settings, get_settings
 from linguamentis.infrastructure.database.models import Base
 from linguamentis.infrastructure.database.repositories import (
-    SQLAlchemyUserActivityRepository,
     SQLAlchemyUserRepository,
 )
 from linguamentis.infrastructure.database.session import get_db_session
@@ -177,7 +176,9 @@ def agent_registry(fake_gateway: AIGateway) -> AgentRegistry:
 
 
 @pytest_asyncio.fixture
-async def async_client(test_settings: Settings, fake_gateway: AIGateway, db_engine) -> AsyncGenerator[AsyncClient, None]:
+async def async_client(
+    test_settings: Settings, fake_gateway: AIGateway, db_engine
+) -> AsyncGenerator[AsyncClient, None]:
     factory = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
 
     async def _override_get_db_session() -> AsyncGenerator[AsyncSession, None]:

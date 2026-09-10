@@ -35,7 +35,8 @@ class Correction(BaseModel):
     corrected: str = Field(description="A corrected or more natural version.")
     explanation: str = Field(description="Why the correction improves the German.")
     category: str = Field(
-        description="grammar | vocabulary | sentence_structure | naturalness | level_appropriateness"
+        description="grammar | vocabulary | sentence_structure "
+        "| naturalness | level_appropriateness"
     )
 
 
@@ -102,7 +103,9 @@ class HatFeedback(BaseModel):
     structured, testable artifact.
     """
 
-    thinking_feedback: str = Field(description="Feedback about the learner's thinking, given first.")
+    thinking_feedback: str = Field(
+        description="Feedback about the learner's thinking, given first."
+    )
     german_feedback: str = Field(description="Feedback about the learner's German, given second.")
     encouragement: str = Field(default="", description="Optional short encouraging remark.")
 

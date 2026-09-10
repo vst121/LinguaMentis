@@ -123,8 +123,11 @@ class EvaluationService:
         )
 
         # Generate structured HatFeedback (Thinking feedback first, then German)
-        thinking_summary = f"Score: {thinking_eval.score}/100 ({thinking_eval.score_anchor()}). Strengths: {', '.join(thinking_eval.strengths)}"
-        german_summary = f"Score: {german_eval.score}/100 ({german_eval.score_anchor()}). Strengths: {', '.join(german_eval.strengths)}"
+        thinking_summary = f"Score: {thinking_eval.score}/100 ({thinking_eval.score_anchor()}). " \
+                    f"Strengths: {', '.join(thinking_eval.strengths)}"
+        
+        german_summary = f"Score: {german_eval.score}/100 ({german_eval.score_anchor()}). " \
+                    f"Strengths: {', '.join(german_eval.strengths)}"
 
         feedback = await self._gateway.generate_feedback(
             challenge_question=turn.challenge_question,

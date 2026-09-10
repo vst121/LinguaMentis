@@ -9,14 +9,14 @@ Exceptions remain reserved for truly exceptional situations
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 T = TypeVar("T")
 E = TypeVar("E")
 
 
 @dataclass(frozen=True, slots=True)
-class Result(Generic[T, E]):
+class Result[T, E]:
     """Represents either a successful value or an error value, never both."""
 
     _value: T | None
@@ -24,11 +24,11 @@ class Result(Generic[T, E]):
     is_ok: bool
 
     @classmethod
-    def ok(cls, value: T) -> "Result[T, E]":
+    def ok(cls, value: T) -> Result[T, E]:
         return cls(_value=value, _error=None, is_ok=True)
 
     @classmethod
-    def err(cls, error: E) -> "Result[T, E]":
+    def err(cls, error: E) -> Result[T, E]:
         return cls(_value=None, _error=error, is_ok=False)
 
     @property

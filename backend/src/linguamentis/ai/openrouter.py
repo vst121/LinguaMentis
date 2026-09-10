@@ -148,6 +148,8 @@ class OpenRouterClient:
         try:
             content = data["choices"][0]["message"]["content"]
         except (KeyError, IndexError) as exc:
-            raise AIProviderError(f"Unexpected OpenRouter response shape: {json.dumps(data)[:500]}") from exc
+            raise AIProviderError(
+                f"Unexpected OpenRouter response shape: {json.dumps(data)[:500]}"
+            ) from exc
 
         return content

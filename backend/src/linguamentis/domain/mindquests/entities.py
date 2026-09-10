@@ -17,7 +17,6 @@ from linguamentis.domain.mindquests.enums import (
     LanguageLevel,
     MindQuestEvent,
     MindQuestStatus,
-    TurnRole,
 )
 from linguamentis.domain.mindquests.state_machine import MindQuestStateMachine
 

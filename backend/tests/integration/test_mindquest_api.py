@@ -3,8 +3,6 @@
 import pytest
 from httpx import AsyncClient
 
-from linguamentis.domain.hats.types import HatType
-
 
 @pytest.mark.asyncio
 async def test_health_check(async_client: AsyncClient):
@@ -40,7 +38,8 @@ async def test_mindquest_lifecycle_api(async_client: AsyncClient):
     submit_resp = await async_client.post(
         f"/api/v1/mindquests/{mq_id}/responses",
         json={
-            "response": "Ein großes Risiko ist, dass Plastikersatzstoffe oft teurer sind und nicht recycelt werden können."
+            "response": "Ein großes Risiko ist, dass Plastikersatzstoffe oft teurer sind "
+            "und nicht recycelt werden können."
         },
     )
     assert submit_resp.status_code == 200

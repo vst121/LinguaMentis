@@ -23,7 +23,9 @@ from linguamentis.infrastructure.database.models import (
     EvidenceModel,
     FinalReflectionModel,
     GermanEvaluationModel,
+    HatRoundModel,
     ThinkingEvaluationModel,
+    TurnModel,
 )
 
 

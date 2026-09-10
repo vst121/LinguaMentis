@@ -10,8 +10,8 @@ from linguamentis.domain.mindquests.entities import Turn
 from linguamentis.domain.mindquests.enums import LanguageLevel
 from linguamentis.domain.mindquests.value_objects import MindQuestContext
 from linguamentis.infrastructure.database.repositories import (
-    SQLAlchemyUserActivityRepository,
     SQLAlchemyEvaluationRepository,
+    SQLAlchemyUserActivityRepository,
 )
 
 

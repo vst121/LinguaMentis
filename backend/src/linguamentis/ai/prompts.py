@@ -86,8 +86,10 @@ def hat_challenge_user_prompt(context: MindQuestContext) -> str:
         f"Turn number within this hat round: {context.current_turn_number}\n"
         f"Completed hats so far: {', '.join(h.value for h in context.completed_hats) or 'none'}\n"
         f"Learner strengths so far: {', '.join(context.learner_strengths) or 'none observed yet'}\n"
-        f"Learner weaknesses so far: {', '.join(context.learner_weaknesses) or 'none observed yet'}\n\n"
-        f"Previous turns in this hat round:\n{_format_previous_responses(context.previous_responses)}\n\n"
+        f"Learner weaknesses so far: " \
+        f"{', '.join(context.learner_weaknesses) or 'none observed yet'}\n\n"
+        f"Previous turns in this hat round: " \
+        f"{_format_previous_responses(context.previous_responses)}\n\n"
         "Generate the next HatChallenge."
     )
 

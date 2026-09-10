@@ -18,7 +18,12 @@ class CreateMindQuestRequest(BaseModel):
     topic: str = Field(min_length=3, description="The topic for intellectual debate.")
     target_level: LanguageLevel = Field(default=LanguageLevel.B2)
     planned_hats: list[HatType] = Field(
-        default_factory=lambda: [HatType.BLACK, HatType.WHITE, HatType.YELLOW, HatType.RED, HatType.GREEN]
+        default_factory=lambda: [
+            HatType.BLACK, 
+            HatType.WHITE, 
+            HatType.YELLOW, 
+            HatType.RED, 
+            HatType.GREEN]
     )
 
 

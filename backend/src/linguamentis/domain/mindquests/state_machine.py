@@ -65,7 +65,9 @@ class MindQuestStateMachine:
 
         allowed = _TRANSITIONS.get(current, {})
         if event not in allowed:
-            raise InvalidStateTransitionError(current_state=current.value, attempted_event=event.value)
+            raise InvalidStateTransitionError(
+                current_state=current.value, attempted_event=event.value
+            )
         return allowed[event]
 
     @staticmethod

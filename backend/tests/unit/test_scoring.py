@@ -28,7 +28,8 @@ def test_compute_thinking_score_calculation():
 
 
 def test_compute_german_score_calculation():
-    # Weights: grammar 0.25, vocabulary 0.20, sentence_structure 0.20, naturalness 0.20, level_appropriateness 0.15
+    # Weights: grammar 0.25, vocabulary 0.20, sentence_structure 0.20,
+    # naturalness 0.20, level_appropriateness 0.15
     score = compute_german_score(
         grammar=90,
         vocabulary=90,

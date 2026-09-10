@@ -19,9 +19,9 @@ from linguamentis.application.mindquests.service import MindQuestService
 from linguamentis.application.turns.service import TurnService
 from linguamentis.infrastructure.configuration import Settings, get_settings
 from linguamentis.infrastructure.database.repositories import (
-    SQLAlchemyUserActivityRepository,
     SQLAlchemyEvaluationRepository,
     SQLAlchemyMindQuestRepository,
+    SQLAlchemyUserActivityRepository,
     SQLAlchemyUserRepository,
 )
 from linguamentis.infrastructure.database.session import get_db_session
