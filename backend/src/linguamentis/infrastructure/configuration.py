@@ -26,11 +26,11 @@ class Settings(BaseSettings):
     openrouter_app_title: str = "LinguaMentis"
 
     # Per-capability model configuration (Architecture.md #23)
-    ai_model_blue: str = "google/gemma-4-26b-a4b-it:free"
-    ai_model_hat: str = "google/gemma-4-26b-a4b-it:free"
-    ai_model_thinking_evaluator: str = "google/gemma-4-26b-a4b-it:free"
-    ai_model_german_evaluator: str = "google/gemma-4-26b-a4b-it:free"
-    ai_model_reflection: str = "google/gemma-4-26b-a4b-it:free"
+    ai_model_blue: str = "meta-llama/llama-3.1-8b-instruct"
+    ai_model_hat: str = "meta-llama/llama-3.1-8b-instruct"
+    ai_model_thinking_evaluator: str = "meta-llama/llama-3.1-8b-instruct"
+    ai_model_german_evaluator: str = "meta-llama/llama-3.1-8b-instruct"
+    ai_model_reflection: str = "meta-llama/llama-3.1-8b-instruct"
 
     ai_request_timeout_seconds: float = 60.0
     ai_max_retries: int = 2
