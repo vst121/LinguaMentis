@@ -8,6 +8,23 @@ It combines **German language development** with **structured thinking** using E
 
 Instead of following traditional language lessons, users enter a **MindQuest** — an intellectual challenge where they explore a complex topic from different perspectives and express their thoughts in German.
 
+## Project Overview
+
+LinguaMentis is a full-stack web application built around a gamified, AI-driven debate experience for B2/C1 German learners. The system combines structured thinking methods (Edward de Bono's Six Thinking Hats) with language practice, enabling users to explore complex topics in German through guided MindQuests.
+
+The project consists of three main layers:
+
+- **Frontend** (Next.js/TypeScript) — the interactive web interface for learners
+- **Backend** (Python/FastAPI) — the application core managing MindQuest lifecycle, Six Hat agents, independent evaluation, and persistence
+- **AI Layer** (OpenRouter) — provides structured intelligence for challenges, evaluations, and reflections
+
+Key principles across the entire project:
+
+- The application owns all state; AI provides intelligence, not control
+- Thinking quality and German quality are evaluated independently and never combined
+- Evidence accompanies every meaningful evaluation
+- V1 focuses on a complete, high-quality vertical slice before adding infrastructure complexity
+
 ---
 
 ## Core Experience
@@ -350,6 +367,39 @@ docker compose up -d postgres
 
 ---
 
+## End User
+
+LinguaMentis is designed for **B2/C1 German learners** who want to develop their thinking and language skills through structured intellectual exploration.
+
+### What the End User Gets
+
+- **MindQuests** — intellectual challenges on complex topics explored through the Six Thinking Hats
+- **Real-time AI-guided challenges** — a Blue Agent orchestrates each session, presenting tailored prompts at each Hat
+- **Independent evaluations** — separate scores for Thinking Quality and German Quality with detailed evidence
+- **German corrections** — actionable, concise corrections with explanations
+- **Final Reflection** — a comprehensive summary of thinking and German performance at the end of each MindQuest
+- **Learning journey** — progress tracking across completed MindQuests
+
+### What the End User Needs
+
+To use LinguaMentis, the end user needs:
+
+- A modern web browser (desktop recommended for the V1 experience)
+- A stable internet connection (the application communicates with AI services via the backend)
+- No local installation of Python, Node.js, or any development tools
+- No API keys or configuration — all infrastructure is handled server-side
+
+### What the End User Does
+
+1. Choose or be assigned a topic
+2. Follow the Blue Agent's guidance through each Thinking Hat
+3. Respond to challenges in German
+4. Receive independent Thinking and German evaluations with evidence and feedback
+5. Continue through all six Hats
+6. Review the final reflection and track their learning progress
+
+---
+
 ## Environment Variables
 
 Create a `.env` file for the backend.
@@ -357,8 +407,6 @@ Create a `.env` file for the backend.
 ```env
 
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5438/linguamentis
-
-
 
 OPENROUTER_API_KEY=your-api-key
 
