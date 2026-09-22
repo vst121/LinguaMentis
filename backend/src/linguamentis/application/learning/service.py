@@ -124,5 +124,5 @@ def _calc_dimension_scores(dims: list[tuple[str, list[int]]]) -> list[DimensionS
         if not vals:
             continue
         avg = round(sum(vals) / len(vals), 1)
-        res.append(DimensionScore(name=name, score=avg))
+        res.append(DimensionScore(name=name, score=avg, sample_size=len(vals)))        
     return res
