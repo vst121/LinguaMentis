@@ -466,14 +466,6 @@ It should become:
 
 ---
 
-## Status
-
-**Current:** Architecture and product definition
-
-**Next milestone:** Implement the Black Hat vertical slice.
-
----
-
 ## License
 
 TBD
