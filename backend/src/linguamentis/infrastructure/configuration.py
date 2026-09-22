@@ -9,18 +9,25 @@ from __future__ import annotations
 
 from functools import lru_cache
 from uuid import UUID
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        # Use absolute path to the .env file in the backend root
+        env_file=BASE_DIR / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
     # Database
     database_url: str = "postgresql+asyncpg://linguamentis:linguamentis@localhost:5438/linguamentis"
 
     # OpenRouter
-    openrouter_api_key: str = ""
+    openrouter_api_key: str 
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     openrouter_http_referer: str = ""
     openrouter_app_title: str = "LinguaMentis"
