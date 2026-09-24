@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from linguamentis.agents.registry import AgentRegistry
 from linguamentis.ai.gateway import AIGateway
 from linguamentis.ai.openrouter import OpenRouterClient
+from linguamentis.ai.jev import DisabledDecisionVerifier, JevClient
 from linguamentis.application.evaluation.service import EvaluationService
 from linguamentis.application.learning.service import LearningService
 from linguamentis.application.mindquests.service import MindQuestService
@@ -79,10 +80,14 @@ def get_evaluation_service(
     evaluation_repo: Annotated[SQLAlchemyEvaluationRepository, Depends(get_evaluation_repo)],
     activity_repo: Annotated[SQLAlchemyUserActivityRepository, Depends(get_activity_repo)],
 ) -> EvaluationService:
+    verifier = (JevClient(api_key=settings.openrouter_api_key, base_url=settings.jev_base_url,
+                          timeout=settings.jev_timeout_seconds)
+                if settings.jev_enabled else DisabledDecisionVerifier())
     return EvaluationService(
         gateway=gateway,
         evaluation_repo=evaluation_repo,
         activity_repo=activity_repo,
+        decision_verifier=verifier,
     )
 
 

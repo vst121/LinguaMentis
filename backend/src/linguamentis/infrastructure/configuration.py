@@ -41,6 +41,12 @@ class Settings(BaseSettings):
 
     ai_request_timeout_seconds: float = 60.0
     ai_max_retries: int = 2
+    jev_enabled: bool = False
+    jev_base_url: str = "https://openrouter.ai/api"
+    jev_model: str = "typesafe/jev-1.13"
+    jev_timeout_seconds: float = 10.0
+    jev_auto_accept_confidence: float = 0.90
+    jev_review_confidence: float = 0.70
 
     # App
     app_env: str = "local"

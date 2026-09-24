@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from linguamentis.ai.gateway import AIGateway
+from linguamentis.ai.jev import DecisionVerifier, DisabledDecisionVerifier
 from linguamentis.ai.models import HatFeedback
 from linguamentis.domain.evaluations.evidence import Correction, Evidence
 from linguamentis.domain.evaluations.german import GermanEvaluation
@@ -46,10 +47,12 @@ class EvaluationService:
         gateway: AIGateway,
         evaluation_repo: EvaluationRepository,
         activity_repo: UserActivityRepository,
+        decision_verifier: DecisionVerifier | None = None,
     ) -> None:
         self._gateway = gateway
         self._evaluation_repo = evaluation_repo
         self._activity_repo = activity_repo
+        self._decision_verifier = decision_verifier or DisabledDecisionVerifier()
 
     async def evaluate_turn_response(
         self,
@@ -61,6 +64,16 @@ class EvaluationService:
     ) -> EvaluationResult:
         """Run parallel evaluations for Thinking Quality and German Quality."""
         contract = get_hat_contract(context.current_hat)
+
+        try:
+            decision = await self._decision_verifier.evaluate_hat_adherence(
+                hat=context.current_hat.value, challenge=turn.challenge_question, response=user_response
+            )
+            logger.info("ai.jev.hat_adherence", turn_id=str(turn.id), choice=decision.choice,
+                        confidence=decision.confidence,
+                        route="auto" if decision.confidence >= 0.90 else "llm_review")
+        except Exception as exc:
+            logger.warning("ai.jev.unavailable", turn_id=str(turn.id), error=str(exc))
 
         # Execute Thinking & German evaluation in parallel (Architecture.md #34)
         thinking_task = self._gateway.evaluate_thinking(
