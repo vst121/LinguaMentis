@@ -52,6 +52,7 @@ describe("Frontend pages (Home, MindQuests list, Reflection, Learning, History)"
 
     render(<MindQuestsPage />);
     expect(await screen.findByText("KI in der Schule")).toBeInTheDocument();
+    expect(screen.getAllByText("Answering Mode").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/1 von 2 Perspektiven abgeschlossen/i)).toBeInTheDocument();
 
     const input = screen.getByPlaceholderText(/Soll KI Hausaufgaben bewerten/i);

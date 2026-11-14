@@ -207,9 +207,9 @@ export default function MindQuestsPage() {
                         <div className="min-w-0">
                           <div className="flex flex-wrap gap-2">
                             <Badge>{q.target_level}</Badge>
-                            {q.mode === "ARGUE" && (
-                              <Badge variant="default">Argue Mode</Badge>
-                            )}
+                            <Badge variant={q.mode === "ARGUE" ? "default" : "info"}>
+                              {q.mode === "ARGUE" ? "Argue Mode" : "Answering Mode"}
+                            </Badge>
                             <Badge
                               variant={
                                 q.status === "COMPLETED" ? "success" : "info"
