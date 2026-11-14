@@ -179,4 +179,160 @@ describe("Spoken Conversation Mode (ConversationAgent UI)", () => {
 
     delete (window as unknown as Record<string, unknown>).SpeechRecognition;
   });
+
+  it("supports spoken Gesprächsmodus in Argue Mode (Perspective Challenger) and returns to 5-hat selector after passing >80%", async () => {
+    let recInstance: {
+      onresult: ((ev: unknown) => void) | null;
+      onend: (() => void) | null;
+      start: ReturnType<typeof vi.fn>;
+      stop: () => void;
+    } | null = null;
+
+    class MockSpeechRecognition {
+      lang = "de-DE";
+      continuous = true;
+      interimResults = true;
+      onresult: ((ev: unknown) => void) | null = null;
+      onerror: ((ev: unknown) => void) | null = null;
+      onend: (() => void) | null = null;
+      start = vi.fn();
+      stop() {
+        if (this.onend) this.onend();
+      }
+      constructor() {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        recInstance = this;
+      }
+    }
+
+    (window as unknown as Record<string, unknown>).SpeechRecognition =
+      MockSpeechRecognition;
+
+    const argueQuest: MindQuest = {
+      ...baseQuest,
+      id: "mq-argue-voice",
+      mode: "ARGUE",
+      planned_hats: ["WHITE", "YELLOW", "GREEN", "RED", "BLACK"],
+    };
+    const blackTurn = {
+      id: "t-argue-v1",
+      turn_number: 1,
+      hat: "BLACK" as const,
+      challenge_question: "Welche Risiken hat Homeoffice?",
+      challenge_instruction: "Schwarzer Hut.",
+      difficulty: 3,
+      created_at: "2026-11-14T10:01:00Z",
+    };
+
+    vi.mocked(mqApi.getMindQuest).mockResolvedValueOnce(argueQuest);
+    vi.mocked(mqApi.selectHat).mockResolvedValueOnce({
+      mindquest: {
+        ...argueQuest,
+        status: "HAT_ACTIVE",
+        current_hat: "BLACK",
+        hat_rounds: [
+          {
+            id: "r-v1",
+            hat: "BLACK",
+            sequence_index: 0,
+            turns: [blackTurn],
+            started_at: "2026-11-14T10:01:00Z",
+          },
+        ],
+      },
+      active_hat: "BLACK",
+      initial_turn: blackTurn,
+      challenge_question: blackTurn.challenge_question,
+      challenge_instruction: blackTurn.challenge_instruction,
+      difficulty: 3,
+    });
+    vi.mocked(convApi.openConversation).mockResolvedValueOnce({
+      mindquest: { ...argueQuest, status: "HAT_ACTIVE", current_hat: "BLACK" },
+      active_hat: "BLACK",
+      active_turn: blackTurn,
+      spoken_text: "Welche Risiken hat Homeoffice?",
+      audio_base64: "",
+      audio_mime_type: "audio/wav",
+      is_completed: false,
+    });
+    vi.mocked(convApi.submitConversationTurn).mockResolvedValueOnce({
+      mindquest: {
+        ...argueQuest,
+        status: "HAT_COMPLETED",
+        completed_hats: ["BLACK"],
+      },
+      user_transcript: "Vereinsamung im Team ist ein ernstes Risiko.",
+      spoken_reply: "Starkes Argument! Wähle nun deinen nächsten Hut.",
+      audio_base64: "",
+      audio_mime_type: "audio/wav",
+      thinking_evaluation: {
+        id: "te-av",
+        score: 88,
+        score_anchor: "Strong",
+        hat_adherence: 90,
+        relevance: 88,
+        reasoning: 88,
+        depth: 85,
+        specificity: 89,
+        evidence: [],
+        strengths: [],
+        weaknesses: [],
+        recommendations: [],
+      },
+      german_evaluation: {
+        id: "ge-av",
+        score: 86,
+        score_anchor: "Strong",
+        grammar: 86,
+        vocabulary: 86,
+        sentence_structure: 86,
+        naturalness: 86,
+        level_appropriateness: 86,
+        evidence: [],
+        corrections: [],
+        strengths: [],
+        weaknesses: [],
+        recommendations: [],
+      },
+      active_hat: null,
+      transitioned_hat: null,
+      is_completed: false,
+      average_score: 87,
+      round_should_complete: true,
+    });
+
+    render(<MindQuestPage />);
+    const convToggle = await screen.findByRole("button", { name: /Gesprächsmodus/i });
+    fireEvent.click(convToggle);
+
+    // Must still let user select from the 5 hats first
+    fireEvent.click(await screen.findByRole("button", { name: /Schwarzer Hut/i }));
+    expect(await screen.findByTestId("conversation-view")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Mündlicher Argue Mode · Perspective Challenger/i)
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Mikrofon hört zu — sprich auf Deutsch/i)
+    ).toBeInTheDocument();
+
+    act(() => {
+      recInstance!.onresult!({
+        resultIndex: 0,
+        results: {
+          length: 1,
+          0: {
+            isFinal: true,
+            0: { transcript: "Vereinsamung im Team ist ein ernstes Risiko." },
+          },
+        },
+      });
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Fertig gesprochen/i }));
+    // After mastering >80% in Argue Mode, returns to 5-hat selector with BLACK disabled
+    const blackBtn = await screen.findByRole("button", { name: /Schwarzer Hut/i });
+    expect(blackBtn).toBeDisabled();
+
+    delete (window as unknown as Record<string, unknown>).SpeechRecognition;
+  });
 });

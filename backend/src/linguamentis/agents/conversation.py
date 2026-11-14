@@ -54,6 +54,8 @@ class ConversationAgent:
         transitioned_hat: HatType | None,
         next_question: str | None,
         is_completed: bool,
+        mode: str = "ANSWERING",
+        argue_passed: bool | None = None,
     ) -> ConversationReplyOutput:
         transitioned_label = (
             HAT_SPOKEN_LABELS[transitioned_hat] if transitioned_hat else None
@@ -68,6 +70,8 @@ class ConversationAgent:
             transitioned_hat=transitioned_label,
             next_question=next_question,
             is_completed=is_completed,
+            mode=mode,
+            argue_passed=argue_passed,
         )
 
     async def synthesize_safe(self, text: str) -> SynthesizedSpeech:

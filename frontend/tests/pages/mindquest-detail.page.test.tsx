@@ -526,7 +526,9 @@ describe("MindQuestPage interactive flow", () => {
     expect(
       await screen.findByText(/Perspektive wählen \(Argue Mode\)/i)
     ).toBeInTheDocument();
-    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    await waitFor(() => {
+      expect(document.documentElement.classList.contains("dark")).toBe(true);
+    });
     expect(screen.getByText("Weißer Hut")).toBeInTheDocument();
     expect(screen.getByText("Gelber Hut")).toBeInTheDocument();
     expect(screen.getByText("Grüner Hut")).toBeInTheDocument();
@@ -534,11 +536,12 @@ describe("MindQuestPage interactive flow", () => {
     expect(screen.getByText("Schwarzer Hut")).toBeInTheDocument();
     expect(screen.queryByText("Blauer Hut")).not.toBeInTheDocument();
 
-    // 2. Select Schwarzer Hut -> locked into BLACK and highlighted in top hat icons
+    // 2. Select Schwarzer Hut -> locked into BLACK, shows SpeechModeToggle, and highlighted in top hat icons
     fireEvent.click(screen.getByRole("button", { name: /Schwarzer Hut/i }));
     expect(
       await screen.findByText("Welche Risiken hat ein generelles Tempolimit?")
     ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Einsprechen/i })).toBeInTheDocument();
     expect(screen.getByLabelText("Schwarzer Hut: aktuell")).toBeInTheDocument();
     expect(screen.getByLabelText("Weißer Hut: offen")).toBeInTheDocument();
 

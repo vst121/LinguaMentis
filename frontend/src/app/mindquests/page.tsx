@@ -117,10 +117,10 @@ export default function MindQuestsPage() {
                     }}
                     placeholder="z. B. Soll KI Hausaufgaben bewerten?"
                     aria-invalid={Boolean(error && topic.trim().length < 3)}
-                    className={`mt-2 w-full rounded-lg border bg-white px-3 py-2.5 text-slate-900 outline-none focus:ring-2 dark:bg-slate-950 dark:text-slate-100 ${
+                    className={`mt-2 w-full rounded-lg border bg-white px-3 py-2.5 text-slate-900 outline-none focus:ring-2 dark:bg-slate-800 dark:text-slate-50 ${
                       error && topic.trim().length < 3
                         ? "border-amber-500 ring-1 ring-amber-500 focus:ring-amber-500"
-                        : "border-slate-300 ring-blue-500 dark:border-slate-700"
+                        : "border-slate-300 ring-blue-500 dark:border-slate-500"
                     }`}
                   />
                 </label>
@@ -129,7 +129,7 @@ export default function MindQuestsPage() {
                   <select
                     value={level}
                     onChange={(e) => setLevel(e.target.value as "B2" | "C1")}
-                    className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                    className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 dark:border-slate-500 dark:bg-slate-800 dark:text-slate-50"
                   >
                     <option>B2</option>
                     <option>C1</option>
@@ -149,8 +149,8 @@ export default function MindQuestsPage() {
                       onClick={() => setMode("ANSWERING")}
                       className={`rounded-lg border px-3 py-2 text-left text-xs transition ${
                         mode === "ANSWERING"
-                          ? "border-blue-600 bg-blue-50 text-blue-950 ring-1 ring-blue-600 dark:border-blue-400 dark:bg-blue-950/50 dark:text-blue-100"
-                          : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800"
+                          ? "border-blue-600 bg-blue-50 text-blue-950 ring-1 ring-blue-600 dark:border-blue-400 dark:bg-blue-900/50 dark:text-blue-100"
+                          : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-500 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-600"
                       }`}
                     >
                       <span className="block font-semibold">Answering Mode</span>
@@ -165,8 +165,8 @@ export default function MindQuestsPage() {
                       onClick={() => setMode("ARGUE")}
                       className={`rounded-lg border px-3 py-2 text-left text-xs transition ${
                         mode === "ARGUE"
-                          ? "border-indigo-500 bg-slate-900 text-slate-100 ring-1 ring-indigo-500"
-                          : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800"
+                          ? "border-indigo-400 bg-slate-700 text-slate-50 ring-1 ring-indigo-400"
+                          : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-500 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-600"
                       }`}
                     >
                       <span className="block font-semibold">Argue Mode</span>

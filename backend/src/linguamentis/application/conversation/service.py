@@ -13,7 +13,7 @@ from linguamentis.domain.evaluations.german import GermanEvaluation
 from linguamentis.domain.evaluations.thinking import ThinkingEvaluation
 from linguamentis.domain.hats.types import HatType
 from linguamentis.domain.mindquests.entities import MindQuest, Turn
-from linguamentis.domain.mindquests.enums import MindQuestStatus
+from linguamentis.domain.mindquests.enums import MindQuestMode, MindQuestStatus
 from linguamentis.shared.exceptions import DomainError
 
 
@@ -41,6 +41,8 @@ class ConversationTurnResult:
     active_turn: Turn | None
     transitioned_hat: HatType | None
     is_completed: bool
+    average_score: float = 0.0
+    round_should_complete: bool = True
 
 
 class ConversationService:
@@ -63,6 +65,10 @@ class ConversationService:
             )
 
         if mq.status == MindQuestStatus.TOPIC_SELECTED:
+            if mq.mode == MindQuestMode.ARGUE:
+                raise DomainError(
+                    "Bitte wähle im Argue Mode zuerst einen Hut aus."
+                )
             started = await self._mq.start_mindquest(mindquest_id)
             mq, turn = started.mindquest, started.initial_turn
         else:
@@ -143,6 +149,12 @@ class ConversationService:
             transitioned_hat=transitioned,
             next_question=next_q,
             is_completed=done,
+            mode=updated_mq.mode.value,
+            argue_passed=(
+                sub.round_should_complete
+                if updated_mq.mode == MindQuestMode.ARGUE
+                else None
+            ),
         )
         if include_audio:
             speech = await agent.synthesize_safe(reply.spoken_reply)
@@ -162,4 +174,6 @@ class ConversationService:
             turn,
             transitioned,
             done,
+            sub.average_score,
+            sub.round_should_complete,
         )

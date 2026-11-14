@@ -53,6 +53,8 @@ class ConversationTurnResponse(BaseModel):
     active_turn: TurnResponse | None = None
     transitioned_hat: HatType | None = None
     is_completed: bool
+    average_score: float = 0.0
+    round_should_complete: bool = True
 
 
 @router.post("/{id}/conversation/opening", response_model=ConversationOpeningResponse)
@@ -144,4 +146,6 @@ async def submit_conversation_turn(
         active_turn=_map_turn(res.active_turn) if res.active_turn else None,
         transitioned_hat=res.transitioned_hat,
         is_completed=res.is_completed,
+        average_score=res.average_score,
+        round_should_complete=res.round_should_complete,
     )

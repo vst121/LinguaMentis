@@ -55,11 +55,13 @@ export function useConversationSession({
   enabled,
   onQuestUpdated,
   onCompleted,
+  onHatSelectionNeeded,
 }: {
   mindquestId: string;
   enabled: boolean;
   onQuestUpdated: (quest: MindQuest, activeTurn: Turn | null) => void;
   onCompleted: () => void;
+  onHatSelectionNeeded?: (quest: MindQuest) => void;
 }) {
   const [phase, setPhase] = useState<ConversationPhase>("initializing");
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
@@ -124,7 +126,13 @@ export function useConversationSession({
   const finishSpeakingRef = useRef<() => Promise<void>>(async () => {});
 
   const playAgentSpeech = useCallback(
-    (audioBase64: string, mimeType: string, fallbackText: string, isDone: boolean) => {
+    (
+      audioBase64: string,
+      mimeType: string,
+      fallbackText: string,
+      isDone: boolean,
+      hatCompletedQuest?: MindQuest | null,
+    ) => {
       stopAllMedia();
       lastAudioRef.current = { base64: audioBase64, mime: mimeType, text: fallbackText };
       setPhase("agent_speaking");
@@ -133,6 +141,9 @@ export function useConversationSession({
         if (isDone) {
           setPhase("completed");
           onCompleted();
+        } else if (hatCompletedQuest && onHatSelectionNeeded) {
+          setPhase("paused");
+          onHatSelectionNeeded(hatCompletedQuest);
         } else {
           void beginListeningRef.current();
         }
@@ -165,7 +176,7 @@ export function useConversationSession({
 
       afterSpeech();
     },
-    [onCompleted, stopAllMedia]
+    [onCompleted, onHatSelectionNeeded, stopAllMedia]
   );
 
   const finishSpeaking = useCallback(async () => {
@@ -235,7 +246,13 @@ export function useConversationSession({
         mime_type: blob?.type || "audio/webm",
         include_audio: false,
       });
-      onQuestUpdated(res.mindquest, res.active_turn ?? null);
+      const needsNextHatSelection =
+        res.mindquest.mode === "ARGUE" &&
+        res.mindquest.status === "HAT_COMPLETED" &&
+        !res.is_completed;
+      if (!needsNextHatSelection) {
+        onQuestUpdated(res.mindquest, res.active_turn ?? null);
+      }
       setMessages((prev) => [
         ...prev,
         {
@@ -244,6 +261,7 @@ export function useConversationSession({
           text: res.user_transcript,
           thinkingScore: res.thinking_evaluation.score,
           germanScore: res.german_evaluation.score,
+          averageScore: res.average_score,
         },
         {
           id: `a-${Date.now() + 1}`,
@@ -263,7 +281,13 @@ export function useConversationSession({
         } catch {}
       }
       submittingRef.current = false;
-      playAgentSpeech(finalAudioB64, finalAudioMime, res.spoken_reply, res.is_completed);
+      playAgentSpeech(
+        finalAudioB64,
+        finalAudioMime,
+        res.spoken_reply,
+        res.is_completed,
+        needsNextHatSelection ? res.mindquest : null,
+      );
     } catch {
       submittingRef.current = false;
       setError("Deine gesprochene Antwort konnte nicht verarbeitet werden.");

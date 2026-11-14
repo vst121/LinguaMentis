@@ -350,10 +350,15 @@ def conversation_reply_system_prompt() -> str:
         "- Keep the total response concise (2 to 4 spoken sentences).\n"
         "- First, react briefly and authentically to the learner's idea (if there is one "
         "high-value German phrasing tip, weave it in naturally in half a sentence).\n"
-        "- Then smoothly transition: if `is_completed` is true, congratulate the learner "
-        "warmly and invite them to view their reflection; otherwise, if `transitioned_hat` "
-        "is provided, briefly announce the perspective shift in German and ask `next_question` "
-        "conversational and verbatim in meaning."
+        "- If `mode` is ARGUE and `argue_passed` is false: act as a demanding Perspective "
+        "Challenger, clearly challenge/reject their current argument using `next_question` "
+        "and push them to give a stronger spoken follow-up.\n"
+        "- If `mode` is ARGUE and `argue_passed` is true and `is_completed` is false: "
+        "acknowledge that their argument convinced the Perspective Challenger and invite "
+        "them to pick the next hat perspective.\n"
+        "- Otherwise, if `is_completed` is true, congratulate the learner warmly and "
+        "invite them to view their reflection; if `transitioned_hat` is provided, briefly "
+        "announce the perspective shift in German and ask `next_question` conversationally."
     )
 
 
@@ -368,16 +373,20 @@ def conversation_reply_user_prompt(
     transitioned_hat: str | None,
     next_question: str | None,
     is_completed: bool,
+    mode: str = "ANSWERING",
+    argue_passed: bool | None = None,
 ) -> str:
     return (
-        f"Topic: {topic} (Level: {target_level})\n"
+        f"Topic: {topic} (Level: {target_level}, Mode: {mode})\n"
         f"Hat just answered: {previous_hat}\n"
         f"Learner's spoken German response: {user_response}\n"
         f"Thinking feedback context: {thinking_feedback}\n"
         f"German feedback context: {german_feedback}\n"
+        f"Argue round passed (>80%): {argue_passed if argue_passed is not None else 'n/a'}\n"
         f"Completed entire MindQuest: {is_completed}\n"
         f"Transitioned to new Hat: {transitioned_hat or 'No (staying in same hat)'}\n"
-        f"Next question to ask learner: {next_question or '(none — MindQuest completed)'}\n\n"
+        f"Next question/counter-argument for learner: "
+        f"{next_question or '(none — wait for next hat selection or completion)'}\n\n"
         "Compose the natural spoken German `ConversationReplyOutput`."
     )
 

@@ -288,3 +288,26 @@ async def test_argue_mode_api_endpoints(async_client: AsyncClient):
     assert sub_resp.json()["average_score"] > 80.0
     assert sub_resp.json()["round_should_complete"] is True
 
+    # Complete RED so we can test spoken conversation mode on a newly selected hat (BLACK)
+    adv_resp = await async_client.post(f"/api/v1/mindquests/{mq_id}/advance")
+    assert adv_resp.status_code == 200
+    assert adv_resp.json()["mindquest"]["status"] == "HAT_COMPLETED"
+
+    # Opening spoken conversation without selecting a hat first fails cleanly (400)
+    await async_client.post(f"/api/v1/mindquests/{mq_id}/select-hat", json={"hat": "BLACK"})
+    conv_open = await async_client.post(f"/api/v1/mindquests/{mq_id}/conversation/opening")
+    assert conv_open.status_code == 200
+    assert conv_open.json()["active_hat"] == "BLACK"
+
+    conv_turn = await async_client.post(
+        f"/api/v1/mindquests/{mq_id}/conversation/turn",
+        json={
+            "transcript": "Ein Risiko besteht darin, dass Arbeitsabläufe in Kliniken stocken."
+        },
+    )
+    assert conv_turn.status_code == 200
+    conv_data = conv_turn.json()
+    assert conv_data["round_should_complete"] is True
+    assert conv_data["average_score"] > 80.0
+    assert conv_data["mindquest"]["status"] == "HAT_COMPLETED"
+

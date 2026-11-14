@@ -32,6 +32,8 @@ export interface ConversationTurnResponse {
   active_turn?: Turn | null;
   transitioned_hat?: HatType | null;
   is_completed: boolean;
+  average_score?: number;
+  round_should_complete?: boolean;
 }
 
 export async function openConversation(

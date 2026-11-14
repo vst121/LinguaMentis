@@ -233,11 +233,23 @@ export default function MindQuestPage() {
     router.replace(`/mindquests/${id}/reflection`);
   }, [id, router]);
 
+  const handleConversationHatSelectionNeeded = useCallback((updated: MindQuest) => {
+    setQuest(updated);
+    setTurn(null);
+    setFeedback(null);
+  }, []);
+
+  const isArgue = quest?.mode === "ARGUE";
+
   const conversation = useConversationSession({
     mindquestId: id,
-    enabled: experienceMode === "conversation" && quest?.status !== "COMPLETED",
+    enabled:
+      experienceMode === "conversation" &&
+      quest?.status !== "COMPLETED" &&
+      (!isArgue || quest?.status === "HAT_ACTIVE"),
     onQuestUpdated: handleConversationQuestUpdate,
     onCompleted: handleConversationCompleted,
+    onHatSelectionNeeded: handleConversationHatSelectionNeeded,
   });
 
   async function send() {
@@ -349,7 +361,6 @@ export default function MindQuestPage() {
       setBusy(false);
     }
   }
-  const isArgue = quest?.mode === "ARGUE";
   if (loading)
     return (
       <AppShell dark={isArgue}>
@@ -414,66 +425,64 @@ export default function MindQuestPage() {
   return (
     <AppShell dark={isArgue}>
       <div className="flex flex-col gap-3">
-        <div className="sticky top-10 z-10 -mx-4 border-b border-slate-200/70 bg-slate-50/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 dark:border-slate-800/80 dark:bg-slate-950/95">
+        <div className="sticky top-10 z-10 -mx-4 border-b border-slate-200/70 bg-slate-50/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 dark:border-slate-600/80 dark:bg-slate-800/95">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">
               <Link
                 href="/mindquests"
-                className="shrink-0 text-xs font-medium text-blue-700 hover:underline dark:text-blue-400"
+                className="shrink-0 text-xs font-medium text-blue-700 hover:underline dark:text-indigo-300"
                 title="Alle MindQuests"
               >
                 ← Zurück
               </Link>
-              <span className="text-slate-300 dark:text-slate-700">|</span>
+              <span className="text-slate-300 dark:text-slate-500">|</span>
               <h1 className="truncate text-sm font-bold sm:text-base">
                 {quest.topic}
               </h1>
               {isArgue && <Badge variant="default">Argue Mode</Badge>}
-              <span className="shrink-0 rounded bg-slate-200/70 px-1.5 py-0.5 text-[11px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <span className="shrink-0 rounded bg-slate-200/70 px-1.5 py-0.5 text-[11px] font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-200">
                 {quest.target_level} · {quest.completed_hats.length}/
                 {quest.planned_hats.length}
               </span>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              {!isArgue && (
-                <div
-                  role="group"
-                  aria-label="MindQuest-Modus"
-                  className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-xs font-medium"
+              <div
+                role="group"
+                aria-label="MindQuest-Modus"
+                className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-xs font-medium dark:border-slate-500 dark:bg-slate-700"
+              >
+                <button
+                  type="button"
+                  aria-pressed={experienceMode === "written"}
+                  onClick={() => setExperienceMode("written")}
+                  className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 transition cursor-pointer ${
+                    experienceMode === "written"
+                      ? "bg-white text-slate-900 shadow-xs dark:bg-slate-500 dark:text-white"
+                      : "text-slate-600 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white"
+                  }`}
                 >
-                  <button
-                    type="button"
-                    aria-pressed={experienceMode === "written"}
-                    onClick={() => setExperienceMode("written")}
-                    className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 transition cursor-pointer ${
-                      experienceMode === "written"
-                        ? "bg-white text-slate-900 shadow-xs"
-                        : "text-slate-600 hover:text-slate-900"
-                    }`}
-                  >
-                    <MessageSquareText size={13} />
-                    Schriftlich
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={experienceMode === "conversation"}
-                    onClick={() => {
-                      if (isRecording) void stopRecording();
-                      setExperienceMode("conversation");
-                    }}
-                    className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 transition cursor-pointer ${
-                      experienceMode === "conversation"
-                        ? "bg-blue-600 text-white shadow-xs"
-                        : "text-slate-600 hover:text-slate-900"
-                    }`}
-                  >
-                    <Volume2 size={13} />
-                    Gesprächsmodus
-                  </button>
-                </div>
-              )}
+                  <MessageSquareText size={13} />
+                  Schriftlich
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={experienceMode === "conversation"}
+                  onClick={() => {
+                    if (isRecording) void stopRecording();
+                    setExperienceMode("conversation");
+                  }}
+                  className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 transition cursor-pointer ${
+                    experienceMode === "conversation"
+                      ? "bg-blue-600 text-white shadow-xs dark:bg-indigo-500"
+                      : "text-slate-600 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white"
+                  }`}
+                >
+                  <Volume2 size={13} />
+                  Gesprächsmodus
+                </button>
+              </div>
               {!isArgue && currentHat && <HatIndicator hat={currentHat} />}
-              {topActionButton}
+              {experienceMode === "written" && topActionButton}
             </div>
           </div>
 
@@ -497,10 +506,10 @@ export default function MindQuestPage() {
                     }`}
                     className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition ${
                       isCurrent
-                        ? "border-indigo-400 bg-indigo-900/90 text-white ring-2 ring-indigo-400/70 shadow-sm"
+                        ? "border-indigo-300 bg-indigo-600 text-white ring-2 ring-indigo-300/70 shadow-sm"
                         : isDone
-                          ? "border-emerald-500/50 bg-emerald-950/60 text-emerald-300"
-                          : "border-slate-700 bg-slate-900/70 text-slate-400"
+                          ? "border-emerald-400/60 bg-emerald-900/50 text-emerald-200"
+                          : "border-slate-500 bg-slate-700/80 text-slate-200"
                     }`}
                   >
                     <span
@@ -508,11 +517,11 @@ export default function MindQuestPage() {
                     />
                     <span>{meta.nameGerman.replace(" Hut", "")}</span>
                     {isDone ? (
-                      <CheckCircle2 size={13} className="text-emerald-400" />
+                      <CheckCircle2 size={13} className="text-emerald-300" />
                     ) : isCurrent ? (
-                      <Flame size={13} className="text-indigo-300" />
+                      <Flame size={13} className="text-indigo-200" />
                     ) : (
-                      <CircleDashed size={13} className="text-slate-500" />
+                      <CircleDashed size={13} className="text-slate-400" />
                     )}
                   </div>
                 );
@@ -571,23 +580,7 @@ export default function MindQuestPage() {
               </Link>
             </Card>
           </div>
-        ) : experienceMode === "conversation" ? (
-          <ConversationView
-            activeHat={currentHat}
-            phase={conversation.phase}
-            messages={conversation.messages}
-            liveTranscript={conversation.liveTranscript}
-            audioLevels={conversation.audioLevels}
-            silenceProgress={conversation.silenceProgress}
-            error={conversation.error}
-            onFinishSpeaking={() => void conversation.finishSpeaking()}
-            onSkipAgentSpeech={conversation.skipAgentSpeech}
-            onReplayAgentSpeech={conversation.replayAgentSpeech}
-            onPauseListening={conversation.pauseListening}
-            onResumeListening={() => void conversation.resumeListening()}
-          />
-        ) : !turn ? (
-          isArgue ? (
+        ) : !turn && isArgue ? (
             <Card
               title="Perspektive wählen (Argue Mode)"
               description="Wähle einen der 5 Hüte. Einmal gewählt, bleibt der Hut gesperrt, bis dein Gesamtschnitt über 80 % liegt."
@@ -604,13 +597,13 @@ export default function MindQuestPage() {
                       onClick={() => void chooseHat(hat)}
                       className={`flex flex-col justify-between rounded-xl border p-3.5 text-left transition ${
                         isCompleted
-                          ? "cursor-not-allowed border-slate-800 bg-slate-900/50 opacity-50"
-                          : "border-slate-700 bg-slate-950/70 hover:border-indigo-400 hover:bg-slate-800/80"
+                          ? "cursor-not-allowed border-slate-600/60 bg-slate-800/40 opacity-55"
+                          : "border-slate-500 bg-slate-800/80 hover:border-indigo-400 hover:bg-slate-600/80"
                       }`}
                     >
                       <div>
                         <div className="flex items-center justify-between gap-2">
-                          <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-100">
+                          <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-50">
                             <span
                               className={`h-2.5 w-2.5 rounded-full ${
                                 HAT_PROGRESS_COLORS[hat].completed
@@ -619,19 +612,19 @@ export default function MindQuestPage() {
                             {meta.nameGerman}
                           </span>
                           {isCompleted ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-300">
                               <CheckCircle2 size={13} />
                               Erledigt
                             </span>
                           ) : (
-                            <Flame size={14} className="text-indigo-400" />
+                            <Flame size={14} className="text-indigo-300" />
                           )}
                         </div>
-                        <p className="mt-1.5 text-xs text-slate-400">
+                        <p className="mt-1.5 text-xs text-slate-300">
                           {meta.question}
                         </p>
                       </div>
-                      <span className="mt-3 text-[11px] font-medium text-indigo-400">
+                      <span className="mt-3 text-[11px] font-medium text-indigo-300">
                         {isCompleted
                           ? "Bereits gemeistert"
                           : "Hut wählen & argumentieren →"}
@@ -641,7 +634,23 @@ export default function MindQuestPage() {
                 })}
               </div>
             </Card>
-          ) : (
+        ) : experienceMode === "conversation" ? (
+          <ConversationView
+            activeHat={currentHat}
+            isArgue={isArgue}
+            phase={conversation.phase}
+            messages={conversation.messages}
+            liveTranscript={conversation.liveTranscript}
+            audioLevels={conversation.audioLevels}
+            silenceProgress={conversation.silenceProgress}
+            error={conversation.error}
+            onFinishSpeaking={() => void conversation.finishSpeaking()}
+            onSkipAgentSpeech={conversation.skipAgentSpeech}
+            onReplayAgentSpeech={conversation.replayAgentSpeech}
+            onPauseListening={conversation.pauseListening}
+            onResumeListening={() => void conversation.resumeListening()}
+          />
+        ) : !turn ? (
             <div className="flex items-center justify-center py-8">
               <Card className="w-full max-w-md">
                 <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
@@ -650,27 +659,26 @@ export default function MindQuestPage() {
                 </div>
               </Card>
             </div>
-          )
         ) : isArgue ? (
           <div className="grid gap-4 md:grid-cols-[.9fr_1.1fr] md:items-start">
             {/* LEFT COLUMN (Argue Mode): Learner starts and gives reasoning */}
             <div className="flex flex-col gap-3">
               <Card>
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold text-indigo-400">
+                  <p className="text-xs font-semibold text-indigo-300">
                     VERSUCH {turn.turn_number} · {currentHat && <span>{currentHat}</span>}
                   </p>
-                  <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
+                  <span className="inline-flex items-center gap-1 text-[11px] text-slate-300">
                     <Lock size={11} />
                     Gesperrt bis &gt; 80 %
                   </span>
                 </div>
                 {turn.turn_number === 1 && (
                   <>
-                    <h2 className="mt-1.5 text-base font-semibold leading-6 text-slate-100">
+                    <h2 className="mt-1.5 text-base font-semibold leading-6 text-slate-50">
                       {turn.challenge_question}
                     </h2>
-                    <p className="mt-2 rounded-lg bg-slate-800/80 p-2.5 text-xs leading-5 text-slate-300">
+                    <p className="mt-2 rounded-lg bg-slate-800/80 p-2.5 text-xs leading-5 text-slate-200">
                       {turn.challenge_instruction}
                     </p>
                   </>
@@ -682,7 +690,7 @@ export default function MindQuestPage() {
                   title="Deine Argumentation"
                   description="Wird an Perspective Challenger & Auswertung gesendet …"
                 >
-                  <p className="rounded-lg bg-slate-800/70 p-3 text-sm leading-6 text-slate-200">
+                  <p className="rounded-lg bg-slate-800/70 p-3 text-sm leading-6 text-slate-100">
                     {pendingResponse}
                   </p>
                 </Card>
@@ -695,7 +703,7 @@ export default function MindQuestPage() {
                       : "Klicke oben rechts auf „Antwort überarbeiten“, um deinen Entwurf zu schärfen."
                   }
                 >
-                  <p className="rounded-lg bg-slate-800/70 p-3 text-sm leading-6 text-slate-200">
+                  <p className="rounded-lg bg-slate-800/70 p-3 text-sm leading-6 text-slate-100">
                     {feedback.turn.user_response}
                   </p>
                 </Card>
@@ -703,20 +711,49 @@ export default function MindQuestPage() {
                 <Card
                   title="Deine Argumentation"
                   description={`Formuliere deine Begründung zu „${quest.topic}“ — Ziel: > 80 % Durchschnitt.`}
+                  headerAction={
+                    <SpeechModeToggle
+                      mode={inputMode}
+                      isRecording={isRecording}
+                      onStartSpeaking={() => void startRecording()}
+                      onStopSpeaking={() => void stopRecording()}
+                    />
+                  }
                 >
                   <form onSubmit={handleResponseSubmit} className="flex flex-col">
+                    <SpeechRecordingBanner
+                      isRecording={isRecording}
+                      isTranscribing={isTranscribing}
+                      elapsedSeconds={speechElapsedSeconds}
+                      audioLevels={audioLevels}
+                      interimText={interimText}
+                      speechError={speechError}
+                      onStopSpeaking={() => void stopRecording()}
+                    />
                     <textarea
                       value={draft}
                       onChange={(e) => setDraft(e.target.value)}
                       onKeyDown={handleResponseKeyDown}
-                      placeholder="Schreibe deine Antwort hier …"
-                      className="min-h-60 w-full resize-y rounded-lg border border-slate-700 bg-slate-950 p-3 leading-7 text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder={
+                        isRecording
+                          ? "Sprich jetzt ins Mikrofon — dein Text erscheint hier …"
+                          : "Schreibe deine Antwort hier …"
+                      }
+                      className={`min-h-60 w-full resize-y rounded-lg border bg-slate-800 p-3 leading-7 text-slate-50 outline-none ${
+                        isRecording
+                          ? "border-indigo-400 ring-2 ring-indigo-400/50"
+                          : "border-slate-500 focus:ring-2 focus:ring-indigo-400"
+                      }`}
                     />
-                    <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
+                    <div className="mt-3 flex items-center justify-between text-xs text-slate-300">
                       <span>
                         {draft.trim().split(/\s+/).filter(Boolean).length} Wörter
                       </span>
-                      <Button type="submit" disabled={!draft.trim()} isLoading={busy}>
+                      <Button
+                        type="submit"
+                        disabled={!draft.trim() || isTranscribing}
+                        isLoading={busy || isTranscribing}
+                      >
                         <Send className="mr-2" size={16} />
                         Antwort auswerten
                       </Button>
@@ -733,13 +770,13 @@ export default function MindQuestPage() {
                   title="Perspective Challenger prüft dein Argument …"
                   description="Denken, Deutsch, Sprach-Upgrade und Gegenargument werden parallel erstellt."
                 >
-                  <div className="flex items-center gap-3 rounded-lg border border-indigo-500/30 bg-indigo-950/30 p-4 text-sm text-indigo-200">
-                    <Loader2 className="h-5 w-5 shrink-0 animate-spin text-indigo-400" />
+                  <div className="flex items-center gap-3 rounded-lg border border-indigo-400/40 bg-indigo-900/35 p-4 text-sm text-indigo-100">
+                    <Loader2 className="h-5 w-5 shrink-0 animate-spin text-indigo-300" />
                     <div>
                       <p className="font-medium">
                         Auswertung &amp; Perspective Challenger laufen ({elapsedSeconds}s) …
                       </p>
-                      <p className="mt-0.5 text-xs text-slate-400">
+                      <p className="mt-0.5 text-xs text-slate-300">
                         Alle Bewertungsdimensionen werden gleichzeitig berechnet.
                       </p>
                     </div>
@@ -751,10 +788,10 @@ export default function MindQuestPage() {
                     title="Perspective Challenger — Gegenargument"
                     description="Widerlege diese Einwände in deiner Überarbeitung links."
                   >
-                    <div className="rounded-lg border border-amber-500/40 bg-amber-950/35 p-3.5 text-sm text-amber-50">
+                    <div className="rounded-lg border border-amber-400/40 bg-amber-900/35 p-3.5 text-sm text-amber-50">
                       <p className="leading-6">{turn.challenge_question}</p>
                       {turn.challenge_instruction && (
-                        <p className="mt-2 text-xs text-amber-200/80">
+                        <p className="mt-2 text-xs text-amber-200/90">
                           {turn.challenge_instruction}
                         </p>
                       )}
@@ -765,11 +802,13 @@ export default function MindQuestPage() {
                     title="Perspective Challenger"
                     description="Bereit für deine Argumentation"
                   >
-                    <p className="text-sm leading-6 text-slate-300">
-                      Gib links dein erstes Argument ein. Der Perspective Challenger
-                      wird deine Logik und dein Deutsch kritisch prüfen, bis dein
-                      Gesamtschnitt über <strong className="text-white">80 %</strong>{" "}
-                      liegt.
+                    <p className="text-sm leading-6 text-slate-200">
+                      Gib links dein erstes Argument ein (oder nutze{" "}
+                      <strong className="text-white">Einsprechen</strong> /{" "}
+                      <strong className="text-white">Gesprächsmodus</strong>). Der
+                      Perspective Challenger prüft deine Logik und dein Deutsch, bis
+                      dein Gesamtschnitt über{" "}
+                      <strong className="text-white">80 %</strong> liegt.
                     </p>
                   </Card>
                 )
@@ -785,23 +824,23 @@ export default function MindQuestPage() {
                     bodyClassName="flex flex-col gap-3"
                   >
                     {!feedback.round_should_complete && feedback.next_challenge_question && (
-                      <div className="rounded-lg border border-amber-500/40 bg-amber-950/35 p-3 text-sm text-amber-50">
-                        <p className="text-xs font-bold uppercase tracking-wide text-amber-300">
+                      <div className="rounded-lg border border-amber-400/40 bg-amber-900/35 p-3 text-sm text-amber-50">
+                        <p className="text-xs font-bold uppercase tracking-wide text-amber-200">
                           Perspective Challenger — Gegenargument
                         </p>
                         <p className="mt-1 leading-6">{feedback.next_challenge_question}</p>
                         {feedback.next_challenge_instruction && (
-                          <p className="mt-1.5 text-xs text-amber-200/80">
+                          <p className="mt-1.5 text-xs text-amber-200/90">
                             {feedback.next_challenge_instruction}
                           </p>
                         )}
                       </div>
                     )}
                     <div className="space-y-2.5">
-                      <p className="rounded-lg bg-blue-950/40 p-3 text-sm leading-6 text-blue-100">
+                      <p className="rounded-lg bg-blue-900/40 p-3 text-sm leading-6 text-blue-100">
                         {feedback.feedback.thinking_feedback}
                       </p>
-                      <p className="rounded-lg bg-emerald-950/40 p-3 text-sm leading-6 text-emerald-100">
+                      <p className="rounded-lg bg-emerald-900/40 p-3 text-sm leading-6 text-emerald-100">
                         {feedback.feedback.german_feedback}
                       </p>
                     </div>

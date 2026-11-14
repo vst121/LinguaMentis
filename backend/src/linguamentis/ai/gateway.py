@@ -263,6 +263,8 @@ class AIGateway:
         transitioned_hat: str | None,
         next_question: str | None,
         is_completed: bool,
+        mode: str = "ANSWERING",
+        argue_passed: bool | None = None,
     ) -> ConversationReplyOutput:
         model = self._settings.ai_model_conversation.strip() or self._settings.ai_model_hat
         result = await self._client.generate_structured(
@@ -277,6 +279,8 @@ class AIGateway:
                 transitioned_hat=transitioned_hat,
                 next_question=next_question,
                 is_completed=is_completed,
+                mode=mode,
+                argue_passed=argue_passed,
             ),
             response_model=ConversationReplyOutput,
             model=model,

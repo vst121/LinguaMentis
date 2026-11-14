@@ -111,8 +111,8 @@ export default function ReflectionPage() {
           strongestGerman={r.strongest_german_dimension}
           weakestGerman={r.weakest_german_dimension}
           thinkingExtra={
-            <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
-              <p className="rounded-lg bg-blue-50/70 p-3.5 text-sm leading-6 text-slate-700 dark:bg-blue-950/40 dark:text-blue-100">
+            <div className="border-t border-slate-100 pt-4 dark:border-slate-600">
+              <p className="rounded-lg bg-blue-50/70 p-3.5 text-sm leading-6 text-slate-700 dark:bg-blue-900/35 dark:text-blue-100">
                 {r.thinking_summary}
               </p>
               {(r.thinking_section.recommendations?.length ?? 0) > 0 && (
@@ -130,8 +130,8 @@ export default function ReflectionPage() {
             </div>
           }
           germanExtra={
-            <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
-              <p className="rounded-lg bg-emerald-50/70 p-3.5 text-sm leading-6 text-slate-700 dark:bg-emerald-950/40 dark:text-emerald-100">
+            <div className="border-t border-slate-100 pt-4 dark:border-slate-600">
+              <p className="rounded-lg bg-emerald-50/70 p-3.5 text-sm leading-6 text-slate-700 dark:bg-emerald-900/35 dark:text-emerald-100">
                 {r.german_summary}
               </p>
               {(r.german_section.important_corrections?.length ?? 0) > 0 && (

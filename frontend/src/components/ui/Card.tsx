@@ -25,7 +25,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900",
+        "rounded-xl border border-gray-200 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-700/90",
         className,
       )}
     >
@@ -33,12 +33,12 @@ export function Card({
         <div className="shrink-0 px-4 pt-3 pb-0 flex items-start justify-between gap-3">
           <div>
             {title && (
-              <h3 className="text-sm font-semibold text-gray-900 md:text-base dark:text-slate-100">
+              <h3 className="text-sm font-semibold text-gray-900 md:text-base dark:text-slate-50">
                 {title}
               </h3>
             )}
             {description && (
-              <p className="mt-0.5 text-xs text-gray-500 md:text-sm dark:text-slate-400">
+              <p className="mt-0.5 text-xs text-gray-500 md:text-sm dark:text-slate-300">
                 {description}
               </p>
             )}
@@ -48,7 +48,7 @@ export function Card({
       )}
       {children && <div className={cn("p-4", bodyClassName)}>{children}</div>}
       {footer && (
-        <div className="shrink-0 rounded-b-xl border-t border-gray-100 bg-gray-50 px-4 py-2.5 dark:border-slate-800 dark:bg-slate-900/80">
+        <div className="shrink-0 rounded-b-xl border-t border-gray-100 bg-gray-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-700/70">
           {footer}
         </div>
       )}

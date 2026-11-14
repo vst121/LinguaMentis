@@ -31,11 +31,11 @@ export function AppShell({
 
   return (
     <div className={dark ? "dark" : undefined}>
-      <div className="flex min-h-dvh flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-        <header className="sticky top-0 z-20 shrink-0 border-b border-slate-200/80 bg-slate-50/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
+      <div className="flex min-h-dvh flex-col bg-slate-50 text-slate-900 dark:bg-slate-800 dark:text-slate-50">
+        <header className="sticky top-0 z-20 shrink-0 border-b border-slate-200/80 bg-slate-50/90 backdrop-blur dark:border-slate-600/80 dark:bg-slate-800/95">
           <div className="mx-auto flex h-10 max-w-[1600px] items-center justify-between px-4 sm:px-6">
             <Link href="/" className="flex items-center gap-1.5 text-sm font-semibold tracking-tight">
-              <span className="grid h-6 w-6 place-items-center rounded-md bg-slate-900 text-white dark:bg-indigo-600">
+              <span className="grid h-6 w-6 place-items-center rounded-md bg-slate-900 text-white dark:bg-indigo-500">
                 <Brain size={14} />
               </span>
               LinguaMentis
@@ -48,8 +48,8 @@ export function AppShell({
                   className={cn(
                     "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition",
                     pathname === href || (href !== "/" && pathname.startsWith(href))
-                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950"
-                      : "text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800",
+                      ? "bg-slate-900 text-white dark:bg-indigo-500 dark:text-white"
+                      : "text-slate-600 hover:bg-slate-200 dark:text-slate-200 dark:hover:bg-slate-700",
                   )}
                 >
                   <Icon size={14} />
