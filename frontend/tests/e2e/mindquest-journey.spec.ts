@@ -31,28 +31,35 @@ test.describe("LinguaMentis E2E MindQuest Journey", () => {
     await expect(page.getByRole("heading", { name: topic })).toBeVisible();
     await page.getByRole("button", { name: /MindQuest beginnen/i }).click();
 
-    // 5. Verify challenge question is displayed and submit a German response
-    await expect(
-      page.getByText("Welche Risiken siehst du bei diesem Vorhaben?")
-    ).toBeVisible();
-    const textarea = page.getByPlaceholder(
-      /Schreibe deine Antwort hier/i
-    );
-    await textarea.fill(
-      "Ein erhebliches Risiko besteht darin, dass kreative Lösungswege von Algorithmen falsch bewertet werden."
-    );
-    await page.getByRole("button", { name: /Antwort auswerten/i }).click();
+    // 5. Complete all 6 mandatory hats (WHITE -> YELLOW -> GREEN -> RED -> BLACK -> BLUE)
+    for (let hatIdx = 0; hatIdx < 6; hatIdx++) {
+      await expect(
+        page.getByText("Welche Risiken siehst du bei diesem Vorhaben?")
+      ).toBeVisible();
+      const textarea = page.getByPlaceholder(/Schreibe deine Antwort hier/i);
+      await textarea.fill(
+        "Ein erhebliches Risiko besteht darin, dass kreative Lösungswege von Algorithmen falsch bewertet werden."
+      );
+      await page.getByRole("button", { name: /Antwort auswerten/i }).click();
 
-    // 6. Verify independent Thinking and German evaluations + corrections appear
-    await expect(page.getByText("Dein Feedback")).toBeVisible();
-    await expect(page.getByText("Denken", { exact: true })).toBeVisible();
-    await expect(page.getByText("Deutsch", { exact: true })).toBeVisible();
-    await expect(page.getByText("Verbesserungen")).toBeVisible();
+      // Verify independent Thinking and German evaluations + corrections appear
+      await expect(page.getByText("Dein Feedback")).toBeVisible();
+      await expect(page.getByText("Denken", { exact: true })).toBeVisible();
+      await expect(page.getByText("Deutsch", { exact: true })).toBeVisible();
+      await expect(page.getByText("Verbesserungen")).toBeVisible();
 
-    // 7. Advance to Final Reflection
-    await page
-      .getByRole("button", { name: /Abschlussreflexion ansehen|Nächste Perspektive/i })
-      .click();
+      if (hatIdx < 5) {
+        await page
+          .getByRole("button", { name: /Nächste Perspektive/i })
+          .click();
+      } else {
+        await page
+          .getByRole("button", { name: /Abschlussreflexion ansehen/i })
+          .click();
+      }
+    }
+
+    // 7. Verify Final Reflection page
     await expect(page).toHaveURL(/\/mindquests\/[0-9a-f-]+\/reflection$/);
     await expect(
       page.getByRole("heading", { name: /Deine MindQuest-Reflexion/i })
@@ -65,8 +72,8 @@ test.describe("LinguaMentis E2E MindQuest Journey", () => {
     await expect(
       page.getByRole("heading", { name: /Deine Entwicklung im Blick/i })
     ).toBeVisible();
-    await expect(page.getByText("hat_adherence", { exact: true })).toBeVisible();
-    await expect(page.getByText("grammar", { exact: true })).toBeVisible();
+    await expect(page.getByText("Perspektiven-Fokus", { exact: true })).toBeVisible();
+    await expect(page.getByText("Grammatik", { exact: true })).toBeVisible();
 
     // 9. Check Learning History page (/history)
     await page.getByRole("link", { name: /Verlauf/i }).click();

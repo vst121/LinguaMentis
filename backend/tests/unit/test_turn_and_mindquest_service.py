@@ -86,14 +86,22 @@ async def test_multi_turn_hat_round_and_multi_hat_progression(
         target_level=LanguageLevel.B2,
         planned_hats=(HatType.BLACK, HatType.YELLOW),
     )
+    assert mq.planned_hats == (
+        HatType.WHITE,
+        HatType.YELLOW,
+        HatType.GREEN,
+        HatType.RED,
+        HatType.BLACK,
+        HatType.BLUE,
+    )
     start_res = await mq_service.start_mindquest(mq.id)
-    assert start_res.active_hat == HatType.BLACK
+    assert start_res.active_hat == HatType.WHITE
     assert start_res.initial_turn.turn_number == 1
 
     # Turn 1 gets a low thinking score (< 75) -> follow-up Turn 2 is created
     fake_llm_client.queue_response(ThinkingEvaluationOutput, _low_thinking_output())
     sub1 = await mq_service.submit_response(
-        mindquest_id=mq.id, user_response="Es könnte Fehler geben."
+        mindquest_id=mq.id, user_response="Es gibt viele Studien zur Nutzung."
     )
     assert sub1.thinking_evaluation.score < 75
     assert sub1.round_should_complete is False
@@ -105,26 +113,33 @@ async def test_multi_turn_hat_round_and_multi_hat_progression(
     # Turn 2 gets default score (>= 75) -> round completes
     sub2 = await mq_service.submit_response(
         mindquest_id=mq.id,
-        user_response="Verzerrte Trainingsdaten können zu Fehldiagnosen führen.",
+        user_response="Krankenhäuser berichten von 20 Prozent schnellerer Auswertung.",
     )
     assert sub2.round_should_complete is True
     assert sub2.next_challenge is None
 
-    # Advance to next hat (YELLOW)
-    adv1 = await mq_service.advance_mindquest(mq.id)
-    assert adv1.is_completed is False
-    assert adv1.next_hat == HatType.YELLOW
-    assert adv1.initial_turn is not None
-
-    # Complete YELLOW hat and advance to final reflection
-    await mq_service.submit_response(
-        mindquest_id=mq.id,
-        user_response="Früherkennung wird durch Mustererkennung deutlich schneller.",
+    # Advance through remaining mandatory hats: YELLOW -> GREEN -> RED -> BLACK -> BLUE
+    remaining_hats = (
+        HatType.YELLOW,
+        HatType.GREEN,
+        HatType.RED,
+        HatType.BLACK,
+        HatType.BLUE,
     )
-    adv2 = await mq_service.advance_mindquest(mq.id)
-    assert adv2.is_completed is True
-    assert adv2.final_reflection is not None
-    assert adv2.mindquest.status == MindQuestStatus.COMPLETED
+    for expected_hat in remaining_hats:
+        adv = await mq_service.advance_mindquest(mq.id)
+        assert adv.is_completed is False
+        assert adv.next_hat == expected_hat
+        assert adv.initial_turn is not None
+        await mq_service.submit_response(
+            mindquest_id=mq.id,
+            user_response="Eine differenzierte Perspektive auf KI in der Medizin ist wichtig.",
+        )
+
+    adv_final = await mq_service.advance_mindquest(mq.id)
+    assert adv_final.is_completed is True
+    assert adv_final.final_reflection is not None
+    assert adv_final.mindquest.status == MindQuestStatus.COMPLETED
 
 
 @pytest.mark.asyncio

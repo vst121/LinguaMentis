@@ -110,8 +110,8 @@ describe("Frontend pages (Home, MindQuests list, Reflection, Learning, History)"
     render(<LearningPage />);
     expect(await screen.findByText("82.5")).toBeInTheDocument();
     expect(screen.getByText("79")).toBeInTheDocument();
-    expect(screen.getByText("reasoning")).toBeInTheDocument();
-    expect(screen.getByText("grammar")).toBeInTheDocument();
+    expect(screen.getByText("Argumentation")).toBeInTheDocument();
+    expect(screen.getByText("Grammatik")).toBeInTheDocument();
   });
 
   it("HistoryPage renders completed MindQuests and activity timeline", async () => {

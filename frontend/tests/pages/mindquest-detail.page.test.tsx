@@ -111,7 +111,15 @@ describe("MindQuestPage interactive flow", () => {
     vi.mocked(mqApi.advanceMindQuest).mockResolvedValueOnce({
       mindquest: { ...baseQuest, status: "COMPLETED", completed_hats: ["BLACK"] },
       is_completed: true,
-      final_reflection: { id: "refl-1" },
+      final_reflection: {
+        id: "refl-1",
+        mindquest_id: "mq-123",
+        thinking_summary: "Starke Risikoanalyse.",
+        german_summary: "Klare Ausdrucksweise auf B2-Niveau.",
+        thinking_section: { overall_summary: "Gut", recommendations: [] },
+        german_section: { overall_summary: "Gut", level_recommendations: [] },
+        closing_message: "Weiter so!",
+      },
     });
 
     render(<MindQuestPage />);
@@ -138,8 +146,8 @@ describe("MindQuestPage interactive flow", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Achte auf Artikel am Satzanfang.")).toBeInTheDocument();
     expect(screen.getByText("Die Haltbarkeit von Lebensmitteln")).toBeInTheDocument();
-    expect(screen.getByText("86")).toBeInTheDocument();
-    expect(screen.getAllByText("78").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("86 / 100")).toBeInTheDocument();
+    expect(screen.getAllByText("78 / 100").length).toBeGreaterThanOrEqual(1);
 
     // 5. Click "Abschlussreflexion ansehen" to advance to reflection
     fireEvent.click(

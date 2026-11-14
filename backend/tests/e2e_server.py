@@ -24,8 +24,6 @@ from sqlalchemy.ext.asyncio import (  # noqa: E402
 
 from linguamentis.ai.gateway import AIGateway  # noqa: E402
 from linguamentis.api.dependencies import get_ai_gateway  # noqa: E402
-from linguamentis.api.v1 import schemas  # noqa: E402
-from linguamentis.domain.hats.types import HatType  # noqa: E402
 from linguamentis.infrastructure.configuration import (  # noqa: E402
     Settings,
     get_settings,
@@ -43,13 +41,6 @@ e2e_settings = Settings(
     gemini_api_key="fake-e2e-key",
     default_user_id=UUID("00000000-0000-0000-0000-000000000001"),
 )
-
-# Use a concise 1-hat default sequence in E2E server so full MindQuest completion
-# can be verified end-to-end through the UI in a single round.
-schemas.CreateMindQuestRequest.model_fields["planned_hats"].default_factory = (
-    lambda: [HatType.BLACK]
-)
-schemas.CreateMindQuestRequest.model_rebuild(force=True)
 
 engine = create_async_engine(
     e2e_settings.database_url, connect_args={"check_same_thread": False}
