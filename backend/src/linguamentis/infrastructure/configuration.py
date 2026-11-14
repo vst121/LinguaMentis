@@ -8,12 +8,13 @@ for a task.
 from __future__ import annotations
 
 from functools import lru_cache
-from uuid import UUID
 from pathlib import Path
+from uuid import UUID
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -26,23 +27,22 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "postgresql+asyncpg://linguamentis:linguamentis@localhost:5438/linguamentis"
 
-    # OpenRouter
-    openrouter_api_key: str 
-    openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    openrouter_http_referer: str = ""
-    openrouter_app_title: str = "LinguaMentis"
+    # Gemini
+    gemini_api_key: str
+    gemini_base_url: str = "https://generativelanguage.googleapis.com"
 
     # Per-capability model configuration (Architecture.md #23)
-    ai_model_blue: str = "meta-llama/llama-3.1-8b-instruct"
-    ai_model_hat: str = "meta-llama/llama-3.1-8b-instruct"
-    ai_model_thinking_evaluator: str = "meta-llama/llama-3.1-8b-instruct"
-    ai_model_german_evaluator: str = "meta-llama/llama-3.1-8b-instruct"
-    ai_model_reflection: str = "meta-llama/llama-3.1-8b-instruct"
+    ai_model_blue: str = "gemini-2.5-flash"
+    ai_model_hat: str = "gemini-2.5-flash"
+    ai_model_thinking_evaluator: str = "gemini-2.5-flash"
+    ai_model_german_evaluator: str = "gemini-2.5-flash"
+    ai_model_reflection: str = "gemini-2.5-flash"
 
     ai_request_timeout_seconds: float = 60.0
     ai_max_retries: int = 2
     jev_enabled: bool = False
-    jev_base_url: str = "https://openrouter.ai/api"
+    jev_api_key: str = ""
+    jev_base_url: str = ""
     jev_model: str = "typesafe/jev-1.13"
     jev_timeout_seconds: float = 10.0
     jev_auto_accept_confidence: float = 0.90

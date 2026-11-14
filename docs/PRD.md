@@ -813,12 +813,12 @@ Evaluation Pipeline
    ↓
 LLM Gateway
    ↓
-OpenRouter
+Gemini
    ↓
 Selected Models
 ```
 
-Agents should not know that OpenRouter is being used.
+Agents should not know that Gemini is being used.
 
 They communicate through an abstraction such as:
 
@@ -829,7 +829,7 @@ ILLMClient
 with an implementation such as:
 
 ```text
-OpenRouterClient
+GeminiClient
 ```
 
 This keeps provider details outside the domain and agent logic.
@@ -995,7 +995,7 @@ These should remain separate from the initial German Quality score.
 
 ## AI
 
-* OpenRouter
+* Google Gemini
 * Free/low-cost models during development
 * Structured LLM outputs
 

@@ -1,7 +1,7 @@
 """MindQuest domain entities.
 
 Per Architecture.md #9, the domain layer must not depend on FastAPI,
-SQLAlchemy, OpenRouter, HTTP, Next.js, or any specific LLM provider.
+SQLAlchemy, HTTP, Next.js, or any specific LLM provider.
 These are plain dataclasses with small amounts of behavior; persistence
 mapping happens in ``infrastructure/database``.
 """

@@ -51,7 +51,7 @@ The LLM does not.
                                                 │
                                                 ▼
                                         ┌───────────────┐
-                                        │  OpenRouter   │
+                                        │    Gemini     │
                                         └───────────────┘
 
 ```
@@ -105,7 +105,7 @@ AI provides:
 | ORM               | SQLAlchemy 2.x |
 | Database          | PostgreSQL     |
 | Migrations        | Alembic        |
-| AI Gateway        | OpenRouter     |
+| AI Gateway        | Google Gemini  |
 | Validation        | Pydantic       |
 | Package Manager   | uv             |
 | Testing           | pytest         |
@@ -173,7 +173,7 @@ backend/
 │       │   ├── models.py
 │       │   ├── prompts.py
 │       │   ├── gateway.py
-│       │   └── openrouter.py
+│       │   └── gemini.py
 │       │
 │       ├── infrastructure/
 │       │   ├── database/
@@ -232,7 +232,7 @@ The domain must not depend on:
 
 - PostgreSQL
 
-- OpenRouter
+- Google Gemini
 
 - HTTP
 
@@ -375,7 +375,7 @@ Agents should not:
 
 - evaluate themselves
 
-- communicate directly with OpenRouter
+- communicate directly with the model provider
 
 ---
 
@@ -417,13 +417,13 @@ ILLMClient
  ↓
 LLM Gateway
  ↓
-OpenRouterClient
+GeminiClient
  ↓
-OpenRouter
+Gemini API
 
 ```
 
-Agents must not depend directly on OpenRouter.
+Agents must not depend directly on Gemini.
 
 This allows us to change:
 
@@ -819,15 +819,19 @@ DATABASE_URL=postgresql+asyncpg://linguamentis:linguamentis@localhost:5432/lingu
 
 
 
-OPENROUTER_API_KEY=your-key
+GEMINI_API_KEY=your-gemini-api-key
 
 
 
-OPENROUTER_MODEL=your-model
+AI_MODEL_HAT=gemini-2.5-flash
+AI_MODEL_THINKING_EVALUATOR=gemini-2.5-flash
+AI_MODEL_GERMAN_EVALUATOR=gemini-2.5-flash
+AI_MODEL_REFLECTION=gemini-2.5-flash
 
 ```
 
-The exact model configuration should remain environment-driven.
+Set each `AI_MODEL_*` value to a Gemini model ID, not an API key. Keep
+`GEMINI_API_KEY` server-side and never expose it to the frontend.
 
 ---
 
@@ -871,7 +875,7 @@ Do not introduce framework dependencies into domain objects.
 
 ### Keep AI behind an abstraction
 
-Agents should not know about OpenRouter.
+Agents should not know about the Gemini API.
 
 ### Keep state deterministic
 

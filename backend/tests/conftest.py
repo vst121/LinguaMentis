@@ -141,7 +141,7 @@ class FakeLLMClient:
 def test_settings() -> Settings:
     return Settings(
         database_url="sqlite+aiosqlite:///:memory:",
-        openrouter_api_key="fake-key",
+        gemini_api_key="fake-key",
         default_user_id=UUID("00000000-0000-0000-0000-000000000001"),
     )
 

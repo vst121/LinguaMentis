@@ -16,7 +16,7 @@ The project consists of three main layers:
 
 - **Frontend** (Next.js/TypeScript) — the interactive web interface for learners
 - **Backend** (Python/FastAPI) — the application core managing MindQuest lifecycle, Six Hat agents, independent evaluation, and persistence
-- **AI Layer** (OpenRouter) — provides structured intelligence for challenges, evaluations, and reflections
+- **AI Layer** (Google Gemini) — provides structured intelligence for challenges, evaluations, and reflections
 
 Key principles across the entire project:
 
@@ -152,7 +152,7 @@ MindQuest Engine
 AI Gateway
    │
    ▼
-OpenRouter
+Google Gemini
    │
    ▼
 PostgreSQL
@@ -193,7 +193,7 @@ The key architectural principle is:
 
 ### AI
 
-- OpenRouter
+- Google Gemini
 
 - Structured LLM outputs
 
@@ -408,9 +408,12 @@ Create a `.env` file for the backend.
 
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5438/linguamentis
 
-OPENROUTER_API_KEY=your-api-key
+GEMINI_API_KEY=your-gemini-api-key
 
-OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+AI_MODEL_HAT=gemini-2.5-flash
+AI_MODEL_THINKING_EVALUATOR=gemini-2.5-flash
+AI_MODEL_GERMAN_EVALUATOR=gemini-2.5-flash
+AI_MODEL_REFLECTION=gemini-2.5-flash
 
 
 
@@ -426,7 +429,8 @@ AI_MODEL_REFLECTION=...
 
 ```
 
-The OpenRouter API key is **server-side only** and must never be exposed to the frontend.
+The Gemini API key is **server-side only** and must never be exposed to the frontend. Model
+settings must contain Gemini model IDs, not API keys.
 
 ---
 

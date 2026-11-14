@@ -879,7 +879,7 @@ unless a real requirement emerges.
 
 # Security
 
-The OpenRouter API key must never be exposed to the frontend.
+The Gemini API key must never be exposed to the frontend.
 
 AI calls always follow:
 
@@ -891,7 +891,7 @@ Backend
   ↓
 LLM Gateway
   ↓
-OpenRouter
+Gemini
 
 ```
 
@@ -901,7 +901,7 @@ Never:
 
 Browser
   ↓
-OpenRouter
+Gemini
 
 ```
 
@@ -957,7 +957,7 @@ Never put:
 
 ```text
 
-OPENROUTER_API_KEY
+GEMINI_API_KEY
 
 ```
 

@@ -34,7 +34,7 @@ The V1 architecture follows a **modular monolith** approach:
 
 - Tailwind CSS
 
-- OpenRouter for LLM access
+- Google Gemini for LLM access
 
 The architecture intentionally avoids unnecessary distributed infrastructure.
 
@@ -107,7 +107,7 @@ The architecture should provide:
                 │                         AI Gateway
                 │                               │
                 │                               ▼
-                │                          OpenRouter
+                │                          Gemini API
                 │
                 └────────────── HTTP API ────────────────┐
                                                          │
@@ -150,11 +150,11 @@ Agent
 LLM Client
  │
  ▼
-OpenRouter
+Gemini
 
 ```
 
-The domain does not depend on OpenRouter.
+The domain does not depend on Gemini.
 
 ---
 
@@ -241,7 +241,7 @@ linguamentis/
 │   │       │   ├── models.py
 │   │       │   ├── prompts.py
 │   │       │   ├── gateway.py
-│   │       │   └── openrouter.py
+│   │       │   └── gemini.py
 │   │       │
 │   │       ├── infrastructure/
 │   │       │   ├── database/
@@ -440,7 +440,7 @@ It must not depend on:
 
 - SQLAlchemy
 
-- OpenRouter
+- Google Gemini
 
 - HTTP
 
@@ -976,13 +976,13 @@ Agent
   ↓
 ILLMClient
   ↓
-OpenRouterClient
+GeminiClient
   ↓
-OpenRouter API
+Gemini API
 
 ```
 
-Agents must never directly depend on OpenRouter.
+Agents must never directly depend on Gemini.
 
 Conceptual interface:
 
@@ -1016,7 +1016,7 @@ Implementation:
 
 ```text
 
-OpenRouterClient
+GeminiClient
 
 ```
 
@@ -1024,7 +1024,7 @@ This allows another provider to be introduced later without changing domain or a
 
 ---
 
-# 23. OpenRouter Model Configuration
+# 23. Gemini Model Configuration
 
 Models should be configurable.
 
@@ -1522,7 +1522,7 @@ User Response
      ↓
 Persist Response
      ↓
-OpenRouter Failure
+Gemini Failure
 
 ```
 
@@ -1701,14 +1701,14 @@ Docker Compose
 
 ```
 
-OpenRouter remains an external API:
+Gemini remains an external API:
 
 ```text
 
 Backend
   │
   ▼
-OpenRouter
+Gemini API
 
 ```
 
@@ -1728,9 +1728,9 @@ DATABASE_URL
 
 
 
-OPENROUTER_API_KEY
+GEMINI_API_KEY
 
-OPENROUTER_BASE_URL
+GEMINI_BASE_URL
 
 
 
@@ -1754,7 +1754,7 @@ LOG_LEVEL
 
 Use Pydantic Settings for backend configuration.
 
-The OpenRouter API key must remain server-side and must never be exposed to Next.js.
+The Gemini API key must remain server-side and must never be exposed to Next.js.
 
 ---
 
@@ -1921,7 +1921,7 @@ This makes the AI system measurable rather than relying only on subjective impre
 
 Even though authentication is out of scope for V1, important boundaries should exist.
 
-OpenRouter credentials:
+Gemini credentials:
 
 ```text
 
@@ -1929,7 +1929,7 @@ Browser
 
   X
 
-OpenRouter API Key
+Gemini API Key
 
 
 
@@ -1937,11 +1937,11 @@ Backend
 
   ↓
 
-OpenRouter
+Gemini API
 
 ```
 
-The browser must never receive the OpenRouter API key.
+The browser must never receive the Gemini API key.
 
 AI prompts should also be treated as server-side implementation details.
 
@@ -2015,7 +2015,7 @@ Important AI interactions use typed structured outputs.
 
 ### Principle 6 — Provider independence
 
-Agents depend on `LLMClient`, not OpenRouter.
+Agents depend on `LLMClient`, not Gemini.
 
 ### Principle 7 — Evidence over scores
 
@@ -2161,7 +2161,7 @@ This validates the most important architectural boundaries before implementing a
       ↓
 7. LLM Gateway
       ↓
-8. OpenRouter integration
+8. Gemini integration
       ↓
 9. BlackHatAgent
       ↓
@@ -2222,7 +2222,7 @@ Agents            └── German Evaluator
 AI Gateway
   │
   ▼
-OpenRouter
+Gemini
   │
   ▼
 PostgreSQL

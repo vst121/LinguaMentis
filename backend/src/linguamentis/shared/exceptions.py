@@ -52,7 +52,7 @@ class AIGatewayError(LinguaMentisError):
 
 
 class AIProviderError(AIGatewayError):
-    """Raised when the upstream LLM provider (OpenRouter) fails or times out."""
+    """Raised when the upstream LLM provider fails or times out."""
 
 
 class StructuredOutputParsingError(AIGatewayError):

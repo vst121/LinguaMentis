@@ -2,10 +2,10 @@
 
 Per Architecture.md #22 (AI Gateway) / Principle 6 (Provider independence):
 
-    Agent -> ILLMClient -> OpenRouterClient -> OpenRouter API
+    Agent -> ILLMClient -> GeminiClient -> Gemini API
 
 Agents and evaluators depend only on ``LLMClient``; they must never import
-``httpx`` or reference OpenRouter directly. This makes it possible to swap
+``httpx`` or reference Gemini directly. This makes it possible to swap
 providers (or use a fake client in tests) without touching agent/evaluator
 code.
 """
