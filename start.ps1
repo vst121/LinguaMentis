@@ -124,6 +124,12 @@ function Start-BackendProcess {
 }
 
 function Start-FrontendProcess([string]$PackageManager) {
+    # Remove production build output if present so next dev does not mix manifests with vendor-chunks
+    $nextDir = Join-Path $FrontendDir ".next"
+    if (Test-Path (Join-Path $nextDir "BUILD_ID")) {
+        Remove-Item -Recurse -Force $nextDir -ErrorAction SilentlyContinue
+    }
+
     $nextBin = Join-Path $FrontendDir "node_modules" "next" "dist" "bin" "next"
     if (Test-Path $nextBin) {
         return Start-Process -FilePath "node" `

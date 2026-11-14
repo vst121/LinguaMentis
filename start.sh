@@ -123,6 +123,10 @@ start_backend() {
 }
 
 start_frontend() {
+  # Remove production build output if present so next dev does not mix manifests with vendor-chunks
+  if [ -f "$FRONTEND_DIR/.next/BUILD_ID" ]; then
+    rm -rf "$FRONTEND_DIR/.next"
+  fi
   (cd "$FRONTEND_DIR" && exec "$PKG_MANAGER" run dev) &
   FRONTEND_PID=$!
 }
