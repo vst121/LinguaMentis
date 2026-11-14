@@ -19,7 +19,7 @@ export default function LearningPage() {
       <div className="flex flex-col gap-2.5">
         <h1 className="text-lg font-bold">Deine Entwicklung im Blick</h1>
         {error ? (
-          <p className="text-rose-700">{error}</p>
+          <p className="text-amber-700 dark:text-amber-300">{error}</p>
         ) : !profile ? (
           <div className="grid gap-4 md:grid-cols-3">
             {[0, 1, 2].map((idx) => (

@@ -35,7 +35,7 @@ export function AppShell({
         <header className="sticky top-0 z-20 shrink-0 border-b border-slate-200/80 bg-slate-50/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
           <div className="mx-auto flex h-10 max-w-[1600px] items-center justify-between px-4 sm:px-6">
             <Link href="/" className="flex items-center gap-1.5 text-sm font-semibold tracking-tight">
-              <span className="grid h-6 w-6 place-items-center rounded-md bg-slate-900 text-white dark:bg-rose-600">
+              <span className="grid h-6 w-6 place-items-center rounded-md bg-slate-900 text-white dark:bg-indigo-600">
                 <Brain size={14} />
               </span>
               LinguaMentis

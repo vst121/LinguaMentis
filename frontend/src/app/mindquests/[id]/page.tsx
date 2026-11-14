@@ -282,7 +282,7 @@ export default function MindQuestPage() {
   if (!quest)
     return (
       <AppShell dark={isArgue}>
-        <p className="text-rose-700 dark:text-rose-400">{error || "MindQuest nicht gefunden."}</p>
+        <p className="text-amber-700 dark:text-amber-300">{error || "MindQuest nicht gefunden."}</p>
       </AppShell>
     );
   const currentHat =
@@ -312,7 +312,7 @@ export default function MindQuestPage() {
               <h1 className="truncate text-sm font-bold sm:text-base">
                 {quest.topic}
               </h1>
-              {isArgue && <Badge variant="danger">Argue Mode</Badge>}
+              {isArgue && <Badge variant="default">Argue Mode</Badge>}
               <span className="shrink-0 rounded bg-slate-200/70 px-1.5 py-0.5 text-[11px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                 {quest.target_level} · {quest.completed_hats.length}/
                 {quest.planned_hats.length}
@@ -338,7 +338,7 @@ export default function MindQuestPage() {
             })}
           </div>
           {error && (
-            <p className="mt-2 rounded-lg bg-rose-50 p-2 text-xs text-rose-700 sm:text-sm dark:bg-rose-950/60 dark:text-rose-300">
+            <p className="mt-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-800 sm:text-sm dark:bg-amber-950/50 dark:text-amber-200">
               {error}
             </p>
           )}
@@ -377,7 +377,7 @@ export default function MindQuestPage() {
                       className={`flex flex-col justify-between rounded-xl border p-3.5 text-left transition ${
                         isCompleted
                           ? "cursor-not-allowed border-slate-800 bg-slate-900/50 opacity-50"
-                          : "border-slate-700 bg-slate-950/70 hover:border-rose-500 hover:bg-slate-800/80"
+                          : "border-slate-700 bg-slate-950/70 hover:border-indigo-400 hover:bg-slate-800/80"
                       }`}
                     >
                       <div>
@@ -396,14 +396,14 @@ export default function MindQuestPage() {
                               Erledigt
                             </span>
                           ) : (
-                            <Flame size={14} className="text-rose-400" />
+                            <Flame size={14} className="text-indigo-400" />
                           )}
                         </div>
                         <p className="mt-1.5 text-xs text-slate-400">
                           {meta.question}
                         </p>
                       </div>
-                      <span className="mt-3 text-[11px] font-medium text-rose-400">
+                      <span className="mt-3 text-[11px] font-medium text-indigo-400">
                         {isCompleted
                           ? "Bereits gemeistert"
                           : "Hut wählen & argumentieren →"}
@@ -424,7 +424,7 @@ export default function MindQuestPage() {
             <div className="flex flex-col gap-3">
               <Card>
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold text-blue-700 dark:text-rose-400">
+                  <p className="text-xs font-semibold text-blue-700 dark:text-indigo-400">
                     {isArgue ? `VERSUCH ${turn.turn_number}` : `RUNDE ${turn.turn_number}`}{" "}
                     · {currentHat && <span>{currentHat}</span>}
                   </p>
@@ -456,13 +456,13 @@ export default function MindQuestPage() {
                   bodyClassName="flex flex-col gap-3"
                 >
                   {isArgue && !feedback.round_should_complete && feedback.next_challenge_question && (
-                    <div className="rounded-lg border border-rose-500/40 bg-rose-950/50 p-3 text-sm text-rose-100">
-                      <p className="text-xs font-bold uppercase tracking-wide text-rose-300">
+                    <div className="rounded-lg border border-amber-500/40 bg-amber-950/35 p-3 text-sm text-amber-50">
+                      <p className="text-xs font-bold uppercase tracking-wide text-amber-300">
                         Devil&apos;s Advocate — Gegenargument
                       </p>
                       <p className="mt-1 leading-6">{feedback.next_challenge_question}</p>
                       {feedback.next_challenge_instruction && (
-                        <p className="mt-1.5 text-xs text-rose-200/80">
+                        <p className="mt-1.5 text-xs text-amber-200/80">
                           {feedback.next_challenge_instruction}
                         </p>
                       )}
@@ -505,8 +505,8 @@ export default function MindQuestPage() {
                   <p className="rounded-lg bg-slate-50 p-3.5 text-sm leading-6 text-slate-700 dark:bg-slate-800/70 dark:text-slate-200">
                     {pendingResponse}
                   </p>
-                  <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-rose-400">
-                    <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-blue-600 dark:bg-rose-500" />
+                  <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-indigo-400">
+                    <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-blue-600 dark:bg-indigo-500" />
                     Auswertung läuft …
                   </div>
                 </Card>
@@ -528,7 +528,7 @@ export default function MindQuestPage() {
                       onChange={(e) => setDraft(e.target.value)}
                       onKeyDown={handleResponseKeyDown}
                       placeholder="Schreibe deine Antwort hier …"
-                      className="min-h-56 w-full resize-y rounded-lg border border-slate-300 bg-white p-3 leading-7 text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-rose-500"
+                      className="min-h-56 w-full resize-y rounded-lg border border-slate-300 bg-white p-3 leading-7 text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-indigo-500"
                     />
                     <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                       <span>

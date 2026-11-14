@@ -50,7 +50,7 @@ export default function ReflectionPage() {
   if (error) {
     return (
       <AppShell>
-        <p className="text-rose-700">{error}</p>
+        <p className="text-amber-700 dark:text-amber-300">{error}</p>
       </AppShell>
     );
   }

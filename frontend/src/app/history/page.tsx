@@ -18,7 +18,7 @@ export default function HistoryPage() {
       <div className="flex flex-col gap-3">
         <h1 className="text-lg font-bold">Deine Lernreise</h1>
         {error ? (
-          <p className="text-rose-700">{error}</p>
+          <p className="text-amber-700 dark:text-amber-300">{error}</p>
         ) : (
           <div className="grid gap-5 md:grid-cols-2 md:items-start">
             <section className="flex flex-col">

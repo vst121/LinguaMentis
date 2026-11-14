@@ -144,7 +144,7 @@ export default function MindQuestsPage() {
                       onClick={() => setMode("ARGUE")}
                       className={`rounded-lg border px-3 py-2 text-left text-xs transition ${
                         mode === "ARGUE"
-                          ? "border-rose-500 bg-rose-950/80 text-rose-100 ring-1 ring-rose-500"
+                          ? "border-indigo-500 bg-slate-900 text-slate-100 ring-1 ring-indigo-500"
                           : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800"
                       }`}
                     >
@@ -155,7 +155,7 @@ export default function MindQuestsPage() {
                     </button>
                   </div>
                 </div>
-                {error && <p className="text-sm text-rose-700 dark:text-rose-400">{error}</p>}
+                {error && <p className="text-sm text-amber-700 dark:text-amber-300">{error}</p>}
               </div>
               <Button type="submit" isLoading={creating} className="w-full">
                 <Plus className="mr-2" size={16} />
@@ -183,7 +183,7 @@ export default function MindQuestsPage() {
                           <div className="flex flex-wrap gap-2">
                             <Badge>{q.target_level}</Badge>
                             {q.mode === "ARGUE" && (
-                              <Badge variant="danger">Argue Mode</Badge>
+                              <Badge variant="default">Argue Mode</Badge>
                             )}
                             <Badge
                               variant={
@@ -206,7 +206,7 @@ export default function MindQuestsPage() {
                             disabled={deletingId === q.id}
                             aria-label={`MindQuest "${q.topic}" löschen`}
                             title="MindQuest löschen"
-                            className="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50 dark:hover:bg-rose-950/60 dark:hover:text-rose-400"
+                            className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 dark:hover:bg-slate-800 dark:hover:text-slate-100"
                           >
                             <Trash2 size={16} />
                           </button>
