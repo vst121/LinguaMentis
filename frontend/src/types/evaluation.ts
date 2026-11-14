@@ -1,3 +1,5 @@
+import type { DimensionScore } from "./learning";
+
 export interface Evidence {
   dimension: string;
   observation: string;
@@ -71,6 +73,18 @@ export interface GermanReflectionSection {
 export interface FinalReflection {
   id: string;
   mindquest_id: string;
+  topic?: string;
+  target_level?: string;
+  hats_completed?: number;
+  hats_total?: number;
+  thinking_overall?: number | null;
+  german_overall?: number | null;
+  thinking_dimensions?: DimensionScore[];
+  german_dimensions?: DimensionScore[];
+  strongest_thinking_dimension?: string | null;
+  weakest_thinking_dimension?: string | null;
+  strongest_german_dimension?: string | null;
+  weakest_german_dimension?: string | null;
   thinking_summary: string;
   german_summary: string;
   thinking_section: ThinkingReflectionSection;

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { ArrowRight, Send } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { ScoreBar } from "@/components/evaluation/ProfileScoreCards";
 import { HatIndicator } from "@/components/hats/HatIndicator";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -14,24 +15,45 @@ import {
   submitResponse,
   advanceMindQuest,
 } from "@/services/api/mindquests";
+import { HAT_METADATA, HatType } from "@/types/hat";
 import { MindQuest, SubmitResponseResponse, Turn } from "@/types/mindquest";
 
-function Score({ label, value }: { label: string; value: number }) {
-  return (
-    <div>
-      <div className="mb-1 flex justify-between text-sm">
-        <span>{label}</span>
-        <strong>{value}</strong>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-        <div
-          className="h-full rounded-full bg-blue-600"
-          style={{ width: `${value}%` }}
-        />
-      </div>
-    </div>
-  );
-}
+const HAT_PROGRESS_COLORS: Record<
+  HatType,
+  { completed: string; active: string; upcoming: string }
+> = {
+  WHITE: {
+    completed: "bg-white border border-slate-400",
+    active: "bg-white border border-slate-600 ring-2 ring-slate-400/70",
+    upcoming: "bg-white/60 border border-slate-300",
+  },
+  YELLOW: {
+    completed: "bg-amber-400",
+    active: "bg-amber-400 ring-2 ring-amber-500/60",
+    upcoming: "bg-amber-200/80",
+  },
+  GREEN: {
+    completed: "bg-emerald-500",
+    active: "bg-emerald-500 ring-2 ring-emerald-500/60",
+    upcoming: "bg-emerald-200/80",
+  },
+  RED: {
+    completed: "bg-rose-500",
+    active: "bg-rose-500 ring-2 ring-rose-500/60",
+    upcoming: "bg-rose-200/80",
+  },
+  BLACK: {
+    completed: "bg-slate-900",
+    active: "bg-slate-900 ring-2 ring-slate-700/60",
+    upcoming: "bg-slate-400/75",
+  },
+  BLUE: {
+    completed: "bg-blue-600",
+    active: "bg-blue-600 ring-2 ring-blue-500/60",
+    upcoming: "bg-blue-200/80",
+  },
+};
+
 export default function MindQuestPage() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
@@ -147,6 +169,16 @@ export default function MindQuestPage() {
     try {
       const result = await advanceMindQuest(id);
       if (result.is_completed) {
+        if (result.final_reflection) {
+          try {
+            sessionStorage.setItem(
+              `linguamentis:reflection:${id}`,
+              JSON.stringify(result.final_reflection),
+            );
+          } catch {
+            // Ignore storage errors and let reflection page fetch directly
+          }
+        }
         // Navigate straight to the final reflection without flashing an intermediate completion screen
         router.replace(`/mindquests/${id}/reflection`);
         return;
@@ -198,13 +230,21 @@ export default function MindQuestPage() {
             {currentHat && <HatIndicator hat={currentHat} detail />}
           </div>
           <div className="mt-4 flex gap-1.5">
-            {quest.planned_hats.map((h) => (
-              <div
-                key={h}
-                title={h}
-                className={`h-2 flex-1 rounded-full ${quest.completed_hats.includes(h) ? "bg-emerald-500" : h === currentHat ? "bg-blue-600" : "bg-slate-200"}`}
-              />
-            ))}
+            {quest.planned_hats.map((h) => {
+              const colors = HAT_PROGRESS_COLORS[h];
+              const stateClass = quest.completed_hats.includes(h)
+                ? colors.completed
+                : h === currentHat
+                  ? colors.active
+                  : colors.upcoming;
+              return (
+                <div
+                  key={h}
+                  title={HAT_METADATA[h]?.nameGerman ?? h}
+                  className={`h-2.5 flex-1 rounded-full transition-all ${stateClass}`}
+                />
+              );
+            })}
           </div>
           {error && (
             <p className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
@@ -344,42 +384,60 @@ export default function MindQuestPage() {
               ) : (
                 <div className="grid gap-4 md:flex-1 md:min-h-0 md:grid-cols-2 md:auto-rows-max md:overflow-y-auto md:pr-1">
                   <Card title="Denken" bodyClassName="pt-3">
-                    <Score
+                    <ScoreBar
                       label="Gesamt"
                       value={feedback.thinking_evaluation.score}
+                      barClassName="bg-blue-600"
                     />
                     <div className="mt-4 space-y-2.5">
-                      <Score
+                      <ScoreBar
+                        label="Perspektiven-Fokus"
+                        value={feedback.thinking_evaluation.hat_adherence}
+                        barClassName="bg-blue-600"
+                      />
+                      <ScoreBar
                         label="Argumentation"
                         value={feedback.thinking_evaluation.reasoning}
+                        barClassName="bg-blue-600"
                       />
-                      <Score
+                      <ScoreBar
                         label="Tiefe"
                         value={feedback.thinking_evaluation.depth}
+                        barClassName="bg-blue-600"
                       />
-                      <Score
+                      <ScoreBar
                         label="Spezifität"
                         value={feedback.thinking_evaluation.specificity}
+                        barClassName="bg-blue-600"
                       />
                     </div>
                   </Card>
                   <Card title="Deutsch" bodyClassName="pt-3">
-                    <Score
+                    <ScoreBar
                       label="Gesamt"
                       value={feedback.german_evaluation.score}
+                      barClassName="bg-emerald-600"
                     />
                     <div className="mt-4 space-y-2.5">
-                      <Score
+                      <ScoreBar
                         label="Grammatik"
                         value={feedback.german_evaluation.grammar}
+                        barClassName="bg-emerald-600"
                       />
-                      <Score
+                      <ScoreBar
                         label="Wortschatz"
                         value={feedback.german_evaluation.vocabulary}
+                        barClassName="bg-emerald-600"
                       />
-                      <Score
+                      <ScoreBar
+                        label="Satzbau"
+                        value={feedback.german_evaluation.sentence_structure}
+                        barClassName="bg-emerald-600"
+                      />
+                      <ScoreBar
                         label="Natürlichkeit"
                         value={feedback.german_evaluation.naturalness}
+                        barClassName="bg-emerald-600"
                       />
                     </div>
                   </Card>

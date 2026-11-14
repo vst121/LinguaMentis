@@ -208,6 +208,39 @@ async def submit_response(
     )
 
 
+def _map_reflection_payload(
+    reflection,
+    mq: MindQuest,
+    metrics,
+) -> dict:
+    return {
+        "id": str(reflection.id),
+        "mindquest_id": str(reflection.mindquest_id),
+        "topic": mq.topic,
+        "target_level": mq.target_level.value,
+        "hats_completed": len(mq.completed_hats),
+        "hats_total": len(mq.planned_hats),
+        "thinking_overall": metrics.thinking_overall,
+        "german_overall": metrics.german_overall,
+        "thinking_dimensions": [
+            {"name": d.name, "score": d.score} for d in metrics.thinking_dimensions
+        ],
+        "german_dimensions": [
+            {"name": d.name, "score": d.score} for d in metrics.german_dimensions
+        ],
+        "strongest_thinking_dimension": metrics.strongest_thinking_dimension,
+        "weakest_thinking_dimension": metrics.weakest_thinking_dimension,
+        "strongest_german_dimension": metrics.strongest_german_dimension,
+        "weakest_german_dimension": metrics.weakest_german_dimension,
+        "thinking_summary": reflection.thinking_summary,
+        "german_summary": reflection.german_summary,
+        "thinking_section": reflection.thinking_section,
+        "german_section": reflection.german_section,
+        "closing_message": reflection.closing_message,
+        "created_at": reflection.created_at.isoformat(),
+    }
+
+
 @router.post("/{id}/advance", response_model=AdvanceMindQuestResponse)
 async def advance_mindquest(
     id: UUID,
@@ -217,15 +250,10 @@ async def advance_mindquest(
 
     reflection_dict = None
     if res.final_reflection:
-        reflection_dict = {
-            "id": str(res.final_reflection.id),
-            "mindquest_id": str(res.final_reflection.mindquest_id),
-            "thinking_summary": res.final_reflection.thinking_summary,
-            "german_summary": res.final_reflection.german_summary,
-            "thinking_section": res.final_reflection.thinking_section,
-            "german_section": res.final_reflection.german_section,
-            "closing_message": res.final_reflection.closing_message,
-        }
+        metrics = await service.get_mindquest_evaluation_metrics(id)
+        reflection_dict = _map_reflection_payload(
+            res.final_reflection, res.mindquest, metrics
+        )
 
     return AdvanceMindQuestResponse(
         mindquest=_map_mindquest(res.mindquest),
@@ -247,13 +275,6 @@ async def get_reflection(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Final reflection for MindQuest '{id}' was not found.",
         )
-    return {
-        "id": str(reflection.id),
-        "mindquest_id": str(reflection.mindquest_id),
-        "thinking_summary": reflection.thinking_summary,
-        "german_summary": reflection.german_summary,
-        "thinking_section": reflection.thinking_section,
-        "german_section": reflection.german_section,
-        "closing_message": reflection.closing_message,
-        "created_at": reflection.created_at.isoformat(),
-    }
+    mq = await service.get_mindquest(id)
+    metrics = await service.get_mindquest_evaluation_metrics(id)
+    return _map_reflection_payload(reflection, mq, metrics)

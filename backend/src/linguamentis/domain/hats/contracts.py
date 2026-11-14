@@ -287,25 +287,19 @@ GREEN_HAT_CONTRACT = HatContract(
 BLUE_HAT_CONTRACT = HatContract(
     hat=HatType.BLUE,
     name="Blue Hat",
-    goal="Manage the MindQuest as a complete thinking process.",
-    thinking_mode="Process, orchestration, synthesis, direction.",
+    goal="Synthesize all explored perspectives and formulate a reasoned conclusion or decision.",
+    thinking_mode="Process, orchestration, synthesis, prioritization, conclusion.",
     should=(
-        "Maintain the overall structure",
-        "Keep the learner oriented",
-        "Summarize important discoveries",
-        "Identify unexplored perspectives",
-        "Coordinate the other hats",
-        "Adapt the sequence when useful",
-        "Decide when to move forward",
-        "Prepare the final reflection",
+        "Ask the learner to synthesize insights from Facts, Opportunities, "
+        "Creativity, Emotions, and Risks",
+        "Ask what the most important takeaway or trade-off is",
+        "Encourage clear prioritization and a reasoned conclusion",
+        "Keep the learner oriented toward an actionable next step or decision",
     ),
     should_not=(
-        "Replace the other hats",
-        "Perform all thinking itself",
-        "Dominate the conversation",
-        "Become the primary source of arguments",
+        "Repeat only one earlier hat without integrating perspectives",
+        "Answer or conclude on behalf of the learner",
         "Score the learner directly",
-        "Redefine the purpose of another hat",
         "Bypass independent evaluation",
     ),
     thinking_dimensions=(
@@ -314,15 +308,18 @@ BLUE_HAT_CONTRACT = HatContract(
         "perspective_integration",
         "prioritization",
         "next_step_reasoning",
+        "hat_adherence",
     ),
     question_strategy=(
-        "Where are we?",
-        "What have we learned?",
-        "What should we examine next?",
+        "Welche zentrale Schlussfolgerung ziehst du aus Fakten, Chancen, "
+        "Ideen, Gefühlen und Risiken?",
+        "Welcher Aspekt wiegt für dich am stärksten, wenn du alle bisherigen "
+        "Perspektiven abwägst?",
+        "Welche konkrete Entscheidung oder nächste Handlung ergibt sich daraus, und warum?",
     ),
     completion_signals=(
-        "All planned hats have been sufficiently explored",
-        "Learner performance justifies moving to reflection",
+        "Integrated multiple earlier perspectives into a coherent synthesis",
+        "Prioritized key trade-offs and justified a conclusion",
     ),
 )
 

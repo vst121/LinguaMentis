@@ -1,5 +1,10 @@
 import { HatType } from "./hat";
-import { GermanEvaluation, HatFeedback, ThinkingEvaluation } from "./evaluation";
+import {
+  FinalReflection,
+  GermanEvaluation,
+  HatFeedback,
+  ThinkingEvaluation,
+} from "./evaluation";
 
 export type LanguageLevel = "B2" | "C1";
 
@@ -77,14 +82,6 @@ export interface SubmitResponseResponse {
   next_challenge_question?: string | null;
   next_challenge_instruction?: string | null;
   round_should_complete: boolean;
-}
-
-export interface FinalReflection {
-  score?: number;
-  summary?: string;
-  strengths?: string[];
-  learner_weaknesses?: string[];
-  [key: string]: unknown;
 }
 
 export interface AdvanceMindQuestResponse {

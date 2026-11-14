@@ -23,13 +23,13 @@ class HatType(StrEnum):
         return self is HatType.BLUE
 
 
-# The default hat sequence for a MindQuest once Blue introduces the topic.
-# V1's vertical slice only activates BLACK; the others are wired but unused
-# until "the remaining five hats" milestone (README.md — First Vertical Slice).
+# Mandatory hat sequence for every MindQuest:
+# White -> Yellow -> Green -> Red -> Black -> Blue (always last).
 DEFAULT_HAT_SEQUENCE: tuple[HatType, ...] = (
-    HatType.BLACK,
     HatType.WHITE,
     HatType.YELLOW,
-    HatType.RED,
     HatType.GREEN,
+    HatType.RED,
+    HatType.BLACK,
+    HatType.BLUE,
 )

@@ -11,6 +11,10 @@ from uuid import UUID
 
 from linguamentis.agents.registry import AgentRegistry
 from linguamentis.ai.models import HatChallenge
+from linguamentis.application.learning.service import (
+    EvaluationMetricsSummary,
+    aggregate_evaluation_metrics,
+)
 from linguamentis.application.mindquests.prefetch import ChallengePrefetchCache
 from linguamentis.application.turns.service import TurnService, TurnSubmissionResult
 from linguamentis.domain.hats.types import DEFAULT_HAT_SEQUENCE, HatType
@@ -82,13 +86,16 @@ class MindQuestService:
     ) -> MindQuest:
         import uuid
 
+        # Enforce mandatory hat sequence: WHITE -> YELLOW -> GREEN -> RED -> BLACK -> BLUE
+        enforced_hats = DEFAULT_HAT_SEQUENCE
+
         mq = MindQuest(
             id=uuid.uuid4(),
             user_id=user_id,
             topic=topic,
             target_level=target_level,
         )
-        mq.select_topic(topic, planned_hats)
+        mq.select_topic(topic, enforced_hats)
         await self._mindquest_repo.save(mq)
 
         await self._activity_repo.log_activity(
@@ -100,7 +107,7 @@ class MindQuestService:
 
         # Warm the first hat challenge while the frontend navigates to the MindQuest view
         if self._prefetch_cache is not None:
-            first_hat = mq.planned_hats[0] if mq.planned_hats else HatType.BLACK
+            first_hat = mq.planned_hats[0] if mq.planned_hats else DEFAULT_HAT_SEQUENCE[0]
             first_context = MindQuestContext(
                 mindquest_id=mq.id,
                 topic=mq.topic,
@@ -142,7 +149,7 @@ class MindQuestService:
                 f"Cannot start MindQuest in status '{mq.status.value}'. Expected IN_PROGRESS."
             )
 
-        first_hat = mq.planned_hats[0] if mq.planned_hats else HatType.BLACK
+        first_hat = mq.planned_hats[0] if mq.planned_hats else DEFAULT_HAT_SEQUENCE[0]
         active_round = mq.activate_hat(first_hat)
 
         # Generate initial challenge for first hat
@@ -283,6 +290,17 @@ class MindQuestService:
 
     async def get_final_reflection(self, mindquest_id: UUID) -> FinalReflection | None:
         return await self._evaluation_repo.get_final_reflection(mindquest_id)
+
+    async def get_mindquest_evaluation_metrics(
+        self, mindquest_id: UUID
+    ) -> EvaluationMetricsSummary:
+        thinking_evals = await self._evaluation_repo.list_thinking_evaluations_by_mindquest(
+            mindquest_id
+        )
+        german_evals = await self._evaluation_repo.list_german_evaluations_by_mindquest(
+            mindquest_id
+        )
+        return aggregate_evaluation_metrics(thinking_evals, german_evals)
 
     async def _generate_and_save_final_reflection(
         self, mq: MindQuest

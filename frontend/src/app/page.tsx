@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { ArrowRight, Brain, Languages, Lightbulb } from "lucide-react";
+import { ArrowRight, Brain, Languages, Lightbulb, Sparkles } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -29,7 +29,8 @@ export default function HomePage() {
               </Link>
               <Link href="/learning">
                 <Button size="lg" variant="outline">
-                  Mein Lernprofil
+                  <Sparkles className="mr-2" size={16} />
+                  Lernprofil
                 </Button>
               </Link>
             </div>
@@ -45,26 +46,17 @@ export default function HomePage() {
               </p>
               <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:mt-6 md:gap-3">
                 {[
-                  "Fakten",
-                  "Gefühle",
-                  "Risiken",
-                  "Chancen",
-                  "Ideen",
-                  "Überblick",
-                ].map((item, i) => (
+                  ["Fakten", "#cbd5e1"],
+                  ["Chancen", "#fbbf24"],
+                  ["Ideen", "#4ade80"],
+                  ["Gefühle", "#fb7185"],
+                  ["Risiken", "#64748b"],
+                  ["Überblick", "#60a5fa"],
+                ].map(([item, color]) => (
                   <div key={item} className="rounded-xl bg-white/10 p-2.5 text-sm md:p-3">
                     <span
                       className="mb-1.5 block h-2 w-2 rounded-full md:mb-2"
-                      style={{
-                        background: [
-                          "#cbd5e1",
-                          "#fb7185",
-                          "#64748b",
-                          "#fbbf24",
-                          "#4ade80",
-                          "#60a5fa",
-                        ][i],
-                      }}
+                      style={{ background: color }}
                     />
                     {item}
                   </div>

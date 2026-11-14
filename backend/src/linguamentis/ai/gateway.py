@@ -19,6 +19,7 @@ from linguamentis.ai.models import (
     ThinkingEvaluationOutput,
 )
 from linguamentis.domain.hats.contracts import HatContract
+from linguamentis.domain.hats.types import HatType
 from linguamentis.domain.mindquests.value_objects import MindQuestContext
 from linguamentis.infrastructure.configuration import Settings
 from linguamentis.shared.logging import get_logger
@@ -38,7 +39,11 @@ class AIGateway:
     async def generate_hat_challenge(
         self, *, contract: HatContract, context: MindQuestContext
     ) -> HatChallenge:
-        model = self._settings.ai_model_hat
+        model = (
+            self._settings.ai_model_blue
+            if contract.hat == HatType.BLUE
+            else self._settings.ai_model_hat
+        )
         result = await self._client.generate_structured(
             system_prompt=prompts.hat_challenge_system_prompt(contract),
             user_prompt=prompts.hat_challenge_user_prompt(context),

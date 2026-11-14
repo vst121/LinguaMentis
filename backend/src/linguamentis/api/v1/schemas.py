@@ -10,7 +10,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from linguamentis.domain.hats.types import HatType
+from linguamentis.domain.hats.types import DEFAULT_HAT_SEQUENCE, HatType
 from linguamentis.domain.mindquests.enums import LanguageLevel, MindQuestStatus
 
 
@@ -18,12 +18,7 @@ class CreateMindQuestRequest(BaseModel):
     topic: str = Field(min_length=3, description="The topic for intellectual debate.")
     target_level: LanguageLevel = Field(default=LanguageLevel.B2)
     planned_hats: list[HatType] = Field(
-        default_factory=lambda: [
-            HatType.BLACK, 
-            HatType.WHITE, 
-            HatType.YELLOW, 
-            HatType.RED, 
-            HatType.GREEN]
+        default_factory=lambda: list(DEFAULT_HAT_SEQUENCE)
     )
 
 
