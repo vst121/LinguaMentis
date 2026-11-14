@@ -16,16 +16,8 @@ export default function LearningPage() {
   }, []);
   return (
     <AppShell>
-      <div className="flex flex-col gap-3">
-        <div>
-          <p className="text-xs font-semibold text-blue-700">LERNPROFIL</p>
-          <h1 className="mt-0.5 text-xl font-bold md:text-2xl">
-            Deine Entwicklung im Blick
-          </h1>
-          <p className="mt-0.5 text-xs text-slate-600 md:text-sm">
-            Denken und Sprache sind zwei eigene Fähigkeiten — hier siehst du beide.
-          </p>
-        </div>
+      <div className="flex flex-col gap-2.5">
+        <h1 className="text-lg font-bold">Deine Entwicklung im Blick</h1>
         {error ? (
           <p className="text-rose-700">{error}</p>
         ) : !profile ? (

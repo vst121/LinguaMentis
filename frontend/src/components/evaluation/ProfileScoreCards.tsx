@@ -52,43 +52,31 @@ export function ProfileMetricsSection({
   germanExtra,
 }: ProfileMetricsSectionProps) {
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid gap-3 md:grid-cols-3">
-        <Card bodyClassName="p-3 md:p-3.5">
-          <p className="text-xs text-slate-500">{primaryCardLabel}</p>
-          <p className="mt-1 text-xl font-bold md:text-2xl">
-            {primaryCardValue}
-          </p>
-        </Card>
-        <Card bodyClassName="p-3 md:p-3.5">
-          <p className="text-xs text-slate-500">Denken</p>
-          <p className="mt-1 text-xl font-bold md:text-2xl">
-            {thinkingOverall !== null && thinkingOverall !== undefined ? (
-              <>
-                {thinkingOverall}{" "}
-                <span className="text-sm font-medium text-slate-400">/ 100</span>
-              </>
-            ) : (
-              "—"
-            )}
-          </p>
-        </Card>
-        <Card bodyClassName="p-3 md:p-3.5">
-          <p className="text-xs text-slate-500">Deutsch</p>
-          <p className="mt-1 text-xl font-bold md:text-2xl">
-            {germanOverall !== null && germanOverall !== undefined ? (
-              <>
-                {germanOverall}{" "}
-                <span className="text-sm font-medium text-slate-400">/ 100</span>
-              </>
-            ) : (
-              "—"
-            )}
-          </p>
-        </Card>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs shadow-sm sm:text-sm">
+        <div className="flex items-center gap-1.5">
+          <span className="text-slate-500">{primaryCardLabel}:</span>
+          <strong className="font-bold text-slate-900">{primaryCardValue}</strong>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-slate-500">Denken:</span>
+          <strong className="font-bold text-blue-700">
+            {thinkingOverall !== null && thinkingOverall !== undefined
+              ? thinkingOverall
+              : "—"}
+          </strong>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-slate-500">Deutsch:</span>
+          <strong className="font-bold text-emerald-700">
+            {germanOverall !== null && germanOverall !== undefined
+              ? germanOverall
+              : "—"}
+          </strong>
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 md:items-start">
+      <div className="grid gap-3 md:grid-cols-2 md:items-start">
         <Card
           title="Denkfähigkeiten"
           description={

@@ -15,11 +15,8 @@ export default function HistoryPage() {
   }, []);
   return (
     <AppShell>
-      <div className="flex flex-col gap-4">
-        <div>
-          <p className="text-xs font-semibold text-blue-700">VERLAUF</p>
-          <h1 className="mt-0.5 text-xl font-bold md:text-2xl">Deine Lernreise</h1>
-        </div>
+      <div className="flex flex-col gap-3">
+        <h1 className="text-lg font-bold">Deine Lernreise</h1>
         {error ? (
           <p className="text-rose-700">{error}</p>
         ) : (

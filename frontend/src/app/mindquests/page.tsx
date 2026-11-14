@@ -79,18 +79,9 @@ export default function MindQuestsPage() {
   }
   return (
     <AppShell>
-      <div className="flex flex-col gap-4">
-        <div>
-          <p className="text-xs font-semibold text-blue-700">MINDQUESTS</p>
-          <h1 className="mt-0.5 text-xl font-bold md:text-2xl">
-            Woran möchtest du heute denken?
-          </h1>
-          <p className="mt-0.5 text-xs text-slate-600 md:text-sm">
-            Wähle ein relevantes Thema und nimm es Perspektive für Perspektive
-            unter die Lupe.
-          </p>
-        </div>
-        <div className="grid gap-5 md:grid-cols-[minmax(290px,.8fr)_1.2fr] md:items-start">
+      <div className="flex flex-col gap-3">
+        <h1 className="text-lg font-bold">Woran möchtest du heute denken?</h1>
+        <div className="grid gap-4 md:grid-cols-[minmax(280px,.8fr)_1.2fr] md:items-start">
           <Card
             title="Neue MindQuest"
             description="Starte mit einem Thema, das dich wirklich interessiert."

@@ -251,30 +251,29 @@ export default function MindQuestPage() {
   const isLastHat = remainingHats.length <= 1;
   return (
     <AppShell>
-      <div className="flex flex-col gap-3">
-        <div className="shrink-0">
+      <div className="flex flex-col gap-2.5">
+        <div>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <Link
-                  href="/mindquests"
-                  className="font-medium text-blue-700 hover:underline"
-                >
-                  ← Alle MindQuests
-                </Link>
-                <span>·</span>
-                <span>
-                  Niveau {quest.target_level} · {quest.completed_hats.length}/
-                  {quest.planned_hats.length} Perspektiven
-                </span>
-              </div>
-              <h1 className="mt-0.5 truncate text-lg font-bold md:text-xl">
+            <div className="flex min-w-0 items-center gap-2">
+              <Link
+                href="/mindquests"
+                className="shrink-0 text-xs font-medium text-blue-700 hover:underline"
+                title="Alle MindQuests"
+              >
+                ← Zurück
+              </Link>
+              <span className="text-slate-300">|</span>
+              <h1 className="truncate text-sm font-bold sm:text-base">
                 {quest.topic}
               </h1>
+              <span className="shrink-0 rounded bg-slate-200/70 px-1.5 py-0.5 text-[11px] font-medium text-slate-700">
+                {quest.target_level} · {quest.completed_hats.length}/
+                {quest.planned_hats.length}
+              </span>
             </div>
-            {currentHat && <HatIndicator hat={currentHat} detail />}
+            {currentHat && <HatIndicator hat={currentHat} />}
           </div>
-          <div className="mt-2 flex gap-1">
+          <div className="mt-1.5 flex gap-1">
             {quest.planned_hats.map((h) => {
               const colors = HAT_PROGRESS_COLORS[h];
               const stateClass = quest.completed_hats.includes(h)
@@ -286,13 +285,13 @@ export default function MindQuestPage() {
                 <div
                   key={h}
                   title={HAT_METADATA[h]?.nameGerman ?? h}
-                  className={`h-1.5 flex-1 rounded-full transition-all ${stateClass}`}
+                  className={`h-1 flex-1 rounded-full transition-all ${stateClass}`}
                 />
               );
             })}
           </div>
           {error && (
-            <p className="mt-2 rounded-lg bg-rose-50 p-2.5 text-sm text-rose-700">
+            <p className="mt-2 rounded-lg bg-rose-50 p-2 text-xs text-rose-700 sm:text-sm">
               {error}
             </p>
           )}
