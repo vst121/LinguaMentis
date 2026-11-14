@@ -183,8 +183,8 @@ export default function MindQuestsPage() {
                 )}
               </div>
               <Button type="submit" isLoading={creating} className="w-full">
-                <Plus className="mr-2" size={16} />
-                MindQuest erstellen
+                {!creating && <Plus className="mr-2" size={16} />}
+                {creating ? "MindQuest wird erstellt …" : "MindQuest erstellen"}
               </Button>
             </form>
           </Card>

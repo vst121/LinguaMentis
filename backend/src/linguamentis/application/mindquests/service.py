@@ -46,6 +46,32 @@ from linguamentis.shared.logging import get_logger
 logger = get_logger(__name__)
 
 
+# Instant German opening prompts for Argue Mode so choosing a hat has zero LLM delay
+_ARGUE_OPENING_PROMPTS: dict[HatType, tuple[str, str]] = {
+    HatType.WHITE: (
+        "Welche gesicherten Fakten, Daten oder Wissenslücken sind beim Thema "
+        "„{topic}“ entscheidend?",
+        "Bleibe objektiv (Weißer Hut): Trenne Fakten klar von Annahmen.",
+    ),
+    HatType.YELLOW: (
+        "Welche konkreten Chancen und positiven Folgen siehst du beim Thema „{topic}“?",
+        "Argumentiere konstruktiv (Gelber Hut): Begründe den konkreten Nutzen.",
+    ),
+    HatType.GREEN: (
+        "Welche kreativen Alternativen oder unkonventionellen Ansätze gibt es für „{topic}“?",
+        "Denke kreativ (Grüner Hut): Entwickle originelle Möglichkeiten.",
+    ),
+    HatType.RED: (
+        "Welche unmittelbare Intuition oder emotionale Reaktion löst „{topic}“ bei dir aus?",
+        "Zeige dein Bauchgefühl (Roter Hut): Beschreibe Eindrücke klar und authentisch.",
+    ),
+    HatType.BLACK: (
+        "Welche konkreten Risiken, Schwächen oder negativen Folgen birgt „{topic}“?",
+        "Analysiere kritisch (Schwarzer Hut): Nenne konkrete Gefahren und Folgeeffekte.",
+    ),
+}
+
+
 @dataclass(slots=True)
 class StartMindQuestResult:
     mindquest: MindQuest
@@ -251,16 +277,14 @@ class MindQuestService:
             )
 
         active_round = mq.activate_hat(hat)
-        context = MindQuestContext(
-            mindquest_id=mq.id,
-            topic=mq.topic,
-            target_level=mq.target_level.value,
-            current_hat=hat,
-            current_turn_number=1,
-            completed_hats=mq.completed_hats,
+        q_tpl, instr = _ARGUE_OPENING_PROMPTS[hat]
+        challenge = HatChallenge(
+            question=q_tpl.format(topic=mq.topic),
+            instruction=instr,
+            expected_thinking_mode=hat,
+            difficulty=4 if mq.target_level == LanguageLevel.C1 else 3,
+            rationale="Instant Argue Mode opening prompt",
         )
-        agent = self._agent_registry.get(hat)
-        challenge = await agent.create_challenge(context)
 
         initial_turn = active_round.add_turn(
             challenge_question=challenge.question,

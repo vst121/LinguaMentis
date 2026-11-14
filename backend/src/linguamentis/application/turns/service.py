@@ -138,19 +138,24 @@ class TurnService:
             previous_responses=tuple(previous_turn_contexts),
         )
 
-        # Evaluate dimensions and generate aligned elaborated proposition in parallel
-        (thinking_eval, german_eval), proposition = await asyncio.gather(
-            self._evaluation_service.evaluate_dimensions(
-                turn=latest_turn,
-                context=context,
-                user_response=user_response,
-            ),
+        # Overlap proposition generation with both evaluation and feedback/follow-up stages
+        prop_task = asyncio.create_task(
             self._evaluation_service.generate_proposition(
                 turn=latest_turn,
                 context=context,
                 user_response=user_response,
-            ),
+            )
         )
+        try:
+            thinking_eval, german_eval = await self._evaluation_service.evaluate_dimensions(
+                turn=latest_turn,
+                context=context,
+                user_response=user_response,
+            )
+        except Exception:
+            prop_task.cancel()
+            await asyncio.gather(prop_task, return_exceptions=True)
+            raise
 
         average_score = compute_response_average_score(thinking_eval, german_eval)
 
@@ -216,7 +221,8 @@ class TurnService:
                 agent = self._agent_registry.get(active_round.hat)
                 follow_up_task = agent.create_challenge(updated_context)
 
-            feedback, follow_up_challenge = await asyncio.gather(
+            proposition, feedback, follow_up_challenge = await asyncio.gather(
+                prop_task,
                 feedback_task,
                 follow_up_task,
             )
@@ -231,7 +237,7 @@ class TurnService:
         else:
             # Prefetch next challenge (Answering Mode) or final reflection if all hats done
             self._schedule_post_round_prefetch(mindquest, active_round.hat)
-            feedback = await feedback_task
+            proposition, feedback = await asyncio.gather(prop_task, feedback_task)
 
         await self._evaluation_service.persist_evaluations(
             user_id=mindquest.user_id,

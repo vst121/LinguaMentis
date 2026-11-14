@@ -389,11 +389,13 @@ describe("MindQuestPage interactive flow", () => {
     expect(screen.getByText("Schwarzer Hut")).toBeInTheDocument();
     expect(screen.queryByText("Blauer Hut")).not.toBeInTheDocument();
 
-    // 2. Select Schwarzer Hut -> locked into BLACK
+    // 2. Select Schwarzer Hut -> locked into BLACK and highlighted in top hat icons
     fireEvent.click(screen.getByRole("button", { name: /Schwarzer Hut/i }));
     expect(
       await screen.findByText("Welche Risiken hat ein generelles Tempolimit?")
     ).toBeInTheDocument();
+    expect(screen.getByLabelText("Schwarzer Hut: aktuell")).toBeInTheDocument();
+    expect(screen.getByLabelText("Weißer Hut: offen")).toBeInTheDocument();
 
     // 3. Submit weak answer -> Devil's Advocate rejection
     fireEvent.change(screen.getByPlaceholderText(/Schreibe deine Antwort hier/i), {
@@ -408,7 +410,7 @@ describe("MindQuestPage interactive flow", () => {
       screen.getByText(/Das überzeugt noch nicht: Welche konkreten volkswirtschaftlichen Folgen entstehen\?/i)
     ).toBeInTheDocument();
 
-    // 4. Revise answer (previous draft pre-filled) and pass > 80%
+    // 4. Revise answer via always-visible top-right button and pass > 80%
     fireEvent.click(screen.getByRole("button", { name: /Antwort überarbeiten/i }));
     const textarea = screen.getByPlaceholderText(/Schreibe deine Antwort hier/i);
     expect(textarea).toHaveValue("Es gibt Staus.");
@@ -424,10 +426,11 @@ describe("MindQuestPage interactive flow", () => {
       await screen.findByText(/Akzeptiert \(87 % > 80 %\)/i)
     ).toBeInTheDocument();
 
-    // 5. Return to 5-hat selector -> Schwarzer Hut is disabled
-    fireEvent.click(screen.getByRole("button", { name: /Nächsten Hut wählen/i }));
+    // 5. Return to 5-hat selector via top-right "Nächste Perspektive" -> Schwarzer Hut is completed & disabled
+    fireEvent.click(screen.getByRole("button", { name: /Nächste Perspektive/i }));
     const blackBtn = await screen.findByRole("button", { name: /Schwarzer Hut/i });
     expect(blackBtn).toBeDisabled();
+    expect(screen.getByLabelText("Schwarzer Hut: erledigt")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Weißer Hut/i })).not.toBeDisabled();
   });
 });
