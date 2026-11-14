@@ -247,7 +247,7 @@ async def test_argue_mode_flow_locks_hat_until_above_80_and_forbids_blue_or_reus
     with pytest.raises(DomainError, match="Cannot change hat"):
         await mq_service.select_hat(mq.id, HatType.WHITE)
 
-    # Submit response with average <= 80% -> Devil's Advocate rejection, round stays open
+    # Submit response with average <= 80% -> Perspective Challenger rejection, round stays open
     fake_llm_client.queue_response(ThinkingEvaluationOutput, _low_thinking_output())
     fake_llm_client.queue_response(
         GermanEvaluationOutput,

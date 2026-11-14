@@ -374,7 +374,7 @@ describe("MindQuestPage interactive flow", () => {
     delete (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
   });
 
-  it("Argue Mode switches to dark theme, shows 5 hats (no Blue), enforces Devil's Advocate until >80%, and disables completed hats", async () => {
+  it("Argue Mode switches to dark theme, shows 5 hats (no Blue), enforces Perspective Challenger until >80%, and disables completed hats", async () => {
     const argueQuest: MindQuest = {
       id: "mq-argue",
       user_id: "u-1",
@@ -423,7 +423,7 @@ describe("MindQuestPage interactive flow", () => {
       difficulty: 4,
     });
 
-    // First attempt fails <= 80% -> Devil's Advocate rejection
+    // First attempt fails <= 80% -> Perspective Challenger rejection
     vi.mocked(mqApi.submitResponse).mockResolvedValueOnce({
       turn: { ...blackTurn, user_response: "Es gibt Staus." },
       thinking_evaluation: {
@@ -542,7 +542,7 @@ describe("MindQuestPage interactive flow", () => {
     expect(screen.getByLabelText("Schwarzer Hut: aktuell")).toBeInTheDocument();
     expect(screen.getByLabelText("Weißer Hut: offen")).toBeInTheDocument();
 
-    // 3. Submit weak answer -> Devil's Advocate rejection
+    // 3. Submit weak answer -> Perspective Challenger rejection
     fireEvent.change(screen.getByPlaceholderText(/Schreibe deine Antwort hier/i), {
       target: { value: "Es gibt Staus." },
     });

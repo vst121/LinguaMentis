@@ -169,7 +169,7 @@ class AIGateway:
         )
         return result
 
-    # -- Argue Mode Devil's Advocate rejection ------------------------------
+    # -- Argue Mode Perspective Challenger rejection ------------------------
 
     async def generate_argue_rejection(
         self,

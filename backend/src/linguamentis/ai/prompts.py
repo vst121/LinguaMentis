@@ -255,21 +255,21 @@ def response_proposition_user_prompt(
 
 
 # ---------------------------------------------------------------------------
-# Argue Mode — Devil's Advocate argued rejection
+# Argue Mode — Perspective Challenger argued rejection
 # ---------------------------------------------------------------------------
 
 
 def argue_rejection_system_prompt(contract: HatContract) -> str:
     return (
         f"{_APPLICATION_FRAME}\n\n"
-        "You are operating in ARGUE MODE as a demanding Devil's Advocate for the "
+        "You are operating in ARGUE MODE as a demanding Perspective Challenger for the "
         "hat contract below. The learner's response did NOT reach the required >80% "
         "overall average across thinking and German quality, so it MUST BE REJECTED "
         "with a sharp, well-reasoned counter-argument.\n\n"
         f"{_format_contract(contract)}\n\n"
         "Rules:\n"
         "- Write completely in German, calibrated to the learner's target level.\n"
-        "- In `question`, clearly reject the current draft as Devil's Advocate: challenge "
+        "- In `question`, clearly reject the current draft as Perspective Challenger: challenge "
         "their exact claim with a concrete counter-argument, point out the biggest logical "
         "or hat-adherence gap and/or linguistic weakness, and demand a stronger revision.\n"
         "- In `instruction`, give a concise, actionable directive telling the learner what "
@@ -297,7 +297,7 @@ def argue_rejection_user_prompt(
         f"Learner's response (German):\n{user_response}\n\n"
         f"Observed thinking gaps: {', '.join(thinking_weaknesses) or 'needs deeper reasoning'}\n"
         f"Observed German gaps: {', '.join(german_weaknesses) or 'needs more precision'}\n\n"
-        "Generate the HatChallenge containing the Devil's Advocate argued rejection."
+        "Generate the HatChallenge containing the Perspective Challenger argued rejection."
     )
 
 

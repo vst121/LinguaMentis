@@ -283,7 +283,7 @@ export default function MindQuestPage() {
   }
   async function nextStep() {
     setError("");
-    // Intra-hat follow-up (e.g. Devil's Advocate rejection in Argue Mode)
+    // Intra-hat follow-up (e.g. Perspective Challenger rejection in Argue Mode)
     if (feedback && !feedback.round_should_complete) {
       const previousAnswer = feedback.turn.user_response ?? "";
       if (feedback.next_challenge_question && turn) {
@@ -680,7 +680,7 @@ export default function MindQuestPage() {
               {pendingResponse ? (
                 <Card
                   title="Deine Argumentation"
-                  description="Wird an Devil's Advocate & Auswertung gesendet …"
+                  description="Wird an Perspective Challenger & Auswertung gesendet …"
                 >
                   <p className="rounded-lg bg-slate-800/70 p-3 text-sm leading-6 text-slate-200">
                     {pendingResponse}
@@ -726,18 +726,18 @@ export default function MindQuestPage() {
               )}
             </div>
 
-            {/* RIGHT COLUMN (Argue Mode): Devil's Advocate responds here */}
+            {/* RIGHT COLUMN (Argue Mode): Perspective Challenger responds here */}
             <div className="flex flex-col gap-3">
               {pendingResponse ? (
                 <Card
-                  title="Devil's Advocate prüft dein Argument …"
+                  title="Perspective Challenger prüft dein Argument …"
                   description="Denken, Deutsch, Sprach-Upgrade und Gegenargument werden parallel erstellt."
                 >
                   <div className="flex items-center gap-3 rounded-lg border border-indigo-500/30 bg-indigo-950/30 p-4 text-sm text-indigo-200">
                     <Loader2 className="h-5 w-5 shrink-0 animate-spin text-indigo-400" />
                     <div>
                       <p className="font-medium">
-                        Auswertung &amp; Devil&apos;s Advocate laufen ({elapsedSeconds}s) …
+                        Auswertung &amp; Perspective Challenger laufen ({elapsedSeconds}s) …
                       </p>
                       <p className="mt-0.5 text-xs text-slate-400">
                         Alle Bewertungsdimensionen werden gleichzeitig berechnet.
@@ -748,7 +748,7 @@ export default function MindQuestPage() {
               ) : !feedback ? (
                 turn.turn_number > 1 ? (
                   <Card
-                    title="Devil's Advocate — Gegenargument"
+                    title="Perspective Challenger — Gegenargument"
                     description="Widerlege diese Einwände in deiner Überarbeitung links."
                   >
                     <div className="rounded-lg border border-amber-500/40 bg-amber-950/35 p-3.5 text-sm text-amber-50">
@@ -762,11 +762,11 @@ export default function MindQuestPage() {
                   </Card>
                 ) : (
                   <Card
-                    title="Devil's Advocate"
+                    title="Perspective Challenger"
                     description="Bereit für deine Argumentation"
                   >
                     <p className="text-sm leading-6 text-slate-300">
-                      Gib links dein erstes Argument ein. Der Devil&apos;s Advocate
+                      Gib links dein erstes Argument ein. Der Perspective Challenger
                       wird deine Logik und dein Deutsch kritisch prüfen, bis dein
                       Gesamtschnitt über <strong className="text-white">80 %</strong>{" "}
                       liegt.
@@ -787,7 +787,7 @@ export default function MindQuestPage() {
                     {!feedback.round_should_complete && feedback.next_challenge_question && (
                       <div className="rounded-lg border border-amber-500/40 bg-amber-950/35 p-3 text-sm text-amber-50">
                         <p className="text-xs font-bold uppercase tracking-wide text-amber-300">
-                          Devil&apos;s Advocate — Gegenargument
+                          Perspective Challenger — Gegenargument
                         </p>
                         <p className="mt-1 leading-6">{feedback.next_challenge_question}</p>
                         {feedback.next_challenge_instruction && (

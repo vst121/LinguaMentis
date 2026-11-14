@@ -171,7 +171,7 @@ export default function MindQuestsPage() {
                     >
                       <span className="block font-semibold">Argue Mode</span>
                       <span className="mt-0.5 block opacity-75">
-                        Devil&apos;s Advocate · &gt; 80 %
+                        Perspective Challenger · &gt; 80 %
                       </span>
                     </button>
                   </div>
