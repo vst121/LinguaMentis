@@ -703,4 +703,75 @@ describe("MindQuestPage interactive flow", () => {
     expect(screen.getByText("88 / 100")).toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/Schreibe deine Antwort hier/i)).not.toBeInTheDocument();
   });
+
+  it("restores saved evaluation when reopening an Answering Mode quest whose active turn is already answered", async () => {
+    const answeredTurn = {
+      id: "turn-ans-1",
+      turn_number: 1,
+      hat: "WHITE" as const,
+      challenge_question: "Welche Fakten gibt es?",
+      challenge_instruction: "Nur Fakten.",
+      difficulty: 3,
+      user_response: "Studien zeigen eine klare Entwicklung.",
+      created_at: "2026-11-14T10:01:00Z",
+    };
+
+    vi.mocked(mqApi.getMindQuest).mockResolvedValueOnce({
+      ...baseQuest,
+      status: "HAT_ACTIVE",
+      current_hat: "WHITE",
+      planned_hats: ["WHITE", "YELLOW"],
+      hat_rounds: [
+        {
+          id: "r-ans-1",
+          hat: "WHITE",
+          sequence_index: 0,
+          turns: [answeredTurn],
+          started_at: "2026-11-14T10:01:00Z",
+        },
+      ],
+    });
+    vi.mocked(mqApi.getCurrentEvaluation).mockResolvedValueOnce({
+      turn: answeredTurn,
+      thinking_evaluation: {
+        id: "te-r1",
+        score: 84,
+        score_anchor: "Strong",
+        hat_adherence: 85,
+        relevance: 85,
+        reasoning: 84,
+        depth: 82,
+        specificity: 84,
+        evidence: [],
+        strengths: ["Klare Faktenbasis."],
+        weaknesses: [],
+        recommendations: [],
+      },
+      german_evaluation: {
+        id: "ge-r1",
+        score: 82,
+        score_anchor: "Strong",
+        grammar: 84,
+        vocabulary: 80,
+        sentence_structure: 82,
+        naturalness: 80,
+        level_appropriateness: 84,
+        evidence: [],
+        corrections: [],
+        strengths: ["Sauberer Satzbau."],
+        weaknesses: [],
+        recommendations: [],
+      },
+      average_score: 83,
+    });
+
+    render(<MindQuestPage />);
+    expect(await screen.findByText("84 / 100")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Nächste Perspektive/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText(/Schreibe deine Antwort hier/i)
+    ).not.toBeInTheDocument();
+  });
 });

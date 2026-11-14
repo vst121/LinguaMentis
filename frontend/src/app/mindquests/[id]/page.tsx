@@ -30,6 +30,7 @@ import { Card } from "@/components/ui/Card";
 import { useConversationSession } from "@/hooks/useConversationSession";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
 import {
+  getCurrentEvaluation,
   getMindQuest,
   selectHat,
   startMindQuest,
@@ -212,6 +213,29 @@ export default function MindQuestPage() {
 
         setQuest(q);
         setTurn(existingTurn);
+        if (existingTurn.user_response) {
+          const lastEval = await getCurrentEvaluation(id);
+          if (cancelled) return;
+          if (lastEval?.thinking_evaluation && lastEval?.german_evaluation) {
+            setFeedback({
+              turn: lastEval.turn,
+              thinking_evaluation: lastEval.thinking_evaluation,
+              german_evaluation: lastEval.german_evaluation,
+              feedback: {
+                thinking_feedback:
+                  lastEval.thinking_evaluation.strengths[0] ||
+                  "Antwort bereits ausgewertet.",
+                german_feedback:
+                  lastEval.german_evaluation.strengths[0] ||
+                  "Sprachliche Auswertung vorhanden.",
+                encouragement: "Bereit für die nächste Perspektive!",
+              },
+              proposition: lastEval.proposition ?? null,
+              average_score: lastEval.average_score ?? undefined,
+              round_should_complete: true,
+            });
+          }
+        }
         if (q.planned_hats.length - q.completed_hats.length <= 1) {
           router.prefetch(`/mindquests/${id}/reflection`);
         }

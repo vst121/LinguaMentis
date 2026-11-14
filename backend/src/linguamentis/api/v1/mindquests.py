@@ -125,6 +125,24 @@ async def get_mindquest(
     return _map_mindquest(mq)
 
 
+@router.get("/{id}/current-evaluation", response_model=LastEvaluationDTO | None)
+async def get_current_evaluation(
+    id: UUID,
+    service: Annotated[MindQuestService, Depends(get_mindquest_service)],
+) -> LastEvaluationDTO | None:
+    res = await service.get_current_turn_evaluation(id)
+    if res is None:
+        return None
+    turn, thinking, german, prop, avg = res
+    return LastEvaluationDTO(
+        turn=_map_turn(turn),
+        thinking_evaluation=_map_thinking_dto(thinking) if thinking is not None else None,
+        german_evaluation=_map_german_dto(german) if german is not None else None,
+        proposition=_map_proposition_dto(prop),
+        average_score=avg,
+    )
+
+
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_mindquest(
     id: UUID,

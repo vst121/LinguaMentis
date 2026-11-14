@@ -507,6 +507,34 @@ class MindQuestService:
     async def get_final_reflection(self, mindquest_id: UUID) -> FinalReflection | None:
         return await self._evaluation_repo.get_final_reflection(mindquest_id)
 
+    async def get_current_turn_evaluation(
+        self, mindquest_id: UUID
+    ) -> tuple[
+        Turn,
+        ThinkingEvaluation | None,
+        GermanEvaluation | None,
+        ResponseProposition | None,
+        float | None,
+    ] | None:
+        mq = await self.get_mindquest(mindquest_id)
+        active_round = mq.current_hat_round
+        if active_round is None:
+            return None
+        last_answered = next(
+            (t for t in reversed(active_round.turns) if t.is_answered), None
+        )
+        if last_answered is None:
+            return None
+        thinking = await self._evaluation_repo.get_thinking_by_turn(last_answered.id)
+        german = await self._evaluation_repo.get_german_by_turn(last_answered.id)
+        prop = await self._evaluation_repo.get_proposition_by_turn(last_answered.id)
+        avg = (
+            compute_response_average_score(thinking, german)
+            if thinking is not None and german is not None
+            else None
+        )
+        return last_answered, thinking, german, prop, avg
+
     async def get_mindquest_evaluation_metrics(
         self, mindquest_id: UUID
     ) -> EvaluationMetricsSummary:

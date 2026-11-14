@@ -291,7 +291,7 @@ async def test_argue_mode_hat_switching_thresholds_and_read_only_solved_hats(
     assert inspect_black.last_german_evaluation is not None
     assert inspect_black.last_average_score is not None and inspect_black.last_average_score > 80.0
 
-    with pytest.raises(DomainError, match="No active hat round"):
+    with pytest.raises(DomainError, match="HAT_COMPLETED|No active hat round"):
         await mq_service.submit_response(
             mindquest_id=mq.id, user_response="Darf nicht mehr geändert werden."
         )

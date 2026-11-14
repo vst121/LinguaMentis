@@ -3,6 +3,7 @@ import { HatType } from "@/types/hat";
 import {
   AdvanceMindQuestResponse,
   CreateMindQuestRequest,
+  LastEvaluation,
   MindQuest,
   StartMindQuestResponse,
   SubmitResponseRequest,
@@ -59,6 +60,12 @@ export async function advanceMindQuest(id: string): Promise<AdvanceMindQuestResp
 
 export async function getFinalReflection(id: string): Promise<FinalReflection> {
   return apiFetch<FinalReflection>(`/mindquests/${id}/reflection`);
+}
+
+export async function getCurrentEvaluation(
+  id: string,
+): Promise<LastEvaluation | null> {
+  return apiFetch<LastEvaluation | null>(`/mindquests/${id}/current-evaluation`);
 }
 
 export async function deleteMindQuest(id: string): Promise<void> {

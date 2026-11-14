@@ -117,7 +117,7 @@ async def test_turn_service_runs_feedback_and_follow_up_challenge_in_parallel(
         id=uuid4(),
         user_id=user_id,
         topic="Speed Test",
-        target_level=LanguageLevel.B2,
+        target_level=LanguageLevel.C1,
         mode=MindQuestMode.ARGUE,
     )
     mq.select_topic("Speed Test", (HatType.BLACK,))
