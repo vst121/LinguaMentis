@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
@@ -7,8 +7,13 @@ import { ArrowRight, Send } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { ScoreBar } from "@/components/evaluation/ProfileScoreCards";
 import { HatIndicator } from "@/components/hats/HatIndicator";
+import {
+  SpeechModeToggle,
+  SpeechRecordingBanner,
+} from "@/components/speech/SpeechInputControls";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { useSpeechToText } from "@/hooks/useSpeechToText";
 import {
   getMindQuest,
   startMindQuest,
@@ -95,8 +100,30 @@ export default function MindQuestPage() {
       setBusy(false);
     }
   }
+  const appendTranscript = useCallback((spokenText: string) => {
+    setDraft((prev) => {
+      const trimmed = prev.trim();
+      return trimmed ? `${trimmed} ${spokenText}` : spokenText;
+    });
+  }, []);
+
+  const {
+    mode: inputMode,
+    isRecording,
+    isTranscribing,
+    interimText,
+    elapsedSeconds,
+    audioLevels,
+    speechError,
+    startRecording,
+    stopRecording,
+  } = useSpeechToText(appendTranscript);
+
   async function send() {
-    if (busy || !draft.trim()) return;
+    if (isRecording) {
+      await stopRecording();
+    }
+    if (busy || isTranscribing || !draft.trim()) return;
     const submitted = draft.trim();
     setBusy(true);
     setError("");
@@ -354,17 +381,42 @@ export default function MindQuestPage() {
                   description="Formuliere deine Gedanken auf Deutsch. Qualität ist wichtiger als Länge."
                   className="flex flex-col md:h-full md:min-h-0"
                   bodyClassName="flex flex-1 flex-col md:min-h-0"
+                  headerAction={
+                    <SpeechModeToggle
+                      mode={inputMode}
+                      isRecording={isRecording}
+                      onStartSpeaking={() => void startRecording()}
+                      onStopSpeaking={() => void stopRecording()}
+                    />
+                  }
                 >
                   <form
                     onSubmit={handleResponseSubmit}
                     className="flex flex-1 flex-col md:min-h-0"
                   >
+                    <SpeechRecordingBanner
+                      isRecording={isRecording}
+                      isTranscribing={isTranscribing}
+                      elapsedSeconds={elapsedSeconds}
+                      audioLevels={audioLevels}
+                      interimText={interimText}
+                      speechError={speechError}
+                      onStopSpeaking={() => void stopRecording()}
+                    />
                     <textarea
                       value={draft}
                       onChange={(e) => setDraft(e.target.value)}
                       onKeyDown={handleResponseKeyDown}
-                      placeholder="Schreibe deine Antwort hier …"
-                      className="min-h-44 w-full flex-1 resize-none rounded-lg border border-slate-300 p-3 leading-7 outline-none focus:ring-2 focus:ring-blue-500 md:min-h-0"
+                      placeholder={
+                        isRecording
+                          ? "Sprich jetzt ins Mikrofon — dein Text erscheint hier …"
+                          : "Schreibe deine Antwort hier …"
+                      }
+                      className={`min-h-44 w-full flex-1 resize-none rounded-lg border p-3 leading-7 outline-none md:min-h-0 ${
+                        isRecording
+                          ? "border-rose-400 bg-rose-50/20 ring-2 ring-rose-200 focus:ring-rose-400"
+                          : "border-slate-300 focus:ring-2 focus:ring-blue-500"
+                      }`}
                     />
                     <div className="mt-3 flex shrink-0 items-center justify-between text-xs text-slate-500">
                       <span>
@@ -372,8 +424,8 @@ export default function MindQuestPage() {
                       </span>
                       <Button
                         type="submit"
-                        disabled={!draft.trim()}
-                        isLoading={busy}
+                        disabled={!draft.trim() || isTranscribing}
+                        isLoading={busy || isTranscribing}
                       >
                         <Send className="mr-2" size={16} />
                         Antwort auswerten

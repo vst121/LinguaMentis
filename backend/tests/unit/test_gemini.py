@@ -298,3 +298,40 @@ async def test_gemini_client_non_retryable_401_and_malformed_candidates():
     assert empty_exc.value.is_format_error is True
 
 
+@pytest.mark.asyncio
+async def test_gemini_client_transcribe_audio_sends_inline_data():
+    captured: dict = {}
+
+    def handle_request(request: httpx.Request) -> httpx.Response:
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(
+            200,
+            json={
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [{"text": '{"text":"Gesprochener deutscher Satz."}'}]
+                        }
+                    }
+                ]
+            },
+        )
+
+    http_client = httpx.AsyncClient(
+        transport=httpx.MockTransport(handle_request),
+        base_url="https://generativelanguage.googleapis.com",
+    )
+    client = GeminiClient(Settings(gemini_api_key="test-key"), http_client=http_client)
+    out = await client.transcribe_audio(
+        audio_base64="UklGRg==",
+        mime_type="audio/webm",
+        model="gemini-2.5-flash",
+    )
+    await http_client.aclose()
+    assert out.text == "Gesprochener deutscher Satz."
+    inline_part = captured["payload"]["contents"][0]["parts"][0]["inlineData"]
+    assert inline_part["mimeType"] == "audio/webm"
+    assert inline_part["data"] == "UklGRg=="
+
+
+

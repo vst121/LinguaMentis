@@ -11,6 +11,7 @@ from urllib.parse import quote
 import httpx
 from pydantic import BaseModel, ValidationError
 
+from linguamentis.ai.models import SpeechTranscriptionOutput
 from linguamentis.infrastructure.configuration import Settings
 from linguamentis.shared.exceptions import AIProviderError, StructuredOutputParsingError
 from linguamentis.shared.logging import get_logger
@@ -79,6 +80,60 @@ class GeminiClient:
     async def aclose(self) -> None:
         if self._owns_client:
             await self._http.aclose()
+
+    async def transcribe_audio(
+        self,
+        *,
+        audio_base64: str,
+        mime_type: str,
+        model: str,
+    ) -> SpeechTranscriptionOutput:
+        system_prompt = (
+            "You are a verbatim German speech-to-text transcriber for LinguaMentis. "
+            "Transcribe the spoken German audio accurately into text. "
+            "IMPORTANT: Transcribe verbatim what the speaker said — do NOT auto-correct "
+            "grammar or vocabulary mistakes, because the learner's German will be evaluated "
+            "separately. Return JSON matching the SpeechTranscriptionOutput schema."
+        )
+        contents = [
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "inlineData": {
+                            "mimeType": mime_type,
+                            "data": audio_base64,
+                        }
+                    },
+                    {
+                        "text": "Transcribe this German audio verbatim into the `text` field."
+                    },
+                ],
+            }
+        ]
+        raw = await self._call(
+            contents=contents,
+            system_prompt=system_prompt,
+            model=model,
+            temperature=0.1,
+            response_model=SpeechTranscriptionOutput,
+        )
+        try:
+            return SpeechTranscriptionOutput.model_validate_json(raw)
+        except ValidationError as exc:
+            try:
+                parsed = json.loads(raw)
+                if isinstance(parsed, dict):
+                    for key in ("text", "transcript", "transcription"):
+                        if isinstance(parsed.get(key), str):
+                            return SpeechTranscriptionOutput(text=parsed[key])
+            except Exception:
+                pass
+            if raw and not raw.lstrip().startswith("{"):
+                return SpeechTranscriptionOutput(text=raw.strip())
+            raise StructuredOutputParsingError(
+                f"Failed to parse SpeechTranscriptionOutput from model '{model}'."
+            ) from exc
 
     async def generate_structured(
         self,

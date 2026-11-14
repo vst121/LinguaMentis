@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     ai_model_thinking_evaluator: str = "gemini-2.5-flash"
     ai_model_german_evaluator: str = "gemini-2.5-flash"
     ai_model_reflection: str = "gemini-2.5-flash"
+    ai_model_transcription: str = ""
     ai_model_structured_fallback: str = "gemini-2.5-flash"
 
     ai_request_timeout_seconds: float = 120.0

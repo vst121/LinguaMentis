@@ -1,4 +1,4 @@
-import React from "react";
+import React, { act } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import MindQuestPage from "@/app/mindquests/[id]/page";
@@ -247,5 +247,98 @@ describe("MindQuestPage interactive flow", () => {
     // Shift+Enter does not trigger submitResponse
     fireEvent.keyDown(textarea, { key: "Enter", shiftKey: true });
     expect(mqApi.submitResponse).not.toHaveBeenCalled();
+  });
+
+  it("switches between Eintippen and Einsprechen on click, shows visual recording indicator, and inserts spoken German text", async () => {
+    let recognitionInstance: {
+      onresult: ((ev: unknown) => void) | null;
+      start: ReturnType<typeof vi.fn>;
+      stop: ReturnType<typeof vi.fn>;
+    } | null = null;
+
+    class MockSpeechRecognition {
+      lang = "";
+      continuous = false;
+      interimResults = false;
+      onresult: ((ev: unknown) => void) | null = null;
+      onerror: ((ev: unknown) => void) | null = null;
+      onend: (() => void) | null = null;
+      start = vi.fn();
+      stop = vi.fn();
+      constructor() {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        recognitionInstance = this;
+      }
+    }
+
+    (window as unknown as Record<string, unknown>).webkitSpeechRecognition =
+      MockSpeechRecognition;
+
+    const activeTurn = {
+      id: "turn-1",
+      turn_number: 1,
+      hat: "WHITE" as const,
+      challenge_question: "Welche Fakten kennen wir?",
+      challenge_instruction: "Nur belegbare Daten.",
+      difficulty: 2,
+      created_at: "2026-11-14T10:01:00Z",
+    };
+
+    vi.mocked(mqApi.getMindQuest).mockResolvedValueOnce({
+      ...baseQuest,
+      status: "HAT_ACTIVE",
+      current_hat: "WHITE",
+      hat_rounds: [
+        {
+          id: "round-1",
+          hat: "WHITE",
+          sequence_index: 0,
+          turns: [activeTurn],
+          started_at: "2026-11-14T10:01:00Z",
+        },
+      ],
+    });
+
+    render(<MindQuestPage />);
+    const speakBtn = await screen.findByRole("button", { name: /Einsprechen/i });
+    const typeBtn = screen.getByRole("button", { name: /Eintippen/i });
+    expect(typeBtn).toHaveAttribute("aria-pressed", "true");
+    expect(speakBtn).toHaveAttribute("aria-pressed", "false");
+
+    // 1. Click "Einsprechen" -> switches to speaking mode and shows visual recording indicator
+    fireEvent.click(speakBtn);
+    expect(await screen.findByTestId("recording-indicator")).toBeInTheDocument();
+    expect(screen.getByText(/Mikrofon nimmt auf/i)).toBeInTheDocument();
+    expect(screen.getByTestId("audio-level-bars")).toBeInTheDocument();
+    expect(speakBtn).toHaveAttribute("aria-pressed", "true");
+
+    // 2. Simulate spoken German result from SpeechRecognition
+    act(() => {
+      recognitionInstance!.onresult!({
+        resultIndex: 0,
+        results: {
+          length: 1,
+          0: {
+            isFinal: true,
+            0: { transcript: "Die Statistik zeigt einen Anstieg um zehn Prozent." },
+          },
+        },
+      });
+    });
+
+    const textarea = screen.getByPlaceholderText(/Sprich jetzt ins Mikrofon/i);
+    await waitFor(() => {
+      expect(textarea).toHaveValue("Die Statistik zeigt einen Anstieg um zehn Prozent.");
+    });
+
+    // 3. Click "Eintippen" -> stops recording, indicator disappears, text remains editable
+    fireEvent.click(typeBtn);
+    await waitFor(() => {
+      expect(screen.queryByTestId("recording-indicator")).not.toBeInTheDocument();
+    });
+    expect(typeBtn).toHaveAttribute("aria-pressed", "true");
+    expect(textarea).toHaveValue("Die Statistik zeigt einen Anstieg um zehn Prozent.");
+
+    delete (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
   });
 });

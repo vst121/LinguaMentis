@@ -25,6 +25,7 @@ from linguamentis.ai.models import (
     GermanReflectionSection,
     HatChallenge,
     HatFeedback,
+    SpeechTranscriptionOutput,
     ThinkingEvaluationOutput,
     ThinkingReflectionSection,
 )
@@ -163,7 +164,27 @@ class FakeLLMClient:
                 closing_message="Ausgezeichnete Leistung!",
             )
 
+        if response_model is SpeechTranscriptionOutput:
+            return SpeechTranscriptionOutput(
+                text="Meiner Ansicht nach überwiegen hier die langfristigen Risiken."
+            )
+
         raise ValueError(f"Unsupported response_model in FakeLLMClient: {response_model}")
+
+    async def transcribe_audio(
+        self,
+        *,
+        audio_base64: str,
+        mime_type: str,
+        model: str,
+    ) -> SpeechTranscriptionOutput:
+        return await self.generate_structured(
+            system_prompt="transcribe",
+            user_prompt=f"{mime_type}:{len(audio_base64)}",
+            response_model=SpeechTranscriptionOutput,
+            model=model,
+            temperature=0.1,
+        )
 
 
 @pytest.fixture

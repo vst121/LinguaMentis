@@ -16,6 +16,7 @@ from linguamentis.ai.models import (
     GermanEvaluationOutput,
     HatChallenge,
     HatFeedback,
+    SpeechTranscriptionOutput,
     ThinkingEvaluationOutput,
 )
 from linguamentis.domain.hats.contracts import HatContract
@@ -155,3 +156,21 @@ class AIGateway:
         )
         logger.info("ai.final_reflection.generated", model=model)
         return result
+
+    # -- Speech-to-Text transcription --------------------------------------
+
+    async def transcribe_german_speech(
+        self,
+        *,
+        audio_base64: str,
+        mime_type: str,
+    ) -> SpeechTranscriptionOutput:
+        model = self._settings.ai_model_transcription.strip() or self._settings.ai_model_hat
+        result = await self._client.transcribe_audio(
+            audio_base64=audio_base64,
+            mime_type=mime_type,
+            model=model,
+        )
+        logger.info("ai.speech.transcribed", model=model, mime_type=mime_type)
+        return result  # type: ignore[return-value]
+

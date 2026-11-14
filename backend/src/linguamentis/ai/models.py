@@ -145,3 +145,13 @@ class FinalReflectionOutput(BaseModel):
     closing_message: str = Field(
         description="A short, motivating closing message from the Blue Agent."
     )
+
+
+class SpeechTranscriptionOutput(BaseModel):
+    """Structured verbatim German speech-to-text transcription."""
+
+    text: str = Field(
+        default="",
+        description="Verbatim German transcript without grammar auto-correction.",
+    )
+

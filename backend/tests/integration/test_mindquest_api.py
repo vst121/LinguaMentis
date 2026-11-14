@@ -181,3 +181,21 @@ async def test_api_error_handlers_and_edge_cases(async_client: AsyncClient, fake
     finally:
         fake_llm_client.error_to_raise = None
 
+    # 6. Speech-to-Text endpoint (/api/v1/speech/transcribe) success and validation
+    import base64
+
+    valid_audio = base64.b64encode(b"fake-webm-audio-bytes").decode("ascii")
+    stt_ok = await async_client.post(
+        "/api/v1/speech/transcribe",
+        json={"audio_base64": valid_audio, "mime_type": "audio/webm;codecs=opus"},
+    )
+    assert stt_ok.status_code == 200
+    assert "Risiken" in stt_ok.json()["text"]
+
+    stt_bad_mime = await async_client.post(
+        "/api/v1/speech/transcribe",
+        json={"audio_base64": valid_audio, "mime_type": "video/mp4"},
+    )
+    assert stt_bad_mime.status_code == 400
+
+

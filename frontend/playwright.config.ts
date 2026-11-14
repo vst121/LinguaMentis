@@ -25,7 +25,7 @@ export default defineConfig({
     },
     {
       command:
-        "NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8001/api/v1 pnpm exec next dev -p 3001",
+        "NEXT_DIST_DIR=.next-e2e NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8001/api/v1 pnpm exec next dev -p 3001",
       url: "http://127.0.0.1:3001",
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,

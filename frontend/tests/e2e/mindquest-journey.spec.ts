@@ -145,4 +145,71 @@ test.describe("LinguaMentis E2E MindQuest Journey", () => {
     await expect(page.getByText("Dein Feedback")).toBeVisible();
     expect(Date.now() - tEval).toBeLessThan(800);
   });
+
+  test("toggles between Eintippen and Einsprechen with visual microphone indicator in browser", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      class BrowserMockSpeechRecognition {
+        lang = "de-DE";
+        continuous = true;
+        interimResults = true;
+        onresult: ((ev: unknown) => void) | null = null;
+        onerror: ((ev: unknown) => void) | null = null;
+        onend: (() => void) | null = null;
+        start() {
+          setTimeout(() => {
+            if (this.onresult) {
+              this.onresult({
+                resultIndex: 0,
+                results: {
+                  length: 1,
+                  0: {
+                    isFinal: true,
+                    0: {
+                      transcript:
+                        "Eingesprochene Antwort über das Browser-Mikrofon.",
+                    },
+                  },
+                },
+              });
+            }
+          }, 50);
+        }
+        stop() {}
+      }
+      (window as unknown as Record<string, unknown>).SpeechRecognition =
+        BrowserMockSpeechRecognition;
+      (window as unknown as Record<string, unknown>).webkitSpeechRecognition =
+        BrowserMockSpeechRecognition;
+    });
+
+    await page.goto("/mindquests");
+    await page
+      .getByPlaceholder(/Soll KI Hausaufgaben bewerten/i)
+      .fill("Spracheingabe Test Thema");
+    await page.getByRole("button", { name: /MindQuest erstellen/i }).click();
+    await expect(page).toHaveURL(/\/mindquests\/[0-9a-f-]+$/);
+
+    await page.getByRole("button", { name: /MindQuest beginnen/i }).click();
+
+    // Click "Einsprechen" button
+    const speakBtn = page.getByRole("button", { name: /Einsprechen/i });
+    await speakBtn.click();
+
+    // Verify visual recording banner & level bars appear
+    await expect(page.getByTestId("recording-indicator")).toBeVisible();
+    await expect(page.getByText(/Mikrofon nimmt auf/i)).toBeVisible();
+    await expect(page.getByTestId("audio-level-bars")).toBeVisible();
+
+    // Wait for spoken transcript to populate textarea
+    const textarea = page.getByPlaceholder(/Sprich jetzt ins Mikrofon/i);
+    await expect(textarea).toHaveValue(
+      "Eingesprochene Antwort über das Browser-Mikrofon."
+    );
+
+    // Switch back to "Eintippen" and verify recording indicator closes
+    await page.getByRole("button", { name: /Eintippen/i }).click();
+    await expect(page.getByTestId("recording-indicator")).toBeHidden();
+  });
 });

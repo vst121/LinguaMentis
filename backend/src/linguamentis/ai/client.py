@@ -41,3 +41,14 @@ class LLMClient(Protocol):
         retries.
         """
         ...
+
+    async def transcribe_audio(
+        self,
+        *,
+        audio_base64: str,
+        mime_type: str,
+        model: str,
+    ) -> BaseModel:
+        """Transcribe spoken German audio into a structured transcription output."""
+        ...
+
