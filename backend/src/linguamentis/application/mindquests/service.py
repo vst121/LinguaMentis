@@ -131,12 +131,8 @@ class MindQuestService:
     ) -> MindQuest:
         import uuid
 
-        # Answering Mode enforces all 6 hats; Argue Mode uses 5 selectable hats (no BLUE)
-        enforced_hats = (
-            ARGUE_SELECTABLE_HATS
-            if mode == MindQuestMode.ARGUE
-            else DEFAULT_HAT_SEQUENCE
-        )
+        # Both modes plan all 6 hats (BLUE is always last); Argue Mode allows free choice of first 5
+        enforced_hats = DEFAULT_HAT_SEQUENCE
 
         mq = MindQuest(
             id=uuid.uuid4(),
@@ -261,18 +257,28 @@ class MindQuestService:
     async def select_hat(
         self, mindquest_id: UUID, hat: HatType
     ) -> StartMindQuestResult:
-        """Select or switch to a hat in Argue Mode (never BLUE).
+        """Select or switch to a hat in Argue Mode.
 
-        - Switching to an incomplete hat preserves its latest turn & prior evaluation.
-        - Switching to an already-completed hat returns read-only state & scores.
+        - The 5 non-BLUE hats can be selected/switched freely at any time.
+        - BLUE is always last: rejected until all 5 other hats are completed, then
+          generates the Blue Agent synthesis question just like Answering Mode.
+        - Completed hats return read-only state & scores.
         """
         mq = await self.get_mindquest(mindquest_id)
 
         if mq.mode != MindQuestMode.ARGUE:
             raise DomainError("Manual hat selection is only available in Argue Mode.")
 
-        if hat == HatType.BLUE or hat not in ARGUE_SELECTABLE_HATS:
-            raise DomainError("Blue Hat cannot be selected in Argue Mode.")
+        if hat not in DEFAULT_HAT_SEQUENCE:
+            raise DomainError(f"Unsupported hat '{hat.value}'.")
+
+        if hat == HatType.BLUE:
+            other_hats_done = all(h in mq.completed_hats for h in ARGUE_SELECTABLE_HATS)
+            if not other_hats_done:
+                raise DomainError(
+                    "Der Blaue Hut muss immer als letzter Schritt nach allen anderen "
+                    "5 Hüten beantwortet werden."
+                )
 
         if mq.status in (MindQuestStatus.COMPLETED, MindQuestStatus.ABANDONED):
             raise DomainError(
@@ -280,7 +286,7 @@ class MindQuestService:
             )
 
         if mq.status == MindQuestStatus.CREATED:
-            mq.select_topic(mq.topic, mq.planned_hats or ARGUE_SELECTABLE_HATS)
+            mq.select_topic(mq.topic, mq.planned_hats or DEFAULT_HAT_SEQUENCE)
 
         if mq.status == MindQuestStatus.TOPIC_SELECTED:
             mq.begin()
@@ -304,14 +310,32 @@ class MindQuestService:
             active_round = mq.activate_hat(hat)
 
         if not active_round.turns:
-            q_tpl, instr = _ARGUE_OPENING_PROMPTS[hat]
-            challenge = HatChallenge(
-                question=q_tpl.format(topic=mq.topic),
-                instruction=instr,
-                expected_thinking_mode=hat,
-                difficulty=4 if mq.target_level == LanguageLevel.C1 else 3,
-                rationale="Instant Argue Mode opening prompt",
-            )
+            if hat == HatType.BLUE:
+                context = MindQuestContext(
+                    mindquest_id=mq.id,
+                    topic=mq.topic,
+                    target_level=mq.target_level.value,
+                    current_hat=HatType.BLUE,
+                    current_turn_number=1,
+                    completed_hats=mq.completed_hats,
+                )
+                challenge = (
+                    await self._prefetch_cache.consume_hat_challenge(mq.id, HatType.BLUE)
+                    if self._prefetch_cache is not None
+                    else None
+                )
+                if challenge is None:
+                    agent = self._agent_registry.get(HatType.BLUE)
+                    challenge = await agent.create_challenge(context)
+            else:
+                q_tpl, instr = _ARGUE_OPENING_PROMPTS[hat]
+                challenge = HatChallenge(
+                    question=q_tpl.format(topic=mq.topic),
+                    instruction=instr,
+                    expected_thinking_mode=hat,
+                    difficulty=4 if mq.target_level == LanguageLevel.C1 else 3,
+                    rationale="Instant Argue Mode opening prompt",
+                )
             current_turn = active_round.add_turn(
                 challenge_question=challenge.question,
                 challenge_instruction=challenge.instruction,
@@ -374,28 +398,9 @@ class MindQuestService:
         self, mindquest_id: UUID, user_response: str
     ) -> TurnSubmissionResult:
         mq = await self.get_mindquest(mindquest_id)
-        res = await self._turn_service.submit_response(
+        return await self._turn_service.submit_response(
             mindquest=mq, user_response=user_response
         )
-        if (
-            mq.mode == MindQuestMode.ARGUE
-            and res.round_should_complete
-            and mq.all_planned_hats_completed()
-            and mq.status == MindQuestStatus.HAT_COMPLETED
-        ):
-            mq.finish_all_hats()
-            mq.start_final_evaluation()
-            reflection = await self._generate_and_save_final_reflection(mq)
-            mq.complete()
-            await self._mindquest_repo.save(mq)
-            await self._activity_repo.log_activity(
-                user_id=mq.user_id,
-                activity_type=ActivityType.MINDQUEST_COMPLETED,
-                mindquest_id=mq.id,
-                payload={"completed_hats": [h.value for h in mq.completed_hats]},
-            )
-            res.final_reflection = reflection
-        return res
 
     async def advance_mindquest(self, mindquest_id: UUID) -> AdvanceMindQuestResult:
         """Advance to the next hat in sequence, or finish the MindQuest if all hats done."""
@@ -447,8 +452,11 @@ class MindQuestService:
                 final_reflection=reflection,
             )
         else:
-            if mq.mode == MindQuestMode.ARGUE:
-                # In Argue Mode, wait for the learner to select the next remaining hat
+            if (
+                mq.mode == MindQuestMode.ARGUE
+                and mq.remaining_planned_hats != (HatType.BLUE,)
+            ):
+                # In Argue Mode, wait for the learner to select among remaining non-Blue hats
                 await self._mindquest_repo.save(mq)
                 return AdvanceMindQuestResult(
                     mindquest=mq,
@@ -458,7 +466,7 @@ class MindQuestService:
                     is_completed=False,
                 )
 
-            # Activate next hat in sequence
+            # Activate next hat in sequence (or final BLUE hat in Argue Mode)
             next_hat = mq.remaining_planned_hats[0]
             active_round = mq.activate_hat(next_hat)
 

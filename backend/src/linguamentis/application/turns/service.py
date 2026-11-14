@@ -169,8 +169,8 @@ class TurnService:
 
         average_score = compute_response_average_score(thinking_eval, german_eval)
 
-        if mindquest.mode == MindQuestMode.ARGUE:
-            # Argue Mode: B2 requires >= 10% average; C1 requires > 80% average
+        if mindquest.mode == MindQuestMode.ARGUE and active_round.hat != HatType.BLUE:
+            # Argue Mode (for the 5 selectable hats): B2 requires >= 10%; C1 requires > 80%
             raw_avg = (
                 thinking_eval.hat_adherence
                 + thinking_eval.relevance
@@ -187,7 +187,7 @@ class TurnService:
                 mindquest.target_level, raw_avg
             )
         else:
-            # Answering Mode: single round per hat (one question + one evaluated response)
+            # Answering Mode (and final Blue Hat synthesis): single round per hat
             turn_count = len(active_round.turns)
             round_should_complete = turn_count >= MAX_TURNS_PER_HAT_ROUND
 
@@ -247,7 +247,7 @@ class TurnService:
                 difficulty=follow_up_challenge.difficulty,
             )
         else:
-            if mindquest.mode == MindQuestMode.ARGUE:
+            if mindquest.mode == MindQuestMode.ARGUE and active_round.hat != HatType.BLUE:
                 # In Argue Mode, immediately mark this hat solved so switching hats preserves it
                 mindquest.complete_current_hat()
                 await self._activity_repo.log_activity(
@@ -256,9 +256,9 @@ class TurnService:
                     mindquest_id=mindquest.id,
                     payload={"hat": active_round.hat.value},
                 )
-            else:
-                # Prefetch next challenge (Answering Mode) or final reflection if all hats done
-                self._schedule_post_round_prefetch(mindquest, active_round.hat)
+            # Prefetch next challenge (Answering Mode, or Blue Hat after 5th Argue hat)
+            # or final reflection when Blue Hat completes
+            self._schedule_post_round_prefetch(mindquest, active_round.hat)
             proposition, feedback = await asyncio.gather(prop_task, feedback_task)
 
         await self._evaluation_service.persist_evaluations(
@@ -291,8 +291,8 @@ class TurnService:
         done_after_round = set(mindquest.completed_hats) | {completed_hat}
         remaining = tuple(h for h in mindquest.planned_hats if h not in done_after_round)
         if remaining:
-            if mindquest.mode == MindQuestMode.ARGUE:
-                # In Argue Mode the user selects the next hat manually
+            if mindquest.mode == MindQuestMode.ARGUE and remaining != (HatType.BLUE,):
+                # In Argue Mode the user chooses among the first 5 hats; only Blue is fixed last
                 return
             next_hat = remaining[0]
             next_context = MindQuestContext(

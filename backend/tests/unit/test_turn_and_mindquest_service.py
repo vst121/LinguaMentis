@@ -11,7 +11,7 @@ from linguamentis.application.evaluation.service import EvaluationService
 from linguamentis.application.mindquests.prefetch import ChallengePrefetchCache
 from linguamentis.application.mindquests.service import MindQuestService
 from linguamentis.application.turns.service import TurnService
-from linguamentis.domain.hats.types import ARGUE_SELECTABLE_HATS, HatType
+from linguamentis.domain.hats.types import DEFAULT_HAT_SEQUENCE, HatType
 from linguamentis.domain.mindquests.enums import (
     LanguageLevel,
     MindQuestMode,
@@ -233,11 +233,11 @@ async def test_argue_mode_hat_switching_thresholds_and_read_only_solved_hats(
         mode=MindQuestMode.ARGUE,
     )
     assert mq.mode == MindQuestMode.ARGUE
-    assert mq.planned_hats == ARGUE_SELECTABLE_HATS
-    assert HatType.BLUE not in mq.planned_hats
+    assert mq.planned_hats == DEFAULT_HAT_SEQUENCE
+    assert HatType.BLUE in mq.planned_hats
 
-    # Blue hat can never be selected in Argue Mode
-    with pytest.raises(DomainError, match="Blue Hat"):
+    # Blue hat cannot be selected before the other 5 hats are completed
+    with pytest.raises(DomainError, match="letzter Schritt"):
         await mq_service.select_hat(mq.id, HatType.BLUE)
 
     # Select BLACK hat first and submit a weak answer (<= 80% -> rejected, Turn 2 created)
@@ -296,18 +296,32 @@ async def test_argue_mode_hat_switching_thresholds_and_read_only_solved_hats(
             mindquest_id=mq.id, user_response="Darf nicht mehr geändert werden."
         )
 
-    # Complete the remaining 4 selectable hats (WHITE, YELLOW, GREEN, RED) -> auto-completes on 5th
-    for idx, remaining_hat in enumerate(
-        (HatType.WHITE, HatType.YELLOW, HatType.GREEN, HatType.RED)
-    ):
+    # Complete the remaining 4 non-Blue hats (WHITE, YELLOW, GREEN, RED)
+    for remaining_hat in (HatType.WHITE, HatType.YELLOW, HatType.GREEN, HatType.RED):
         await mq_service.select_hat(mq.id, remaining_hat)
         sub = await mq_service.submit_response(
             mindquest_id=mq.id,
             user_response="Differenzierte Argumentation mit präziser C1-Ausdrucksweise.",
         )
         assert sub.round_should_complete is True
-        if idx == 3:
-            assert sub.final_reflection is not None
+
+    # Now all 5 non-Blue hats are done -> Blue Hat unlocks as final step!
+    assert mq.remaining_planned_hats == (HatType.BLUE,) or (
+        (await mq_service.get_mindquest(mq.id)).remaining_planned_hats == (HatType.BLUE,)
+    )
+    blue_sel = await mq_service.select_hat(mq.id, HatType.BLUE)
+    assert blue_sel.active_hat == HatType.BLUE
+    assert blue_sel.initial_turn.challenge_question != ""
+
+    # Blue Hat completes in 1 round (just like Answering Mode), then advance finishes quest
+    blue_sub = await mq_service.submit_response(
+        mindquest_id=mq.id,
+        user_response="Insgesamt müssen wir Effizienz und Verkehrssicherheit ausbalancieren.",
+    )
+    assert blue_sub.round_should_complete is True
+    final_adv = await mq_service.advance_mindquest(mq.id)
+    assert final_adv.is_completed is True
+    assert final_adv.final_reflection is not None
 
     finished = await mq_service.get_mindquest(mq.id)
     assert finished.status == MindQuestStatus.COMPLETED

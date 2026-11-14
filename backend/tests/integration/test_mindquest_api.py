@@ -262,9 +262,9 @@ async def test_argue_mode_api_endpoints(async_client: AsyncClient):
     mq_data = create_resp.json()
     mq_id = mq_data["id"]
     assert mq_data["mode"] == "ARGUE"
-    assert mq_data["planned_hats"] == ["WHITE", "YELLOW", "GREEN", "RED", "BLACK"]
+    assert mq_data["planned_hats"] == ["WHITE", "YELLOW", "GREEN", "RED", "BLACK", "BLUE"]
 
-    # Selecting BLUE is rejected
+    # Selecting BLUE before the other 5 hats are completed is rejected
     blue_resp = await async_client.post(
         f"/api/v1/mindquests/{mq_id}/select-hat",
         json={"hat": "BLUE"},

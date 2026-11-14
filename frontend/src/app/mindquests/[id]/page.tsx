@@ -46,6 +46,14 @@ import {
 } from "@/types/mindquest";
 
 const ARGUE_HATS: HatType[] = ["WHITE", "YELLOW", "GREEN", "RED", "BLACK"];
+const ALL_ARGUE_HATS: HatType[] = [
+  "WHITE",
+  "YELLOW",
+  "GREEN",
+  "RED",
+  "BLACK",
+  "BLUE",
+];
 
 const inFlightStarts = new Map<string, Promise<StartMindQuestResponse>>();
 
@@ -257,6 +265,17 @@ export default function MindQuestPage() {
   }, [applySelectHatResult, id, router]);
   async function chooseHat(hat: HatType) {
     if (busy || pendingResponse) return;
+    if (quest?.mode === "ARGUE" && hat === "BLUE") {
+      const fiveDone = ARGUE_HATS.every((h) =>
+        quest.completed_hats.includes(h),
+      );
+      if (!fiveDone) {
+        setError(
+          "Der Blaue Hut kann nicht ausgewählt werden — er muss immer als letzter Schritt nach allen anderen 5 Hüten beantwortet werden.",
+        );
+        return;
+      }
+    }
     if (isRecording) {
       await stopRecording();
     }
@@ -367,26 +386,10 @@ export default function MindQuestPage() {
           activeHat && !quest.completed_hats.includes(activeHat)
             ? [...quest.completed_hats, activeHat]
             : quest.completed_hats;
-        const allDone = quest.planned_hats.every((h) =>
-          nextCompleted.includes(h),
-        );
-        if (allDone || res.final_reflection) {
-          if (res.final_reflection) {
-            try {
-              sessionStorage.setItem(
-                `linguamentis:reflection:${id}`,
-                JSON.stringify(res.final_reflection),
-              );
-            } catch {
-              // Ignore storage errors
-            }
-          }
-          router.replace(`/mindquests/${id}/reflection`);
-          return;
-        }
         setQuest({
           ...quest,
-          status: "HAT_COMPLETED",
+          status:
+            activeHat === "BLUE" ? quest.status : "HAT_COMPLETED",
           completed_hats: nextCompleted,
         });
         setIsReadOnlyHat(true);
@@ -459,7 +462,11 @@ export default function MindQuestPage() {
       return;
     }
 
-    if (quest?.mode === "ARGUE" && remainingHats.length > 0) {
+    if (
+      quest?.mode === "ARGUE" &&
+      remainingHats.length > 0 &&
+      !(remainingHats.length === 1 && remainingHats[0] === "BLUE")
+    ) {
       setFeedback(null);
       setTurn(null);
       setIsReadOnlyHat(false);
@@ -488,6 +495,8 @@ export default function MindQuestPage() {
       }
       setQuest(result.mindquest);
       setFeedback(null);
+      setIsReadOnlyHat(false);
+      setDraft("");
       setTurn(result.initial_turn ?? null);
       setBusy(false);
     } catch {
@@ -528,10 +537,15 @@ export default function MindQuestPage() {
         ? null
         : quest.current_hat || quest.planned_hats[0];
   const argueTargetText = quest.target_level === "B2" ? "≥ 10 %" : "> 80 %";
+  const allFiveArgueDone = ARGUE_HATS.every((h) =>
+    quest.completed_hats.includes(h),
+  );
   const remainingHats = quest.planned_hats.filter(
     (h) => !quest.completed_hats.includes(h),
   );
-  const isLastHat = remainingHats.length <= 1;
+  const isLastHat = isArgue
+    ? currentHat === "BLUE"
+    : remainingHats.length <= 1;
 
   const topActionButton = feedback ? (
     feedback.round_should_complete ? (
@@ -541,7 +555,7 @@ export default function MindQuestPage() {
         size="md"
         className="shrink-0 bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400/60 hover:bg-emerald-500"
       >
-        {isLastHat && !isArgue ? "Abschlussreflexion ansehen" : "Nächste Perspektive"}
+        {isLastHat ? "Abschlussreflexion ansehen" : "Nächste Perspektive"}
         <ArrowRight className="ml-2" size={16} />
       </Button>
     ) : (
@@ -626,10 +640,11 @@ export default function MindQuestPage() {
               className="mt-2 flex flex-wrap items-center gap-1.5"
               aria-label="Hut-Fortschritt"
             >
-              {ARGUE_HATS.map((h) => {
+              {ALL_ARGUE_HATS.map((h) => {
                 const meta = HAT_METADATA[h];
                 const isDone = quest.completed_hats.includes(h);
                 const isCurrent = h === currentHat;
+                const isBlueLocked = h === "BLUE" && !allFiveArgueDone;
                 return (
                   <button
                     key={h}
@@ -638,21 +653,31 @@ export default function MindQuestPage() {
                     onClick={() => void chooseHat(h)}
                     data-testid={`hat-pill-${h}`}
                     title={`${meta.nameGerman} — ${
-                      isDone
-                        ? "Erledigt (Punkte ansehen)"
-                        : isCurrent
-                          ? "Aktuell"
-                          : "Offen (wechseln)"
+                      isBlueLocked
+                        ? "Gesperrt (immer als letzter Schritt)"
+                        : isDone
+                          ? "Erledigt (Punkte ansehen)"
+                          : isCurrent
+                            ? "Aktuell"
+                            : "Offen (wechseln)"
                     }`}
                     aria-label={`${meta.nameGerman}: ${
-                      isDone ? "erledigt" : isCurrent ? "aktuell" : "offen"
+                      isBlueLocked
+                        ? "gesperrt"
+                        : isDone
+                          ? "erledigt"
+                          : isCurrent
+                            ? "aktuell"
+                            : "offen"
                     }`}
                     className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition disabled:opacity-60 ${
                       isCurrent
                         ? "border-indigo-300 bg-indigo-600 text-white ring-2 ring-indigo-300/70 shadow-sm"
                         : isDone
                           ? "border-emerald-400/60 bg-emerald-900/50 text-emerald-200 hover:bg-emerald-800/60"
-                          : "border-slate-500 bg-slate-700/80 text-slate-200 hover:border-indigo-400 hover:bg-slate-600/80"
+                          : isBlueLocked
+                            ? "border-blue-500/40 bg-slate-800/70 text-blue-200/80 hover:border-blue-400"
+                            : "border-slate-500 bg-slate-700/80 text-slate-200 hover:border-indigo-400 hover:bg-slate-600/80"
                     }`}
                   >
                     <span
@@ -663,6 +688,8 @@ export default function MindQuestPage() {
                       <CheckCircle2 size={13} className="text-emerald-300" />
                     ) : isCurrent ? (
                       <Flame size={13} className="text-indigo-200" />
+                    ) : isBlueLocked ? (
+                      <Lock size={12} className="text-blue-300" />
                     ) : (
                       <CircleDashed size={13} className="text-slate-400" />
                     )}
@@ -726,12 +753,13 @@ export default function MindQuestPage() {
         ) : !turn && isArgue ? (
             <Card
               title="Perspektive wählen (Argue Mode)"
-              description={`Wähle einen der 5 Hüte. Du kannst jederzeit oben zwischen offenen Hüten wechseln (Ziel ${quest.target_level}: ${argueTargetText}).`}
+              description={`Wähle einen der ersten 5 Hüte (Ziel ${quest.target_level}: ${argueTargetText}). Der Blaue Hut folgt immer als letzter Schritt.`}
             >
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {ARGUE_HATS.map((hat) => {
+                {ALL_ARGUE_HATS.map((hat) => {
                   const meta = HAT_METADATA[hat];
                   const isCompleted = quest.completed_hats.includes(hat);
+                  const isBlueLocked = hat === "BLUE" && !allFiveArgueDone;
                   return (
                     <button
                       key={hat}
@@ -742,7 +770,9 @@ export default function MindQuestPage() {
                       className={`flex flex-col justify-between rounded-xl border p-3.5 text-left transition ${
                         isCompleted
                           ? "border-emerald-500/50 bg-emerald-950/30 hover:border-emerald-400 hover:bg-emerald-900/35"
-                          : "border-slate-500 bg-slate-800/80 hover:border-indigo-400 hover:bg-slate-600/80"
+                          : isBlueLocked
+                            ? "border-blue-500/40 bg-slate-800/50 opacity-80 hover:border-blue-400"
+                            : "border-slate-500 bg-slate-800/80 hover:border-indigo-400 hover:bg-slate-600/80"
                       }`}
                     >
                       <div>
@@ -760,6 +790,11 @@ export default function MindQuestPage() {
                               <CheckCircle2 size={13} />
                               Erledigt
                             </span>
+                          ) : isBlueLocked ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-300">
+                              <Lock size={12} />
+                              Letzter Schritt
+                            </span>
                           ) : (
                             <Flame size={14} className="text-indigo-300" />
                           )}
@@ -770,12 +805,20 @@ export default function MindQuestPage() {
                       </div>
                       <span
                         className={`mt-3 text-[11px] font-medium ${
-                          isCompleted ? "text-emerald-300" : "text-indigo-300"
+                          isCompleted
+                            ? "text-emerald-300"
+                            : isBlueLocked
+                              ? "text-blue-300"
+                              : "text-indigo-300"
                         }`}
                       >
                         {isCompleted
                           ? "Erledigt · Punktzahl ansehen →"
-                          : "Hut wählen & argumentieren →"}
+                          : isBlueLocked
+                            ? "Erst nach den anderen 5 Hüten wählbar"
+                            : hat === "BLUE"
+                              ? "Abschluss-Synthese starten →"
+                              : "Hut wählen & argumentieren →"}
                       </span>
                     </button>
                   );
@@ -807,7 +850,7 @@ export default function MindQuestPage() {
                 </div>
               </Card>
             </div>
-        ) : isArgue ? (
+        ) : isArgue && currentHat !== "BLUE" ? (
           <div className="grid gap-4 md:grid-cols-[.9fr_1.1fr] md:items-start">
             {/* LEFT COLUMN (Argue Mode): Learner starts and gives reasoning */}
             <div className="flex flex-col gap-3">
@@ -1112,16 +1155,16 @@ export default function MindQuestPage() {
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-[.9fr_1.1fr] md:items-start">
-            {/* Left column (Answering Mode): Challenge prompt and Feedback summary */}
+            {/* Left column (Answering Mode & final Blue Hat synthesis): Challenge prompt and Feedback summary */}
             <div className="flex flex-col gap-3">
               <Card>
-                <p className="text-xs font-semibold text-blue-700">
+                <p className="text-xs font-semibold text-blue-700 dark:text-blue-300">
                   RUNDE {turn.turn_number} · {currentHat && <span>{currentHat}</span>}
                 </p>
                 <h2 className="mt-1.5 text-base font-semibold leading-6 md:text-lg md:leading-7">
                   {turn.challenge_question}
                 </h2>
-                <p className="mt-2.5 rounded-lg bg-slate-50 p-2.5 text-xs leading-5 text-slate-600 md:text-sm md:leading-6">
+                <p className="mt-2.5 rounded-lg bg-slate-50 p-2.5 text-xs leading-5 text-slate-600 md:text-sm md:leading-6 dark:bg-slate-800/80 dark:text-slate-200">
                   {turn.challenge_instruction}
                 </p>
               </Card>
@@ -1133,10 +1176,10 @@ export default function MindQuestPage() {
                   bodyClassName="flex flex-col gap-3"
                 >
                   <div className="space-y-2.5">
-                    <p className="rounded-lg bg-blue-50 p-3 text-sm leading-6 text-slate-700">
+                    <p className="rounded-lg bg-blue-50 p-3 text-sm leading-6 text-slate-700 dark:bg-blue-900/40 dark:text-blue-100">
                       {feedback.feedback.thinking_feedback}
                     </p>
-                    <p className="rounded-lg bg-emerald-50 p-3 text-sm leading-6 text-slate-700">
+                    <p className="rounded-lg bg-emerald-50 p-3 text-sm leading-6 text-slate-700 dark:bg-emerald-900/40 dark:text-emerald-100">
                       {feedback.feedback.german_feedback}
                     </p>
                   </div>
@@ -1144,7 +1187,7 @@ export default function MindQuestPage() {
               )}
             </div>
 
-            {/* Right column (Answering Mode): Editor, loading state, or evaluation */}
+            {/* Right column (Answering Mode & final Blue Hat synthesis): Editor, loading state, or evaluation */}
             <div className="flex flex-col">
               {pendingResponse ? (
                 <Card
@@ -1152,11 +1195,11 @@ export default function MindQuestPage() {
                   description="Denken, Deutsch und Sprach-Upgrade werden parallel erstellt …"
                   bodyClassName="flex flex-col gap-3"
                 >
-                  <p className="rounded-lg bg-slate-50 p-3.5 text-sm leading-6 text-slate-700">
+                  <p className="rounded-lg bg-slate-50 p-3.5 text-sm leading-6 text-slate-700 dark:bg-slate-800/70 dark:text-slate-100">
                     {pendingResponse}
                   </p>
-                  <div className="flex items-center gap-2.5 rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
-                    <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  <div className="flex items-center gap-2.5 rounded-lg bg-blue-50 p-3 text-sm text-blue-800 dark:bg-indigo-900/40 dark:text-indigo-100">
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-600 dark:text-indigo-300" />
                     <span>Auswertung läuft ({elapsedSeconds}s) …</span>
                   </div>
                 </Card>
@@ -1192,13 +1235,13 @@ export default function MindQuestPage() {
                           ? "Sprich jetzt ins Mikrofon — dein Text erscheint hier …"
                           : "Schreibe deine Antwort hier …"
                       }
-                      className={`min-h-56 w-full resize-y rounded-lg border bg-white p-3 leading-7 text-slate-900 outline-none ${
+                      className={`min-h-56 w-full resize-y rounded-lg border bg-white p-3 leading-7 text-slate-900 outline-none dark:bg-slate-800 dark:text-slate-50 ${
                         isRecording
-                          ? "border-amber-400 bg-amber-50/20 ring-2 ring-amber-200 focus:ring-amber-400"
-                          : "border-slate-300 focus:ring-2 focus:ring-blue-500"
+                          ? "border-amber-400 bg-amber-50/20 ring-2 ring-amber-200 focus:ring-amber-400 dark:border-indigo-400 dark:bg-slate-800 dark:ring-indigo-400/50"
+                          : "border-slate-300 focus:ring-2 focus:ring-blue-500 dark:border-slate-500 dark:focus:ring-indigo-400"
                       }`}
                     />
-                    <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                    <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-300">
                       <span>
                         {draft.trim().split(/\s+/).filter(Boolean).length} Wörter
                       </span>
@@ -1217,10 +1260,10 @@ export default function MindQuestPage() {
                 <div className="grid gap-3 md:grid-cols-2 md:auto-rows-max">
                   <Card title="Denken" bodyClassName="pt-3">
                     <div className="mb-2 flex items-baseline justify-between">
-                      <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      <span className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-300">
                         Gesamt
                       </span>
-                      <strong className="text-lg font-bold text-blue-700">
+                      <strong className="text-lg font-bold text-blue-700 dark:text-blue-300">
                         {feedback.thinking_evaluation.score} / 100
                       </strong>
                     </div>

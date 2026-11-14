@@ -383,7 +383,7 @@ describe("MindQuestPage interactive flow", () => {
       mode: "ARGUE",
       status: "TOPIC_SELECTED",
       current_hat: null,
-      planned_hats: ["WHITE", "YELLOW", "GREEN", "RED", "BLACK"],
+      planned_hats: ["WHITE", "YELLOW", "GREEN", "RED", "BLACK", "BLUE"],
       completed_hats: [],
       hat_rounds: [],
       created_at: "2026-11-14T10:00:00Z",
@@ -629,7 +629,7 @@ describe("MindQuestPage interactive flow", () => {
 
     render(<MindQuestPage />);
 
-    // 1. Dark theme active and 5 hats visible (Blauer Hut must NOT be present)
+    // 1. Dark theme active and all 6 hats shown (Blauer Hut shown as locked last step)
     expect(
       await screen.findByText(/Perspektive wählen \(Argue Mode\)/i)
     ).toBeInTheDocument();
@@ -641,7 +641,20 @@ describe("MindQuestPage interactive flow", () => {
     expect(screen.getByText("Grüner Hut")).toBeInTheDocument();
     expect(screen.getByText("Roter Hut")).toBeInTheDocument();
     expect(screen.getByText("Schwarzer Hut")).toBeInTheDocument();
-    expect(screen.queryByText("Blauer Hut")).not.toBeInTheDocument();
+    expect(screen.getByText("Blauer Hut")).toBeInTheDocument();
+    expect(screen.getByTestId("hat-pill-BLUE")).toHaveAttribute(
+      "aria-label",
+      "Blauer Hut: gesperrt",
+    );
+
+    // Clicking Blauer Hut early explains why it cannot be selected yet
+    fireEvent.click(screen.getByTestId("hat-card-BLUE"));
+    expect(
+      await screen.findByText(
+        /Der Blaue Hut kann nicht ausgewählt werden — er muss immer als letzter Schritt nach allen anderen 5 Hüten beantwortet werden\./i
+      )
+    ).toBeInTheDocument();
+    expect(mqApi.selectHat).not.toHaveBeenCalled();
 
     // 2. Select Schwarzer Hut -> shows SpeechModeToggle & top-left active pill
     fireEvent.click(screen.getByTestId("hat-card-BLACK"));
@@ -767,11 +780,139 @@ describe("MindQuestPage interactive flow", () => {
 
     render(<MindQuestPage />);
     expect(await screen.findByText("84 / 100")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Nächste Perspektive/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Nächste Perspektive/i })).toBeInTheDocument();
     expect(
       screen.queryByPlaceholderText(/Schreibe deine Antwort hier/i)
     ).not.toBeInTheDocument();
+  });
+
+  it("Argue Mode unlocks Blauer Hut as final synthesis step after the first 5 hats and finishes to reflection", async () => {
+    const argueFiveDone: MindQuest = {
+      id: "mq-argue-blue",
+      user_id: "u-1",
+      topic: "Tempolimit",
+      target_level: "B2",
+      mode: "ARGUE",
+      status: "HAT_COMPLETED",
+      current_hat: null,
+      planned_hats: ["WHITE", "YELLOW", "GREEN", "RED", "BLACK", "BLUE"],
+      completed_hats: ["WHITE", "YELLOW", "GREEN", "RED", "BLACK"],
+      hat_rounds: [],
+      created_at: "2026-11-14T10:00:00Z",
+      updated_at: "2026-11-14T10:05:00Z",
+    };
+
+    const blueTurn = {
+      id: "t-blue-1",
+      turn_number: 1,
+      hat: "BLUE" as const,
+      challenge_question: "Wie lautet dein abschließendes Fazit aus allen fünf Perspektiven?",
+      challenge_instruction: "Führe Fakten, Chancen, Ideen, Gefühle und Risiken zusammen.",
+      difficulty: 3,
+      created_at: "2026-11-14T10:06:00Z",
+    };
+
+    vi.mocked(mqApi.getMindQuest).mockResolvedValueOnce(argueFiveDone);
+    vi.mocked(mqApi.selectHat).mockResolvedValueOnce({
+      mindquest: {
+        ...argueFiveDone,
+        status: "HAT_ACTIVE",
+        current_hat: "BLUE",
+        hat_rounds: [
+          {
+            id: "r-blue",
+            hat: "BLUE",
+            sequence_index: 5,
+            turns: [blueTurn],
+            started_at: "2026-11-14T10:06:00Z",
+          },
+        ],
+      },
+      active_hat: "BLUE",
+      initial_turn: blueTurn,
+      challenge_question: blueTurn.challenge_question,
+      challenge_instruction: blueTurn.challenge_instruction,
+      difficulty: 3,
+      is_read_only: false,
+    });
+    vi.mocked(mqApi.submitResponse).mockResolvedValueOnce({
+      turn: { ...blueTurn, user_response: "Insgesamt brauchen wir ein ausgewogenes Konzept." },
+      thinking_evaluation: {
+        id: "te-blue",
+        score: 85,
+        score_anchor: "Strong",
+        hat_adherence: 85,
+        relevance: 85,
+        reasoning: 85,
+        depth: 85,
+        specificity: 85,
+        evidence: [],
+        strengths: ["Gute Synthese."],
+        weaknesses: [],
+        recommendations: [],
+      },
+      german_evaluation: {
+        id: "ge-blue",
+        score: 84,
+        score_anchor: "Strong",
+        grammar: 84,
+        vocabulary: 84,
+        sentence_structure: 84,
+        naturalness: 84,
+        level_appropriateness: 84,
+        evidence: [],
+        corrections: [],
+        strengths: ["Klarer Ausdruck."],
+        weaknesses: [],
+        recommendations: [],
+      },
+      feedback: {
+        thinking_feedback: "Gelungene Zusammenfassung.",
+        german_feedback: "Sehr gutes B2-Deutsch.",
+        encouragement: "Starkes Finale!",
+      },
+      average_score: 84.5,
+      round_should_complete: true,
+    });
+    vi.mocked(mqApi.advanceMindQuest).mockResolvedValueOnce({
+      mindquest: {
+        ...argueFiveDone,
+        status: "COMPLETED",
+        completed_hats: ["WHITE", "YELLOW", "GREEN", "RED", "BLACK", "BLUE"],
+      },
+      is_completed: true,
+      final_reflection: {
+        id: "refl-argue-1",
+        mindquest_id: "mq-argue-blue",
+        mode: "ARGUE",
+        thinking_summary: "Stark.",
+        german_summary: "Gut.",
+        thinking_section: { overall_summary: "Stark" },
+        german_section: { overall_summary: "Gut" },
+        closing_message: "Bravo!",
+      },
+    });
+
+    render(<MindQuestPage />);
+    const blueCard = await screen.findByTestId("hat-card-BLUE");
+    expect(blueCard).toHaveTextContent(/Abschluss-Synthese starten/i);
+
+    fireEvent.click(blueCard);
+    expect(
+      await screen.findByText(blueTurn.challenge_question)
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText(/Schreibe deine Antwort hier/i), {
+      target: { value: "Insgesamt brauchen wir ein ausgewogenes Konzept." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Antwort auswerten/i }));
+
+    expect(await screen.findByText("Gelungene Zusammenfassung.")).toBeInTheDocument();
+    const finishBtn = screen.getByRole("button", { name: /Abschlussreflexion ansehen/i });
+    fireEvent.click(finishBtn);
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith("/mindquests/mq-123/reflection");
+    });
   });
 });
