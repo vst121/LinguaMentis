@@ -212,6 +212,96 @@ def hat_feedback_user_prompt(
 
 
 # ---------------------------------------------------------------------------
+# Elaborated response proposition (Hat Agent model rewrite)
+# ---------------------------------------------------------------------------
+
+
+def response_proposition_system_prompt(contract: HatContract) -> str:
+    return (
+        f"{_APPLICATION_FRAME}\n\n"
+        "You are the Hat Agent for the contract below. Your task is to craft an "
+        "elaborated, higher-level German version of what the learner just wrote so "
+        "they can learn how to express their exact same idea more articulately.\n\n"
+        f"{_format_contract(contract)}\n\n"
+        "Rules:\n"
+        "- STRICT ALIGNMENT: Keep the learner's core idea, stance, and reasoning. Do NOT "
+        "invent unrelated arguments, contradict their viewpoint, or drift outside this "
+        "hat's thinking mode.\n"
+        "- ELABORATED GERMAN: Elevate the wording and syntax clearly above a simple/basic "
+        "draft (use richer vocabulary, precise verbs/nouns, idiomatic debate Redemittel, "
+        "and cohesive complex structures such as subordinate clauses, Nominalstil, or "
+        "Konjunktiv II where natural). Calibrate to strong upper-B2 when target level is "
+        "B2, and eloquent C1 when target level is C1.\n"
+        "- HIGHLIGHTS: Provide 2-6 PropositionHighlightOutput items pointing out the most "
+        "valuable upgrades. Every upgraded_phrase MUST appear verbatim (exact spelling and "
+        "casing) inside improved_response so the UI can highlight it inline. Pair each "
+        "with the corresponding original_phrase from the learner's response (or empty "
+        "string if newly added for cohesion), a category (vocabulary | syntax | idiom | "
+        "precision | connector), and a brief, helpful explanation in German."
+    )
+
+
+def response_proposition_user_prompt(
+    *, context: MindQuestContext, challenge_question: str, user_response: str
+) -> str:
+    return (
+        f"Topic: {context.topic}\n"
+        f"Target language level: {context.target_level}\n"
+        f"Current hat: {context.current_hat.value}\n"
+        f"Challenge given to the learner: {challenge_question}\n\n"
+        f"Learner's original response (German):\n{user_response}\n\n"
+        "Generate the ResponsePropositionOutput."
+    )
+
+
+# ---------------------------------------------------------------------------
+# Argue Mode — Devil's Advocate argued rejection
+# ---------------------------------------------------------------------------
+
+
+def argue_rejection_system_prompt(contract: HatContract) -> str:
+    return (
+        f"{_APPLICATION_FRAME}\n\n"
+        "You are operating in ARGUE MODE as a demanding Devil's Advocate for the "
+        "hat contract below. The learner's response did NOT reach the required >80% "
+        "overall average across thinking and German quality, so it MUST BE REJECTED "
+        "with a sharp, well-reasoned counter-argument.\n\n"
+        f"{_format_contract(contract)}\n\n"
+        "Rules:\n"
+        "- Write completely in German, calibrated to the learner's target level.\n"
+        "- In `question`, clearly reject the current draft as Devil's Advocate: challenge "
+        "their exact claim with a concrete counter-argument, point out the biggest logical "
+        "or hat-adherence gap and/or linguistic weakness, and demand a stronger revision.\n"
+        "- In `instruction`, give a concise, actionable directive telling the learner what "
+        "must be improved in their next revision to convince you (and reach >80%).\n"
+        "- Stay strictly within this hat's perspective and never mention scores or contracts."
+    )
+
+
+def argue_rejection_user_prompt(
+    *,
+    context: MindQuestContext,
+    previous_challenge: str,
+    user_response: str,
+    average_score: float,
+    thinking_weaknesses: list[str],
+    german_weaknesses: list[str],
+) -> str:
+    return (
+        f"Topic: {context.topic}\n"
+        f"Target language level: {context.target_level}\n"
+        f"Current hat: {context.current_hat.value}\n"
+        f"Attempt number: {context.current_turn_number}\n"
+        f"Average score achieved: {average_score}/100 (required: > 80.0)\n"
+        f"Challenge/prompt answered: {previous_challenge}\n"
+        f"Learner's response (German):\n{user_response}\n\n"
+        f"Observed thinking gaps: {', '.join(thinking_weaknesses) or 'needs deeper reasoning'}\n"
+        f"Observed German gaps: {', '.join(german_weaknesses) or 'needs more precision'}\n\n"
+        "Generate the HatChallenge containing the Devil's Advocate argued rejection."
+    )
+
+
+# ---------------------------------------------------------------------------
 # Final reflection (Blue Agent)
 # ---------------------------------------------------------------------------
 

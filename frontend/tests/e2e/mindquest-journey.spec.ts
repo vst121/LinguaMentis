@@ -26,10 +26,9 @@ test.describe("LinguaMentis E2E MindQuest Journey", () => {
       .fill(topic);
     await page.getByRole("button", { name: /MindQuest erstellen/i }).click();
 
-    // 4. Verify redirect to active MindQuest detail page and start the quest
+    // 4. Verify redirect to active MindQuest detail page and immediate first question (no begin button)
     await expect(page).toHaveURL(/\/mindquests\/[0-9a-f-]+$/);
     await expect(page.getByRole("heading", { name: topic })).toBeVisible();
-    await page.getByRole("button", { name: /MindQuest beginnen/i }).click();
 
     // 5. Complete all 6 mandatory hats (WHITE -> YELLOW -> GREEN -> RED -> BLACK -> BLUE)
     for (let hatIdx = 0; hatIdx < 6; hatIdx++) {
@@ -42,10 +41,11 @@ test.describe("LinguaMentis E2E MindQuest Journey", () => {
       );
       await page.getByRole("button", { name: /Antwort auswerten/i }).click();
 
-      // Verify independent Thinking and German evaluations + corrections appear
+      // Verify independent Thinking and German evaluations + elaborated proposition appear
       await expect(page.getByText("Dein Feedback")).toBeVisible();
       await expect(page.getByText("Denken", { exact: true })).toBeVisible();
       await expect(page.getByText("Deutsch", { exact: true })).toBeVisible();
+      await expect(page.getByText("Sprach-Upgrade: Elaborierte Antwort")).toBeVisible();
       await expect(page.getByText("Verbesserungen")).toBeVisible();
 
       if (hatIdx < 5) {
@@ -86,8 +86,11 @@ test.describe("LinguaMentis E2E MindQuest Journey", () => {
   }) => {
     await page.goto("/mindquests");
     await page.getByRole("button", { name: /MindQuest erstellen/i }).click();
-    // Should remain on /mindquests when topic is empty
+    // Should remain on /mindquests and show reminder when topic is empty
     await expect(page).toHaveURL(/\/mindquests$/);
+    await expect(
+      page.getByText("Bitte gib zuerst ein Thema für deine MindQuest ein."),
+    ).toBeVisible();
 
     await page.getByRole("link", { name: /Start/i }).click();
     await expect(page).toHaveURL(/\/$/);

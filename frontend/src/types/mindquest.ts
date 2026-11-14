@@ -3,10 +3,13 @@ import {
   FinalReflection,
   GermanEvaluation,
   HatFeedback,
+  ResponseProposition,
   ThinkingEvaluation,
 } from "./evaluation";
 
 export type LanguageLevel = "B2" | "C1";
+
+export type MindQuestMode = "ANSWERING" | "ARGUE";
 
 export type MindQuestStatus =
   | "CREATED"
@@ -45,6 +48,7 @@ export interface MindQuest {
   user_id: string;
   topic: string;
   target_level: LanguageLevel;
+  mode?: MindQuestMode;
   status: MindQuestStatus;
   current_hat?: HatType | null;
   planned_hats: HatType[];
@@ -58,6 +62,7 @@ export interface MindQuest {
 export interface CreateMindQuestRequest {
   topic: string;
   target_level?: LanguageLevel;
+  mode?: MindQuestMode;
   planned_hats?: HatType[];
 }
 
@@ -79,6 +84,8 @@ export interface SubmitResponseResponse {
   thinking_evaluation: ThinkingEvaluation;
   german_evaluation: GermanEvaluation;
   feedback: HatFeedback;
+  proposition?: ResponseProposition | null;
+  average_score?: number;
   next_challenge_question?: string | null;
   next_challenge_instruction?: string | null;
   round_should_complete: boolean;

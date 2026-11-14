@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
+import { ScoreRadarChart } from "@/components/evaluation/ScoreRadarChart";
 import { DimensionScore } from "@/types/learning";
 
 const DIMENSION_LABELS: Record<string, string> = {
@@ -19,32 +20,6 @@ const DIMENSION_LABELS: Record<string, string> = {
 
 export function formatDimensionName(name: string): string {
   return DIMENSION_LABELS[name] ?? name.replaceAll("_", " ");
-}
-
-export function ScoreBar({
-  label,
-  value,
-  barClassName = "bg-blue-600",
-}: {
-  label: string;
-  value: number;
-  barClassName?: string;
-}) {
-  const clamped = Math.max(0, Math.min(100, value));
-  return (
-    <div>
-      <div className="mb-1 flex justify-between text-sm">
-        <span>{label}</span>
-        <strong>{value} / 100</strong>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-        <div
-          className={`h-full rounded-full ${barClassName}`}
-          style={{ width: `${clamped}%` }}
-        />
-      </div>
-    </div>
-  );
 }
 
 interface ProfileMetricsSectionProps {
@@ -77,43 +52,31 @@ export function ProfileMetricsSection({
   germanExtra,
 }: ProfileMetricsSectionProps) {
   return (
-    <div className="flex flex-col gap-5 md:flex-1 md:min-h-0">
-      <div className="grid shrink-0 gap-4 md:grid-cols-3">
-        <Card bodyClassName="p-4 md:p-5">
-          <p className="text-sm text-slate-500">{primaryCardLabel}</p>
-          <p className="mt-1.5 text-2xl font-bold md:text-3xl">
-            {primaryCardValue}
-          </p>
-        </Card>
-        <Card bodyClassName="p-4 md:p-5">
-          <p className="text-sm text-slate-500">Denken</p>
-          <p className="mt-1.5 text-2xl font-bold md:text-3xl">
-            {thinkingOverall !== null && thinkingOverall !== undefined ? (
-              <>
-                {thinkingOverall}{" "}
-                <span className="text-base font-medium text-slate-400">/ 100</span>
-              </>
-            ) : (
-              "—"
-            )}
-          </p>
-        </Card>
-        <Card bodyClassName="p-4 md:p-5">
-          <p className="text-sm text-slate-500">Deutsch</p>
-          <p className="mt-1.5 text-2xl font-bold md:text-3xl">
-            {germanOverall !== null && germanOverall !== undefined ? (
-              <>
-                {germanOverall}{" "}
-                <span className="text-base font-medium text-slate-400">/ 100</span>
-              </>
-            ) : (
-              "—"
-            )}
-          </p>
-        </Card>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs shadow-sm sm:text-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-center gap-1.5">
+          <span className="text-slate-500 dark:text-slate-400">{primaryCardLabel}:</span>
+          <strong className="font-bold text-slate-900 dark:text-slate-100">{primaryCardValue}</strong>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-slate-500 dark:text-slate-400">Denken:</span>
+          <strong className="font-bold text-blue-700 dark:text-blue-400">
+            {thinkingOverall !== null && thinkingOverall !== undefined
+              ? thinkingOverall
+              : "—"}
+          </strong>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-slate-500 dark:text-slate-400">Deutsch:</span>
+          <strong className="font-bold text-emerald-700 dark:text-emerald-400">
+            {germanOverall !== null && germanOverall !== undefined
+              ? germanOverall
+              : "—"}
+          </strong>
+        </div>
       </div>
 
-      <div className="grid gap-5 md:flex-1 md:min-h-0 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2 md:items-start">
         <Card
           title="Denkfähigkeiten"
           description={
@@ -121,20 +84,18 @@ export function ProfileMetricsSection({
               ? `Stärke: ${formatDimensionName(strongestThinking)} · Fokus: ${formatDimensionName(weakestThinking)}`
               : "Deine Werte erscheinen nach der ersten Auswertung."
           }
-          className="flex flex-col md:h-full md:min-h-0"
-          bodyClassName="flex-1 space-y-4 md:overflow-y-auto"
+          bodyClassName="space-y-3"
         >
           {thinkingDimensions.length > 0 && (
-            <div className="space-y-3.5">
-              {thinkingDimensions.map((d) => (
-                <ScoreBar
-                  key={d.name}
-                  label={formatDimensionName(d.name)}
-                  value={d.score}
-                  barClassName="bg-blue-600"
-                />
-              ))}
-            </div>
+            <ScoreRadarChart
+              accent="blue"
+              ariaLabel="Radar-Diagramm Denkfähigkeiten"
+              dimensions={thinkingDimensions.map((d) => ({
+                key: d.name,
+                label: formatDimensionName(d.name),
+                score: d.score,
+              }))}
+            />
           )}
           {thinkingExtra}
         </Card>
@@ -146,20 +107,18 @@ export function ProfileMetricsSection({
               ? `Stärke: ${formatDimensionName(strongestGerman)} · Fokus: ${formatDimensionName(weakestGerman)}`
               : "Deine Werte erscheinen nach der ersten Auswertung."
           }
-          className="flex flex-col md:h-full md:min-h-0"
-          bodyClassName="flex-1 space-y-4 md:overflow-y-auto"
+          bodyClassName="space-y-3"
         >
           {germanDimensions.length > 0 && (
-            <div className="space-y-3.5">
-              {germanDimensions.map((d) => (
-                <ScoreBar
-                  key={d.name}
-                  label={formatDimensionName(d.name)}
-                  value={d.score}
-                  barClassName="bg-emerald-600"
-                />
-              ))}
-            </div>
+            <ScoreRadarChart
+              accent="emerald"
+              ariaLabel="Radar-Diagramm Deutsch"
+              dimensions={germanDimensions.map((d) => ({
+                key: d.name,
+                label: formatDimensionName(d.name),
+                score: d.score,
+              }))}
+            />
           )}
           {germanExtra}
         </Card>

@@ -1,4 +1,5 @@
 import type { DimensionScore } from "./learning";
+import type { MindQuestMode } from "./mindquest";
 
 export interface Evidence {
   dimension: string;
@@ -50,6 +51,19 @@ export interface HatFeedback {
   encouragement?: string;
 }
 
+export interface PropositionHighlight {
+  upgraded_phrase: string;
+  original_phrase: string;
+  explanation: string;
+  category: string;
+}
+
+export interface ResponseProposition {
+  id: string;
+  improved_response: string;
+  highlights: PropositionHighlight[];
+}
+
 export interface ThinkingReflectionSection {
   overall_summary: string;
   strongest_thinking_modes?: string[];
@@ -75,6 +89,7 @@ export interface FinalReflection {
   mindquest_id: string;
   topic?: string;
   target_level?: string;
+  mode?: MindQuestMode;
   hats_completed?: number;
   hats_total?: number;
   thinking_overall?: number | null;

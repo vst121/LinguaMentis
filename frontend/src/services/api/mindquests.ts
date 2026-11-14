@@ -1,4 +1,5 @@
 import { apiFetch } from "./client";
+import { HatType } from "@/types/hat";
 import {
   AdvanceMindQuestResponse,
   CreateMindQuestRequest,
@@ -30,6 +31,16 @@ export async function startMindQuest(id: string): Promise<StartMindQuestResponse
   });
 }
 
+export async function selectHat(
+  id: string,
+  hat: HatType,
+): Promise<StartMindQuestResponse> {
+  return apiFetch<StartMindQuestResponse>(`/mindquests/${id}/select-hat`, {
+    method: "POST",
+    body: JSON.stringify({ hat }),
+  });
+}
+
 export async function submitResponse(
   id: string,
   data: SubmitResponseRequest
@@ -48,4 +59,10 @@ export async function advanceMindQuest(id: string): Promise<AdvanceMindQuestResp
 
 export async function getFinalReflection(id: string): Promise<FinalReflection> {
   return apiFetch<FinalReflection>(`/mindquests/${id}/reflection`);
+}
+
+export async function deleteMindQuest(id: string): Promise<void> {
+  return apiFetch<void>(`/mindquests/${id}`, {
+    method: "DELETE",
+  });
 }

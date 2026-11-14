@@ -17,6 +17,7 @@ from linguamentis.ai.models import (
     GermanEvaluationOutput,
     HatChallenge,
     HatFeedback,
+    ResponsePropositionOutput,
     SpeechTranscriptionOutput,
     SynthesizedSpeech,
     ThinkingEvaluationOutput,
@@ -132,6 +133,78 @@ class AIGateway:
             model=model,
             temperature=0.5,
         )
+
+    # -- Elaborated response proposition ----------------------------------
+
+    async def generate_response_proposition(
+        self,
+        *,
+        contract: HatContract,
+        context: MindQuestContext,
+        challenge_question: str,
+        user_response: str,
+    ) -> ResponsePropositionOutput:
+        model = (
+            self._settings.ai_model_blue
+            if contract.hat == HatType.BLUE
+            else self._settings.ai_model_hat
+        )
+        result = await self._client.generate_structured(
+            system_prompt=prompts.response_proposition_system_prompt(contract),
+            user_prompt=prompts.response_proposition_user_prompt(
+                context=context,
+                challenge_question=challenge_question,
+                user_response=user_response,
+            ),
+            response_model=ResponsePropositionOutput,
+            model=model,
+            temperature=0.5,
+        )
+        logger.info(
+            "ai.response_proposition.generated",
+            hat=contract.hat.value,
+            mindquest_id=str(context.mindquest_id),
+            model=model,
+            highlight_count=len(result.highlights),
+        )
+        return result
+
+    # -- Argue Mode Devil's Advocate rejection ------------------------------
+
+    async def generate_argue_rejection(
+        self,
+        *,
+        contract: HatContract,
+        context: MindQuestContext,
+        previous_challenge: str,
+        user_response: str,
+        average_score: float,
+        thinking_weaknesses: list[str],
+        german_weaknesses: list[str],
+    ) -> HatChallenge:
+        model = self._settings.ai_model_hat
+        result = await self._client.generate_structured(
+            system_prompt=prompts.argue_rejection_system_prompt(contract),
+            user_prompt=prompts.argue_rejection_user_prompt(
+                context=context,
+                previous_challenge=previous_challenge,
+                user_response=user_response,
+                average_score=average_score,
+                thinking_weaknesses=thinking_weaknesses,
+                german_weaknesses=german_weaknesses,
+            ),
+            response_model=HatChallenge,
+            model=model,
+            temperature=0.6,
+        )
+        logger.info(
+            "ai.argue_rejection.generated",
+            hat=contract.hat.value,
+            mindquest_id=str(context.mindquest_id),
+            average_score=average_score,
+            model=model,
+        )
+        return result
 
     # -- Final reflection (Blue Agent) -------------------------------------
 

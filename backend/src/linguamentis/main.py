@@ -13,6 +13,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import inspect, text
 
 from linguamentis.api.dependencies import get_gemini_client, shutdown_ai_resources
 from linguamentis.api.router import api_router
@@ -36,12 +37,25 @@ configure_logging(settings.log_level)
 logger = get_logger(__name__)
 
 
+def _ensure_schema_columns(sync_conn) -> None:
+    inspector = inspect(sync_conn)
+    columns = {col["name"] for col in inspector.get_columns("mind_quests")}
+    if "mode" not in columns:
+        sync_conn.execute(
+            text(
+                "ALTER TABLE mind_quests "
+                "ADD COLUMN mode VARCHAR(20) NOT NULL DEFAULT 'ANSWERING'"
+            )
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Process lifecycle: initialize database tables & default user on startup."""
     engine = get_engine(settings)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(_ensure_schema_columns)
 
     session_factory = get_session_factory(settings)
     async with session_factory() as session:

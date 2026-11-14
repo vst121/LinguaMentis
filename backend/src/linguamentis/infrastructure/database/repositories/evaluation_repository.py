@@ -18,6 +18,10 @@ from sqlalchemy.orm import selectinload
 
 from linguamentis.domain.evaluations.evidence import Correction, Evidence, EvidenceRecord
 from linguamentis.domain.evaluations.german import GermanEvaluation
+from linguamentis.domain.evaluations.proposition import (
+    PropositionHighlight,
+    ResponseProposition,
+)
 from linguamentis.domain.evaluations.thinking import ThinkingEvaluation
 from linguamentis.infrastructure.database.models import (
     EvidenceModel,
@@ -25,6 +29,7 @@ from linguamentis.infrastructure.database.models import (
     GermanEvaluationModel,
     HatRoundModel,
     MindQuestModel,
+    ResponsePropositionModel,
     ThinkingEvaluationModel,
     TurnModel,
 )
@@ -53,6 +58,14 @@ class EvaluationRepository(Protocol):
         ...
 
     async def save_german(self, eval_: GermanEvaluation) -> GermanEvaluation:
+        ...
+
+    async def get_proposition_by_turn(self, turn_id: UUID) -> ResponseProposition | None:
+        ...
+
+    async def save_proposition(
+        self, proposition: ResponseProposition
+    ) -> ResponseProposition:
         ...
 
     async def get_final_reflection(self, mindquest_id: UUID) -> FinalReflection | None:
@@ -221,6 +234,51 @@ class SQLAlchemyEvaluationRepository:
 
         await self._session.flush()
         return eval_
+
+    async def get_proposition_by_turn(self, turn_id: UUID) -> ResponseProposition | None:
+        stmt = select(ResponsePropositionModel).where(
+            ResponsePropositionModel.turn_id == turn_id
+        )
+        res = await self._session.execute(stmt)
+        model = res.scalar_one_or_none()
+        if model is None:
+            return None
+        return _to_domain_proposition(model)
+
+    async def save_proposition(
+        self, proposition: ResponseProposition
+    ) -> ResponseProposition:
+        stmt = select(ResponsePropositionModel).where(
+            ResponsePropositionModel.turn_id == proposition.turn_id
+        )
+        res = await self._session.execute(stmt)
+        model = res.scalar_one_or_none()
+
+        highlights_json = [
+            {
+                "upgraded_phrase": h.upgraded_phrase,
+                "original_phrase": h.original_phrase,
+                "explanation": h.explanation,
+                "category": h.category,
+            }
+            for h in proposition.highlights
+        ]
+
+        if model is None:
+            model = ResponsePropositionModel(
+                id=proposition.id,
+                turn_id=proposition.turn_id,
+                improved_response=proposition.improved_response,
+                highlights=highlights_json,
+                created_at=proposition.created_at,
+            )
+            self._session.add(model)
+        else:
+            model.improved_response = proposition.improved_response
+            model.highlights = highlights_json
+
+        await self._session.flush()
+        return proposition
 
     async def get_final_reflection(self, mindquest_id: UUID) -> FinalReflection | None:
         stmt = select(FinalReflectionModel).where(FinalReflectionModel.mindquest_id == mindquest_id)
@@ -422,5 +480,24 @@ def _to_domain_german(
         strengths=list(model.strengths or []),
         weaknesses=list(model.weaknesses or []),
         recommendations=list(model.recommendations or []),
+        created_at=model.created_at,
+    )
+
+
+def _to_domain_proposition(model: ResponsePropositionModel) -> ResponseProposition:
+    highlights = [
+        PropositionHighlight(
+            upgraded_phrase=h.get("upgraded_phrase", ""),
+            original_phrase=h.get("original_phrase", ""),
+            explanation=h.get("explanation", ""),
+            category=h.get("category", "vocabulary"),
+        )
+        for h in (model.highlights or [])
+    ]
+    return ResponseProposition(
+        id=model.id,
+        turn_id=model.turn_id,
+        improved_response=model.improved_response,
+        highlights=highlights,
         created_at=model.created_at,
     )

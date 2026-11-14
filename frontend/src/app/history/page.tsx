@@ -15,18 +15,15 @@ export default function HistoryPage() {
   }, []);
   return (
     <AppShell>
-      <div className="flex flex-col gap-5 md:flex-1 md:min-h-0">
-        <div className="shrink-0">
-          <p className="text-xs font-semibold text-blue-700 md:text-sm">VERLAUF</p>
-          <h1 className="mt-1 text-2xl font-bold md:text-3xl">Deine Lernreise</h1>
-        </div>
+      <div className="flex flex-col gap-3">
+        <h1 className="text-lg font-bold">Deine Lernreise</h1>
         {error ? (
-          <p className="text-rose-700">{error}</p>
+          <p className="text-amber-700 dark:text-amber-300">{error}</p>
         ) : (
-          <div className="grid gap-6 md:flex-1 md:min-h-0 md:grid-cols-2">
-            <section className="flex flex-col md:min-h-0">
-              <h2 className="mb-3 shrink-0 text-lg font-semibold">MindQuests</h2>
-              <div className="space-y-3 md:flex-1 md:overflow-y-auto md:pr-1">
+          <div className="grid gap-5 md:grid-cols-2 md:items-start">
+            <section className="flex flex-col">
+              <h2 className="mb-2.5 text-base font-semibold md:text-lg">MindQuests</h2>
+              <div className="space-y-3">
                 {quests.length === 0 ? (
                   <Card>
                     <p className="text-slate-600">
@@ -66,12 +63,9 @@ export default function HistoryPage() {
                 )}
               </div>
             </section>
-            <section className="flex flex-col md:min-h-0">
-              <h2 className="mb-3 shrink-0 text-lg font-semibold">Aktivität</h2>
-              <Card
-                className="flex flex-col md:flex-1 md:min-h-0"
-                bodyClassName="flex-1 md:overflow-y-auto"
-              >
+            <section className="flex flex-col">
+              <h2 className="mb-2.5 text-base font-semibold md:text-lg">Aktivität</h2>
+              <Card>
                 {activities.length === 0 ? (
                   <p className="text-slate-600">Noch keine Aktivitäten.</p>
                 ) : (

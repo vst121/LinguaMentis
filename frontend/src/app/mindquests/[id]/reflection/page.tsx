@@ -50,7 +50,7 @@ export default function ReflectionPage() {
   if (error) {
     return (
       <AppShell>
-        <p className="text-rose-700">{error}</p>
+        <p className="text-amber-700 dark:text-amber-300">{error}</p>
       </AppShell>
     );
   }
@@ -70,29 +70,32 @@ export default function ReflectionPage() {
     );
   }
 
+  const isArgue = r.mode === "ARGUE";
   const hatsLabel =
     r.hats_completed !== undefined && r.hats_total !== undefined
       ? `${r.hats_completed} / ${r.hats_total}`
       : "Abgeschlossen";
 
   return (
-    <AppShell>
-      <div className="flex flex-col gap-5 md:flex-1 md:min-h-0">
-        <div className="flex shrink-0 flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <AppShell dark={isArgue}>
+      <div className="flex flex-col gap-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-blue-700 md:text-sm">
-              ABSCHLUSS{r.topic ? ` · ${r.topic}` : ""}
-              {r.target_level ? ` (${r.target_level})` : ""}
-            </p>
-            <h1 className="mt-1 text-2xl font-bold md:text-3xl">
-              Deine MindQuest-Reflexion
-            </h1>
-            <p className="mt-1.5 max-w-3xl text-sm text-slate-600 md:text-base">
-              {r.closing_message}
-            </p>
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <h1 className="text-lg font-bold">Deine MindQuest-Reflexion</h1>
+              {(r.topic || r.target_level) && (
+                <span className="truncate text-xs text-slate-500 dark:text-slate-400">
+                  {r.topic}
+                  {r.target_level ? ` (${r.target_level})` : ""}
+                </span>
+              )}
+            </div>
+            {r.closing_message && (
+              <p className="text-xs text-slate-600 dark:text-slate-400">{r.closing_message}</p>
+            )}
           </div>
           <Link href="/mindquests" className="shrink-0">
-            <Button>Neue MindQuest starten</Button>
+            <Button size="sm">Neue MindQuest starten</Button>
           </Link>
         </div>
 
@@ -108,16 +111,16 @@ export default function ReflectionPage() {
           strongestGerman={r.strongest_german_dimension}
           weakestGerman={r.weakest_german_dimension}
           thinkingExtra={
-            <div className="border-t border-slate-100 pt-4">
-              <p className="rounded-lg bg-blue-50/70 p-3.5 text-sm leading-6 text-slate-700">
+            <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
+              <p className="rounded-lg bg-blue-50/70 p-3.5 text-sm leading-6 text-slate-700 dark:bg-blue-950/40 dark:text-blue-100">
                 {r.thinking_summary}
               </p>
               {(r.thinking_section.recommendations?.length ?? 0) > 0 && (
                 <>
-                  <h4 className="mt-4 text-sm font-semibold text-slate-900">
+                  <h4 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
                     Nächster Schritt
                   </h4>
-                  <ul className="mt-1.5 space-y-1.5 text-sm text-slate-600">
+                  <ul className="mt-1.5 space-y-1.5 text-sm text-slate-600 dark:text-slate-300">
                     {r.thinking_section.recommendations?.map((x) => (
                       <li key={x}>• {x}</li>
                     ))}
@@ -127,13 +130,13 @@ export default function ReflectionPage() {
             </div>
           }
           germanExtra={
-            <div className="border-t border-slate-100 pt-4">
-              <p className="rounded-lg bg-emerald-50/70 p-3.5 text-sm leading-6 text-slate-700">
+            <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
+              <p className="rounded-lg bg-emerald-50/70 p-3.5 text-sm leading-6 text-slate-700 dark:bg-emerald-950/40 dark:text-emerald-100">
                 {r.german_summary}
               </p>
               {(r.german_section.important_corrections?.length ?? 0) > 0 && (
                 <div className="mt-4 space-y-2">
-                  <h4 className="text-sm font-semibold text-slate-900">
+                  <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     Wichtige Korrekturen
                   </h4>
                   {r.german_section.important_corrections?.map((c, idx) => (
@@ -141,8 +144,8 @@ export default function ReflectionPage() {
                       key={idx}
                       className="border-l-2 border-emerald-500 pl-3 text-xs leading-5"
                     >
-                      <s className="text-slate-500">{c.original}</s>{" "}
-                      <span className="font-medium text-slate-900">
+                      <s className="text-slate-500 dark:text-slate-400">{c.original}</s>{" "}
+                      <span className="font-medium text-slate-900 dark:text-slate-100">
                         → {c.corrected}
                       </span>
                     </div>
@@ -151,10 +154,10 @@ export default function ReflectionPage() {
               )}
               {(r.german_section.level_recommendations?.length ?? 0) > 0 && (
                 <>
-                  <h4 className="mt-4 text-sm font-semibold text-slate-900">
+                  <h4 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
                     Nächster Schritt
                   </h4>
-                  <ul className="mt-1.5 space-y-1.5 text-sm text-slate-600">
+                  <ul className="mt-1.5 space-y-1.5 text-sm text-slate-600 dark:text-slate-300">
                     {r.german_section.level_recommendations?.map((x) => (
                       <li key={x}>• {x}</li>
                     ))}

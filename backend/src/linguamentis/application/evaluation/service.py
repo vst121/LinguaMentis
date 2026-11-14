@@ -15,11 +15,15 @@ from uuid import UUID
 
 from linguamentis.ai.gateway import AIGateway
 from linguamentis.ai.jev import DecisionVerifier, DisabledDecisionVerifier
-from linguamentis.ai.models import HatFeedback
+from linguamentis.ai.models import HatChallenge, HatFeedback
 from linguamentis.domain.evaluations.evidence import Correction, Evidence
 from linguamentis.domain.evaluations.german import GermanEvaluation
+from linguamentis.domain.evaluations.proposition import (
+    PropositionHighlight,
+    ResponseProposition,
+)
 from linguamentis.domain.evaluations.thinking import ThinkingEvaluation
-from linguamentis.domain.hats.contracts import get_hat_contract
+from linguamentis.domain.hats.contracts import HatContract, get_hat_contract
 from linguamentis.domain.mindquests.entities import Turn
 from linguamentis.domain.mindquests.enums import ActivityType
 from linguamentis.domain.mindquests.value_objects import MindQuestContext
@@ -39,6 +43,7 @@ class EvaluationResult:
     thinking: ThinkingEvaluation
     german: GermanEvaluation
     feedback: HatFeedback
+    proposition: ResponseProposition
 
 
 class EvaluationService:
@@ -143,6 +148,36 @@ class EvaluationService:
         )
         return thinking_eval, german_eval
 
+    async def generate_proposition(
+        self,
+        *,
+        turn: Turn,
+        context: MindQuestContext,
+        user_response: str,
+    ) -> ResponseProposition:
+        """Generate an aligned, elaborated German version of the learner's response."""
+        contract = get_hat_contract(context.current_hat)
+        prop_out = await self._gateway.generate_response_proposition(
+            contract=contract,
+            context=context,
+            challenge_question=turn.challenge_question,
+            user_response=user_response,
+        )
+        return ResponseProposition(
+            id=uuid.uuid4(),
+            turn_id=turn.id,
+            improved_response=prop_out.improved_response,
+            highlights=[
+                PropositionHighlight(
+                    upgraded_phrase=h.upgraded_phrase,
+                    original_phrase=h.original_phrase,
+                    explanation=h.explanation,
+                    category=h.category,
+                )
+                for h in prop_out.highlights
+            ],
+        )
+
     async def generate_feedback(
         self,
         *,
@@ -166,6 +201,27 @@ class EvaluationService:
             german_summary=german_summary,
         )
 
+    async def generate_argue_rejection(
+        self,
+        *,
+        contract: HatContract,
+        context: MindQuestContext,
+        previous_challenge: str,
+        user_response: str,
+        average_score: float,
+        thinking_weaknesses: list[str],
+        german_weaknesses: list[str],
+    ) -> HatChallenge:
+        return await self._gateway.generate_argue_rejection(
+            contract=contract,
+            context=context,
+            previous_challenge=previous_challenge,
+            user_response=user_response,
+            average_score=average_score,
+            thinking_weaknesses=thinking_weaknesses,
+            german_weaknesses=german_weaknesses,
+        )
+
     async def persist_evaluations(
         self,
         *,
@@ -174,9 +230,12 @@ class EvaluationService:
         mindquest_id: UUID,
         thinking_eval: ThinkingEvaluation,
         german_eval: GermanEvaluation,
+        proposition: ResponseProposition | None = None,
     ) -> None:
         await self._evaluation_repo.save_thinking(thinking_eval)
         await self._evaluation_repo.save_german(german_eval)
+        if proposition is not None:
+            await self._evaluation_repo.save_proposition(proposition)
 
         await self._activity_repo.log_activity(
             user_id=user_id,
@@ -206,9 +265,10 @@ class EvaluationService:
         context: MindQuestContext,
         user_response: str,
     ) -> EvaluationResult:
-        """Run parallel evaluations for Thinking Quality and German Quality."""
-        thinking_eval, german_eval = await self.evaluate_dimensions(
-            turn=turn, context=context, user_response=user_response
+        """Run parallel evaluations and response proposition for a turn."""
+        (thinking_eval, german_eval), proposition = await asyncio.gather(
+            self.evaluate_dimensions(turn=turn, context=context, user_response=user_response),
+            self.generate_proposition(turn=turn, context=context, user_response=user_response),
         )
         feedback = await self.generate_feedback(
             challenge_question=turn.challenge_question,
@@ -222,9 +282,11 @@ class EvaluationService:
             mindquest_id=context.mindquest_id,
             thinking_eval=thinking_eval,
             german_eval=german_eval,
+            proposition=proposition,
         )
         return EvaluationResult(
             thinking=thinking_eval,
             german=german_eval,
             feedback=feedback,
+            proposition=proposition,
         )

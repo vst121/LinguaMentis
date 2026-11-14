@@ -17,11 +17,16 @@ from linguamentis.application.learning.service import (
 )
 from linguamentis.application.mindquests.prefetch import ChallengePrefetchCache
 from linguamentis.application.turns.service import TurnService, TurnSubmissionResult
-from linguamentis.domain.hats.types import DEFAULT_HAT_SEQUENCE, HatType
+from linguamentis.domain.hats.types import (
+    ARGUE_SELECTABLE_HATS,
+    DEFAULT_HAT_SEQUENCE,
+    HatType,
+)
 from linguamentis.domain.mindquests.entities import MindQuest, Turn
 from linguamentis.domain.mindquests.enums import (
     ActivityType,
     LanguageLevel,
+    MindQuestMode,
     MindQuestStatus,
 )
 from linguamentis.domain.mindquests.value_objects import MindQuestContext
@@ -39,6 +44,32 @@ from linguamentis.shared.exceptions import DomainError, NotFoundError
 from linguamentis.shared.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+# Instant German opening prompts for Argue Mode so choosing a hat has zero LLM delay
+_ARGUE_OPENING_PROMPTS: dict[HatType, tuple[str, str]] = {
+    HatType.WHITE: (
+        "Welche gesicherten Fakten, Daten oder Wissenslücken sind beim Thema "
+        "„{topic}“ entscheidend?",
+        "Bleibe objektiv (Weißer Hut): Trenne Fakten klar von Annahmen.",
+    ),
+    HatType.YELLOW: (
+        "Welche konkreten Chancen und positiven Folgen siehst du beim Thema „{topic}“?",
+        "Argumentiere konstruktiv (Gelber Hut): Begründe den konkreten Nutzen.",
+    ),
+    HatType.GREEN: (
+        "Welche kreativen Alternativen oder unkonventionellen Ansätze gibt es für „{topic}“?",
+        "Denke kreativ (Grüner Hut): Entwickle originelle Möglichkeiten.",
+    ),
+    HatType.RED: (
+        "Welche unmittelbare Intuition oder emotionale Reaktion löst „{topic}“ bei dir aus?",
+        "Zeige dein Bauchgefühl (Roter Hut): Beschreibe Eindrücke klar und authentisch.",
+    ),
+    HatType.BLACK: (
+        "Welche konkreten Risiken, Schwächen oder negativen Folgen birgt „{topic}“?",
+        "Analysiere kritisch (Schwarzer Hut): Nenne konkrete Gefahren und Folgeeffekte.",
+    ),
+}
 
 
 @dataclass(slots=True)
@@ -82,18 +113,24 @@ class MindQuestService:
         user_id: UUID,
         topic: str,
         target_level: LanguageLevel = LanguageLevel.B2,
+        mode: MindQuestMode = MindQuestMode.ANSWERING,
         planned_hats: tuple[HatType, ...] = DEFAULT_HAT_SEQUENCE,
     ) -> MindQuest:
         import uuid
 
-        # Enforce mandatory hat sequence: WHITE -> YELLOW -> GREEN -> RED -> BLACK -> BLUE
-        enforced_hats = DEFAULT_HAT_SEQUENCE
+        # Answering Mode enforces all 6 hats; Argue Mode uses 5 selectable hats (no BLUE)
+        enforced_hats = (
+            ARGUE_SELECTABLE_HATS
+            if mode == MindQuestMode.ARGUE
+            else DEFAULT_HAT_SEQUENCE
+        )
 
         mq = MindQuest(
             id=uuid.uuid4(),
             user_id=user_id,
             topic=topic,
             target_level=target_level,
+            mode=mode,
         )
         mq.select_topic(topic, enforced_hats)
         await self._mindquest_repo.save(mq)
@@ -102,11 +139,15 @@ class MindQuestService:
             user_id=user_id,
             activity_type=ActivityType.MINDQUEST_STARTED,
             mindquest_id=mq.id,
-            payload={"topic": topic, "target_level": target_level.value},
+            payload={
+                "topic": topic,
+                "target_level": target_level.value,
+                "mode": mode.value,
+            },
         )
 
-        # Warm the first hat challenge while the frontend navigates to the MindQuest view
-        if self._prefetch_cache is not None:
+        # In Answering Mode, warm the first hat challenge while frontend navigates
+        if mode == MindQuestMode.ANSWERING and self._prefetch_cache is not None:
             first_hat = mq.planned_hats[0] if mq.planned_hats else DEFAULT_HAT_SEQUENCE[0]
             first_context = MindQuestContext(
                 mindquest_id=mq.id,
@@ -134,9 +175,19 @@ class MindQuestService:
     ) -> list[MindQuest]:
         return await self._mindquest_repo.list_by_user(user_id, limit=limit, offset=offset)
 
+    async def delete_mindquest(self, mindquest_id: UUID) -> None:
+        deleted = await self._mindquest_repo.delete(mindquest_id)
+        if not deleted:
+            raise NotFoundError("MindQuest", mindquest_id)
+
     async def start_mindquest(self, mindquest_id: UUID) -> StartMindQuestResult:
         """Begin MindQuest progress and activate the first hat round."""
         mq = await self.get_mindquest(mindquest_id)
+
+        if mq.mode == MindQuestMode.ARGUE:
+            raise DomainError(
+                "In Argue Mode, select one of the 5 available hats via select-hat."
+            )
 
         if mq.status == MindQuestStatus.CREATED:
             mq.select_topic(mq.topic, mq.planned_hats or DEFAULT_HAT_SEQUENCE)
@@ -194,6 +245,69 @@ class MindQuestService:
             challenge=challenge,
         )
 
+    async def select_hat(
+        self, mindquest_id: UUID, hat: HatType
+    ) -> StartMindQuestResult:
+        """Select and lock a hat in Argue Mode (never BLUE, never an already-completed hat)."""
+        mq = await self.get_mindquest(mindquest_id)
+
+        if mq.mode != MindQuestMode.ARGUE:
+            raise DomainError("Manual hat selection is only available in Argue Mode.")
+
+        if hat == HatType.BLUE or hat not in ARGUE_SELECTABLE_HATS:
+            raise DomainError("Blue Hat cannot be selected in Argue Mode.")
+
+        if mq.status == MindQuestStatus.HAT_ACTIVE:
+            raise DomainError(
+                "Cannot change hat while the current hat is active and below 80% average."
+            )
+
+        if hat in mq.completed_hats:
+            raise DomainError(f"Hat '{hat.value}' has already been completed.")
+
+        if mq.status == MindQuestStatus.CREATED:
+            mq.select_topic(mq.topic, mq.planned_hats or ARGUE_SELECTABLE_HATS)
+
+        if mq.status == MindQuestStatus.TOPIC_SELECTED:
+            mq.begin()
+
+        if mq.status not in (MindQuestStatus.IN_PROGRESS, MindQuestStatus.HAT_COMPLETED):
+            raise DomainError(
+                f"Cannot select a hat when MindQuest status is '{mq.status.value}'."
+            )
+
+        active_round = mq.activate_hat(hat)
+        q_tpl, instr = _ARGUE_OPENING_PROMPTS[hat]
+        challenge = HatChallenge(
+            question=q_tpl.format(topic=mq.topic),
+            instruction=instr,
+            expected_thinking_mode=hat,
+            difficulty=4 if mq.target_level == LanguageLevel.C1 else 3,
+            rationale="Instant Argue Mode opening prompt",
+        )
+
+        initial_turn = active_round.add_turn(
+            challenge_question=challenge.question,
+            challenge_instruction=challenge.instruction,
+            difficulty=challenge.difficulty,
+        )
+
+        await self._mindquest_repo.save(mq)
+
+        await self._activity_repo.log_activity(
+            user_id=mq.user_id,
+            activity_type=ActivityType.HAT_SELECTED,
+            mindquest_id=mq.id,
+            payload={"hat": hat.value},
+        )
+
+        return StartMindQuestResult(
+            mindquest=mq,
+            active_hat=hat,
+            initial_turn=initial_turn,
+            challenge=challenge,
+        )
+
     async def submit_response(
         self, mindquest_id: UUID, user_response: str
     ) -> TurnSubmissionResult:
@@ -242,6 +356,17 @@ class MindQuestService:
                 final_reflection=reflection,
             )
         else:
+            if mq.mode == MindQuestMode.ARGUE:
+                # In Argue Mode, wait for the learner to select the next remaining hat
+                await self._mindquest_repo.save(mq)
+                return AdvanceMindQuestResult(
+                    mindquest=mq,
+                    next_hat=None,
+                    initial_turn=None,
+                    challenge=None,
+                    is_completed=False,
+                )
+
             # Activate next hat in sequence
             next_hat = mq.remaining_planned_hats[0]
             active_round = mq.activate_hat(next_hat)

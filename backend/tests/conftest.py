@@ -26,6 +26,8 @@ from linguamentis.ai.models import (
     GermanReflectionSection,
     HatChallenge,
     HatFeedback,
+    PropositionHighlightOutput,
+    ResponsePropositionOutput,
     SpeechTranscriptionOutput,
     SynthesizedSpeech,
     ThinkingEvaluationOutput,
@@ -143,6 +145,30 @@ class FakeLLMClient:
                 thinking_feedback="Good analysis of risks.",
                 german_feedback="Clear German expression with minor grammar errors.",
                 encouragement="Keep going!",
+            )
+
+        if response_model is ResponsePropositionOutput:
+            return ResponsePropositionOutput(
+                improved_response=(
+                    "Ein zentrales Risiko besteht insbesondere darin, dass "
+                    "algorithmische Systeme kreative Lösungsansätze fehlinterpretieren könnten."
+                ),
+                highlights=[
+                    PropositionHighlightOutput(
+                        upgraded_phrase="Ein zentrales Risiko besteht insbesondere darin",
+                        original_phrase="Ein Risiko ist",
+                        explanation=(
+                            "Gehobene Nominal- und Fokusstruktur zur Einleitung eines Arguments."
+                        ),
+                        category="syntax",
+                    ),
+                    PropositionHighlightOutput(
+                        upgraded_phrase="kreative Lösungsansätze fehlinterpretieren könnten",
+                        original_phrase="kreative Ideen falsch bewerten",
+                        explanation="Präzisere C1-Wortwahl mit Konjunktiv II für Risikohypothesen.",
+                        category="vocabulary",
+                    ),
+                ],
             )
 
         if response_model is FinalReflectionOutput:

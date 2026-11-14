@@ -105,6 +105,25 @@ describe("MindQuestPage interactive flow", () => {
         german_feedback: "Achte auf Artikel am Satzanfang.",
         encouragement: "Weiter so!",
       },
+      proposition: {
+        id: "prop-1",
+        improved_response:
+          "Ein gravierendes Risiko besteht darin, dass die Haltbarkeit von Lebensmitteln erheblich sinkt.",
+        highlights: [
+          {
+            upgraded_phrase: "Ein gravierendes Risiko besteht darin",
+            original_phrase: "",
+            explanation: "Stilistisch gehobene Argumentationseinleitung.",
+            category: "syntax",
+          },
+          {
+            upgraded_phrase: "erheblich sinkt",
+            original_phrase: "könnte sinken",
+            explanation: "Präziseres Adverb zur Verstärkung der Aussage.",
+            category: "vocabulary",
+          },
+        ],
+      },
       round_should_complete: true,
     });
 
@@ -124,16 +143,15 @@ describe("MindQuestPage interactive flow", () => {
 
     render(<MindQuestPage />);
 
-    // 1. Wait for TOPIC_SELECTED view and click "MindQuest beginnen"
-    const startBtn = await screen.findByRole("button", { name: /MindQuest beginnen/i });
-    fireEvent.click(startBtn);
-
-    // 2. Active challenge appears
+    // 1. Auto-starts immediately without an intermediate "Bereit für deine erste Perspektive" step
     expect(
       await screen.findByText("Welche Risiken birgt ein sofortiges Plastikverbot?")
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Bereit für deine erste Perspektive")
+    ).not.toBeInTheDocument();
 
-    // 3. Enter response and submit
+    // 2. Enter response and submit
     const textarea = screen.getByPlaceholderText(/Schreibe deine Antwort hier/i);
     fireEvent.change(textarea, {
       target: { value: "Haltbarkeit von Lebensmitteln könnte sinken." },
@@ -148,6 +166,20 @@ describe("MindQuestPage interactive flow", () => {
     expect(screen.getByText("Die Haltbarkeit von Lebensmitteln")).toBeInTheDocument();
     expect(screen.getByText("86 / 100")).toBeInTheDocument();
     expect(screen.getAllByText("78 / 100").length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getByRole("img", { name: "Radar-Diagramm Denken" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Radar-Diagramm Deutsch" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Relevanz")).toBeInTheDocument();
+    expect(screen.getByText("Niveau-Passung")).toBeInTheDocument();
+    expect(
+      screen.getByText("Sprach-Upgrade: Elaborierte Antwort")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Stilistisch gehobene Argumentationseinleitung.")
+    ).toBeInTheDocument();
 
     // 5. Click "Abschlussreflexion ansehen" to advance to reflection
     fireEvent.click(
@@ -197,6 +229,7 @@ describe("MindQuestPage interactive flow", () => {
     expect(textarea).toHaveValue("Entwurf bleibt erhalten");
   });
 
+<<<<<<< HEAD
   it("redirects immediately to reflection when opening an already COMPLETED MindQuest and counts words accurately", async () => {
     vi.mocked(mqApi.getMindQuest).mockResolvedValueOnce({
       ...baseQuest,
@@ -340,5 +373,210 @@ describe("MindQuestPage interactive flow", () => {
     expect(textarea).toHaveValue("Die Statistik zeigt einen Anstieg um zehn Prozent.");
 
     delete (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
+=======
+  it("Argue Mode switches to dark theme, shows 5 hats (no Blue), enforces Devil's Advocate until >80%, and disables completed hats", async () => {
+    const argueQuest: MindQuest = {
+      id: "mq-argue",
+      user_id: "u-1",
+      topic: "Tempolimit auf Autobahnen",
+      target_level: "C1",
+      mode: "ARGUE",
+      status: "TOPIC_SELECTED",
+      current_hat: null,
+      planned_hats: ["WHITE", "YELLOW", "GREEN", "RED", "BLACK"],
+      completed_hats: [],
+      hat_rounds: [],
+      created_at: "2026-11-14T10:00:00Z",
+      updated_at: "2026-11-14T10:00:00Z",
+    };
+
+    const blackTurn = {
+      id: "t-argue-1",
+      turn_number: 1,
+      hat: "BLACK" as const,
+      challenge_question: "Welche Risiken hat ein generelles Tempolimit?",
+      challenge_instruction: "Bleibe beim Schwarzen Hut.",
+      difficulty: 4,
+      created_at: "2026-11-14T10:01:00Z",
+    };
+
+    vi.mocked(mqApi.getMindQuest).mockResolvedValueOnce(argueQuest);
+    vi.mocked(mqApi.selectHat).mockResolvedValueOnce({
+      mindquest: {
+        ...argueQuest,
+        status: "HAT_ACTIVE",
+        current_hat: "BLACK",
+        hat_rounds: [
+          {
+            id: "r-argue-1",
+            hat: "BLACK",
+            sequence_index: 0,
+            turns: [blackTurn],
+            started_at: "2026-11-14T10:01:00Z",
+          },
+        ],
+      },
+      active_hat: "BLACK",
+      initial_turn: blackTurn,
+      challenge_question: blackTurn.challenge_question,
+      challenge_instruction: blackTurn.challenge_instruction,
+      difficulty: 4,
+    });
+
+    // First attempt fails <= 80% -> Devil's Advocate rejection
+    vi.mocked(mqApi.submitResponse).mockResolvedValueOnce({
+      turn: { ...blackTurn, user_response: "Es gibt Staus." },
+      thinking_evaluation: {
+        id: "te-a1",
+        score: 60,
+        score_anchor: "Adequate",
+        hat_adherence: 65,
+        relevance: 60,
+        reasoning: 55,
+        depth: 55,
+        specificity: 65,
+        evidence: [],
+        strengths: [],
+        weaknesses: [],
+        recommendations: [],
+      },
+      german_evaluation: {
+        id: "ge-a1",
+        score: 70,
+        score_anchor: "Good",
+        grammar: 70,
+        vocabulary: 70,
+        sentence_structure: 70,
+        naturalness: 70,
+        level_appropriateness: 70,
+        evidence: [],
+        corrections: [],
+        strengths: [],
+        weaknesses: [],
+        recommendations: [],
+      },
+      feedback: {
+        thinking_feedback: "Zu allgemein.",
+        german_feedback: "Zu knapp formuliert.",
+        encouragement: "Schärfe dein Argument.",
+      },
+      average_score: 65,
+      next_challenge_question: "Das überzeugt noch nicht: Welche konkreten volkswirtschaftlichen Folgen entstehen?",
+      next_challenge_instruction: "Belege deine Kritik mit einem konkreten Mechanismus.",
+      round_should_complete: false,
+    });
+
+    // Second attempt succeeds > 80%
+    vi.mocked(mqApi.submitResponse).mockResolvedValueOnce({
+      turn: {
+        ...blackTurn,
+        turn_number: 2,
+        user_response: "Ein zentrales Risiko liegt in höheren Transportkosten durch längere Fahrzeiten.",
+      },
+      thinking_evaluation: {
+        id: "te-a2",
+        score: 88,
+        score_anchor: "Strong",
+        hat_adherence: 90,
+        relevance: 88,
+        reasoning: 88,
+        depth: 85,
+        specificity: 89,
+        evidence: [],
+        strengths: [],
+        weaknesses: [],
+        recommendations: [],
+      },
+      german_evaluation: {
+        id: "ge-a2",
+        score: 86,
+        score_anchor: "Strong",
+        grammar: 86,
+        vocabulary: 86,
+        sentence_structure: 86,
+        naturalness: 86,
+        level_appropriateness: 86,
+        evidence: [],
+        corrections: [],
+        strengths: [],
+        weaknesses: [],
+        recommendations: [],
+      },
+      feedback: {
+        thinking_feedback: "Starkes Risikoargument.",
+        german_feedback: "Überzeugendes C1-Deutsch.",
+        encouragement: "Geschafft!",
+      },
+      average_score: 87,
+      round_should_complete: true,
+    });
+
+    vi.mocked(mqApi.advanceMindQuest).mockResolvedValueOnce({
+      mindquest: {
+        ...argueQuest,
+        status: "HAT_COMPLETED",
+        completed_hats: ["BLACK"],
+      },
+      is_completed: false,
+    });
+
+    render(<MindQuestPage />);
+
+    // 1. Dark theme active and 5 hats visible (Blauer Hut must NOT be present)
+    expect(
+      await screen.findByText(/Perspektive wählen \(Argue Mode\)/i)
+    ).toBeInTheDocument();
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(screen.getByText("Weißer Hut")).toBeInTheDocument();
+    expect(screen.getByText("Gelber Hut")).toBeInTheDocument();
+    expect(screen.getByText("Grüner Hut")).toBeInTheDocument();
+    expect(screen.getByText("Roter Hut")).toBeInTheDocument();
+    expect(screen.getByText("Schwarzer Hut")).toBeInTheDocument();
+    expect(screen.queryByText("Blauer Hut")).not.toBeInTheDocument();
+
+    // 2. Select Schwarzer Hut -> locked into BLACK and highlighted in top hat icons
+    fireEvent.click(screen.getByRole("button", { name: /Schwarzer Hut/i }));
+    expect(
+      await screen.findByText("Welche Risiken hat ein generelles Tempolimit?")
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Schwarzer Hut: aktuell")).toBeInTheDocument();
+    expect(screen.getByLabelText("Weißer Hut: offen")).toBeInTheDocument();
+
+    // 3. Submit weak answer -> Devil's Advocate rejection
+    fireEvent.change(screen.getByPlaceholderText(/Schreibe deine Antwort hier/i), {
+      target: { value: "Es gibt Staus." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Antwort auswerten/i }));
+
+    expect(
+      await screen.findByText(/Abgelehnt \(65 % · > 80 % nötig\)/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Das überzeugt noch nicht: Welche konkreten volkswirtschaftlichen Folgen entstehen\?/i)
+    ).toBeInTheDocument();
+
+    // 4. Revise answer via always-visible top-right button and pass > 80%
+    fireEvent.click(screen.getByRole("button", { name: /Antwort überarbeiten/i }));
+    const textarea = screen.getByPlaceholderText(/Schreibe deine Antwort hier/i);
+    expect(textarea).toHaveValue("Es gibt Staus.");
+    fireEvent.change(textarea, {
+      target: {
+        value:
+          "Ein zentrales Risiko liegt in höheren Transportkosten durch längere Fahrzeiten.",
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Antwort auswerten/i }));
+
+    expect(
+      await screen.findByText(/Akzeptiert \(87 % > 80 %\)/i)
+    ).toBeInTheDocument();
+
+    // 5. Return to 5-hat selector via top-right "Nächste Perspektive" -> Schwarzer Hut is completed & disabled
+    fireEvent.click(screen.getByRole("button", { name: /Nächste Perspektive/i }));
+    const blackBtn = await screen.findByRole("button", { name: /Schwarzer Hut/i });
+    expect(blackBtn).toBeDisabled();
+    expect(screen.getByLabelText("Schwarzer Hut: erledigt")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Weißer Hut/i })).not.toBeDisabled();
+>>>>>>> feature_propositions
   });
 });

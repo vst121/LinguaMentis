@@ -11,15 +11,24 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from linguamentis.domain.hats.types import DEFAULT_HAT_SEQUENCE, HatType
-from linguamentis.domain.mindquests.enums import LanguageLevel, MindQuestStatus
+from linguamentis.domain.mindquests.enums import (
+    LanguageLevel,
+    MindQuestMode,
+    MindQuestStatus,
+)
 
 
 class CreateMindQuestRequest(BaseModel):
     topic: str = Field(min_length=3, description="The topic for intellectual debate.")
     target_level: LanguageLevel = Field(default=LanguageLevel.B2)
+    mode: MindQuestMode = Field(default=MindQuestMode.ANSWERING)
     planned_hats: list[HatType] = Field(
         default_factory=lambda: list(DEFAULT_HAT_SEQUENCE)
     )
+
+
+class SelectHatRequest(BaseModel):
+    hat: HatType
 
 
 class TurnResponse(BaseModel):
@@ -48,6 +57,7 @@ class MindQuestResponse(BaseModel):
     user_id: UUID
     topic: str
     target_level: LanguageLevel
+    mode: MindQuestMode
     status: MindQuestStatus
     current_hat: HatType | None
     planned_hats: list[HatType]
@@ -121,11 +131,26 @@ class HatFeedbackDTO(BaseModel):
     encouragement: str = ""
 
 
+class PropositionHighlightDTO(BaseModel):
+    upgraded_phrase: str
+    original_phrase: str = ""
+    explanation: str
+    category: str
+
+
+class ResponsePropositionDTO(BaseModel):
+    id: UUID
+    improved_response: str
+    highlights: list[PropositionHighlightDTO]
+
+
 class SubmitResponseResponse(BaseModel):
     turn: TurnResponse
     thinking_evaluation: ThinkingEvaluationDTO
     german_evaluation: GermanEvaluationDTO
     feedback: HatFeedbackDTO
+    proposition: ResponsePropositionDTO | None = None
+    average_score: float = 0.0
     next_challenge_question: str | None = None
     next_challenge_instruction: str | None = None
     round_should_complete: bool

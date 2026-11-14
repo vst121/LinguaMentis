@@ -63,9 +63,105 @@ describe("Frontend pages (Home, MindQuests list, Reflection, Learning, History)"
       expect(mqApi.createMindQuest).toHaveBeenCalledWith({
         topic: "Grundeinkommen",
         target_level: "C1",
+        mode: "ANSWERING",
       });
       expect(mockPush).toHaveBeenCalledWith("/mindquests/mq-new");
     });
+  });
+
+  it("MindQuestsPage toggles dark theme and creates an Argue Mode MindQuest", async () => {
+    vi.mocked(mqApi.listMindQuests).mockResolvedValueOnce([]);
+    vi.mocked(mqApi.createMindQuest).mockResolvedValueOnce({
+      id: "mq-argue-1",
+      user_id: "u-1",
+      topic: "Tempolimit",
+      target_level: "B2",
+      mode: "ARGUE",
+      status: "TOPIC_SELECTED",
+      planned_hats: ["WHITE", "YELLOW", "GREEN", "RED", "BLACK"],
+      completed_hats: [],
+      hat_rounds: [],
+      created_at: "2026-11-14T10:00:00Z",
+      updated_at: "2026-11-14T10:00:00Z",
+    });
+
+    render(<MindQuestsPage />);
+    expect(await screen.findByText(/Noch keine MindQuest/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("radio", { name: /Argue Mode/i }));
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+
+    const input = screen.getByPlaceholderText(/Soll KI Hausaufgaben bewerten/i);
+    fireEvent.change(input, { target: { value: "Tempolimit" } });
+    fireEvent.submit(input.closest("form")!);
+
+    await waitFor(() => {
+      expect(mqApi.createMindQuest).toHaveBeenCalledWith({
+        topic: "Tempolimit",
+        target_level: "B2",
+        mode: "ARGUE",
+      });
+      expect(mockPush).toHaveBeenCalledWith("/mindquests/mq-argue-1");
+    });
+  });
+
+  it("MindQuestsPage blocks submission and reminds the user when topic is empty", async () => {
+    vi.mocked(mqApi.listMindQuests).mockResolvedValueOnce([]);
+    const createSpy = vi.mocked(mqApi.createMindQuest);
+    createSpy.mockClear();
+
+    render(<MindQuestsPage />);
+    expect(await screen.findByText(/Noch keine MindQuest/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /MindQuest erstellen/i }));
+    expect(
+      await screen.findByText("Bitte gib zuerst ein Thema für deine MindQuest ein."),
+    ).toBeInTheDocument();
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  it("MindQuestsPage deletes an individual MindQuest from the list without navigating", async () => {
+    vi.mocked(mqApi.listMindQuests).mockResolvedValueOnce([
+      {
+        id: "mq-del-1",
+        user_id: "u-1",
+        topic: "Alte Quest 1",
+        target_level: "B2",
+        status: "TOPIC_SELECTED",
+        planned_hats: ["WHITE"],
+        completed_hats: [],
+        hat_rounds: [],
+        created_at: "2026-11-14T10:00:00Z",
+        updated_at: "2026-11-14T10:00:00Z",
+      },
+      {
+        id: "mq-keep-2",
+        user_id: "u-1",
+        topic: "Aktuelle Quest 2",
+        target_level: "C1",
+        status: "COMPLETED",
+        planned_hats: ["WHITE"],
+        completed_hats: ["WHITE"],
+        hat_rounds: [],
+        created_at: "2026-11-14T10:05:00Z",
+        updated_at: "2026-11-14T10:05:00Z",
+      },
+    ]);
+    vi.mocked(mqApi.deleteMindQuest).mockResolvedValueOnce(undefined);
+
+    render(<MindQuestsPage />);
+    expect(await screen.findByText("Alte Quest 1")).toBeInTheDocument();
+    expect(screen.getByText("Aktuelle Quest 2")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: 'MindQuest "Alte Quest 1" löschen' }),
+    );
+
+    await waitFor(() => {
+      expect(mqApi.deleteMindQuest).toHaveBeenCalledWith("mq-del-1");
+      expect(screen.queryByText("Alte Quest 1")).not.toBeInTheDocument();
+    });
+    expect(screen.getByText("Aktuelle Quest 2")).toBeInTheDocument();
   });
 
   it("ReflectionPage renders thinking and german summaries or error on failure", async () => {
@@ -112,6 +208,12 @@ describe("Frontend pages (Home, MindQuests list, Reflection, Learning, History)"
     expect(screen.getByText("79")).toBeInTheDocument();
     expect(screen.getByText("Argumentation")).toBeInTheDocument();
     expect(screen.getByText("Grammatik")).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Radar-Diagramm Denkfähigkeiten" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Radar-Diagramm Deutsch" }),
+    ).toBeInTheDocument();
   });
 
   it("HistoryPage renders completed MindQuests and activity timeline", async () => {

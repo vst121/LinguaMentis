@@ -14,10 +14,16 @@ from linguamentis.ai.models import HatChallenge, HatFeedback
 from linguamentis.application.evaluation.service import EvaluationService
 from linguamentis.application.mindquests.prefetch import ChallengePrefetchCache
 from linguamentis.domain.evaluations.german import GermanEvaluation
+from linguamentis.domain.evaluations.proposition import ResponseProposition
 from linguamentis.domain.evaluations.thinking import ThinkingEvaluation
+from linguamentis.domain.hats.contracts import get_hat_contract
 from linguamentis.domain.hats.types import HatType
 from linguamentis.domain.mindquests.entities import MindQuest, Turn
-from linguamentis.domain.mindquests.enums import ActivityType, MindQuestStatus
+from linguamentis.domain.mindquests.enums import (
+    ActivityType,
+    MindQuestMode,
+    MindQuestStatus,
+)
 from linguamentis.domain.mindquests.value_objects import MindQuestContext, TurnContext
 from linguamentis.infrastructure.database.repositories.activity_repository import (
     UserActivityRepository,
@@ -31,7 +37,27 @@ from linguamentis.shared.logging import get_logger
 logger = get_logger(__name__)
 
 COMPLETION_SCORE_THRESHOLD = 75
-MAX_TURNS_PER_HAT_ROUND = 3
+MAX_TURNS_PER_HAT_ROUND = 1
+ARGUE_PASS_AVERAGE_THRESHOLD = 80.0
+
+
+def compute_response_average_score(
+    thinking_eval: ThinkingEvaluation, german_eval: GermanEvaluation
+) -> float:
+    """Mean across all 10 evaluation classifications (5 Thinking + 5 German)."""
+    scores = (
+        thinking_eval.hat_adherence,
+        thinking_eval.relevance,
+        thinking_eval.reasoning,
+        thinking_eval.depth,
+        thinking_eval.specificity,
+        german_eval.grammar,
+        german_eval.vocabulary,
+        german_eval.sentence_structure,
+        german_eval.naturalness,
+        german_eval.level_appropriateness,
+    )
+    return round(sum(scores) / len(scores), 1)
 
 
 @dataclass(slots=True)
@@ -42,6 +68,8 @@ class TurnSubmissionResult:
     feedback: HatFeedback
     next_challenge: HatChallenge | None
     round_should_complete: bool
+    proposition: ResponseProposition | None = None
+    average_score: float = 0.0
 
 
 class TurnService:
@@ -110,21 +138,46 @@ class TurnService:
             previous_responses=tuple(previous_turn_contexts),
         )
 
-        # Evaluate dimensions first so we immediately know whether another turn is needed
-        thinking_eval, german_eval = await self._evaluation_service.evaluate_dimensions(
-            turn=latest_turn,
-            context=context,
-            user_response=user_response,
+        # Overlap proposition generation with both evaluation and feedback/follow-up stages
+        prop_task = asyncio.create_task(
+            self._evaluation_service.generate_proposition(
+                turn=latest_turn,
+                context=context,
+                user_response=user_response,
+            )
         )
+        try:
+            thinking_eval, german_eval = await self._evaluation_service.evaluate_dimensions(
+                turn=latest_turn,
+                context=context,
+                user_response=user_response,
+            )
+        except Exception:
+            prop_task.cancel()
+            await asyncio.gather(prop_task, return_exceptions=True)
+            raise
 
-        # Check if the hat round has reached completion threshold
-        thinking_score = thinking_eval.score
-        turn_count = len(active_round.turns)
+        average_score = compute_response_average_score(thinking_eval, german_eval)
 
-        round_should_complete = (
-            thinking_score >= COMPLETION_SCORE_THRESHOLD
-            or turn_count >= MAX_TURNS_PER_HAT_ROUND
-        )
+        if mindquest.mode == MindQuestMode.ARGUE:
+            # Argue Mode: strictly > 80% average across all 10 classifications required
+            raw_avg = (
+                thinking_eval.hat_adherence
+                + thinking_eval.relevance
+                + thinking_eval.reasoning
+                + thinking_eval.depth
+                + thinking_eval.specificity
+                + german_eval.grammar
+                + german_eval.vocabulary
+                + german_eval.sentence_structure
+                + german_eval.naturalness
+                + german_eval.level_appropriateness
+            ) / 10.0
+            round_should_complete = raw_avg > ARGUE_PASS_AVERAGE_THRESHOLD
+        else:
+            # Answering Mode: single round per hat (one question + one evaluated response)
+            turn_count = len(active_round.turns)
+            round_should_complete = turn_count >= MAX_TURNS_PER_HAT_ROUND
 
         feedback_task = self._evaluation_service.generate_feedback(
             challenge_question=latest_turn.challenge_question,
@@ -135,8 +188,6 @@ class TurnService:
 
         next_challenge: HatChallenge | None = None
         if not round_should_complete:
-            # Run feedback generation and next-turn challenge generation in parallel
-            agent = self._agent_registry.get(active_round.hat)
             updated_previous = list(previous_turn_contexts) + [
                 TurnContext(
                     hat=latest_turn.hat,
@@ -155,9 +206,25 @@ class TurnService:
                 completed_hats=mindquest.completed_hats,
                 previous_responses=tuple(updated_previous),
             )
-            feedback, follow_up_challenge = await asyncio.gather(
+            if mindquest.mode == MindQuestMode.ARGUE:
+                contract = get_hat_contract(active_round.hat)
+                follow_up_task = self._evaluation_service.generate_argue_rejection(
+                    contract=contract,
+                    context=updated_context,
+                    previous_challenge=latest_turn.challenge_question,
+                    user_response=user_response,
+                    average_score=average_score,
+                    thinking_weaknesses=thinking_eval.weaknesses,
+                    german_weaknesses=german_eval.weaknesses,
+                )
+            else:
+                agent = self._agent_registry.get(active_round.hat)
+                follow_up_task = agent.create_challenge(updated_context)
+
+            proposition, feedback, follow_up_challenge = await asyncio.gather(
+                prop_task,
                 feedback_task,
-                agent.create_challenge(updated_context),
+                follow_up_task,
             )
             next_challenge = follow_up_challenge
 
@@ -168,9 +235,9 @@ class TurnService:
                 difficulty=follow_up_challenge.difficulty,
             )
         else:
-            # Prefetch the next hat challenge (or final reflection) while feedback is generated/read
+            # Prefetch next challenge (Answering Mode) or final reflection if all hats done
             self._schedule_post_round_prefetch(mindquest, active_round.hat)
-            feedback = await feedback_task
+            proposition, feedback = await asyncio.gather(prop_task, feedback_task)
 
         await self._evaluation_service.persist_evaluations(
             user_id=mindquest.user_id,
@@ -178,6 +245,7 @@ class TurnService:
             mindquest_id=mindquest.id,
             thinking_eval=thinking_eval,
             german_eval=german_eval,
+            proposition=proposition,
         )
 
         await self._mindquest_repo.save(mindquest)
@@ -189,6 +257,8 @@ class TurnService:
             feedback=feedback,
             next_challenge=next_challenge,
             round_should_complete=round_should_complete,
+            proposition=proposition,
+            average_score=average_score,
         )
 
     def _schedule_post_round_prefetch(
@@ -199,6 +269,9 @@ class TurnService:
         done_after_round = set(mindquest.completed_hats) | {completed_hat}
         remaining = tuple(h for h in mindquest.planned_hats if h not in done_after_round)
         if remaining:
+            if mindquest.mode == MindQuestMode.ARGUE:
+                # In Argue Mode the user selects the next hat manually
+                return
             next_hat = remaining[0]
             next_context = MindQuestContext(
                 mindquest_id=mindquest.id,

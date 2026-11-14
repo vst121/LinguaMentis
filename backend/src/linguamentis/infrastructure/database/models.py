@@ -45,6 +45,7 @@ class MindQuestModel(Base):
     )
     topic: Mapped[str] = mapped_column(Text, nullable=False, default="")
     target_level: Mapped[str] = mapped_column(String(2), nullable=False)
+    mode: Mapped[str] = mapped_column(String(20), nullable=False, default="ANSWERING")
     status: Mapped[str] = mapped_column(String(40), nullable=False, default="CREATED")
     current_hat: Mapped[str | None] = mapped_column(String(10), nullable=True)
     planned_hats: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
@@ -109,6 +110,9 @@ class TurnModel(Base):
         back_populates="turn", uselist=False, cascade="all, delete-orphan"
     )
     german_evaluation: Mapped[GermanEvaluationModel | None] = relationship(
+        back_populates="turn", uselist=False, cascade="all, delete-orphan"
+    )
+    proposition: Mapped[ResponsePropositionModel | None] = relationship(
         back_populates="turn", uselist=False, cascade="all, delete-orphan"
     )
 
@@ -193,6 +197,20 @@ class EvidenceModel(Base):
         Index("ix_evidence_thinking_eval_id", "thinking_evaluation_id"),
         Index("ix_evidence_german_eval_id", "german_evaluation_id"),
     )
+
+
+class ResponsePropositionModel(Base):
+    __tablename__ = "response_propositions"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    turn_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("turns.id"), nullable=False, unique=True
+    )
+    improved_response: Mapped[str] = mapped_column(Text, nullable=False)
+    highlights: Mapped[list[dict]] = mapped_column(JSON, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+    turn: Mapped[TurnModel] = relationship(back_populates="proposition")
 
 
 class FinalReflectionModel(Base):

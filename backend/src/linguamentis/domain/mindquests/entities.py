@@ -16,6 +16,7 @@ from linguamentis.domain.hats.types import HatType
 from linguamentis.domain.mindquests.enums import (
     LanguageLevel,
     MindQuestEvent,
+    MindQuestMode,
     MindQuestStatus,
 )
 from linguamentis.domain.mindquests.state_machine import MindQuestStateMachine
@@ -103,6 +104,7 @@ class MindQuest:
     user_id: UUID
     topic: str
     target_level: LanguageLevel
+    mode: MindQuestMode = MindQuestMode.ANSWERING
     status: MindQuestStatus = MindQuestStatus.CREATED
     current_hat: HatType | None = None
     hat_rounds: list[HatRound] = field(default_factory=list)

@@ -9,14 +9,22 @@ from __future__ import annotations
 from typing import Protocol
 from uuid import UUID
 
+from sqlalchemy import delete as sa_delete
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from linguamentis.domain.hats.types import HatType
 from linguamentis.domain.mindquests.entities import HatRound, MindQuest, Turn
-from linguamentis.domain.mindquests.enums import LanguageLevel, MindQuestStatus
-from linguamentis.infrastructure.database.models import HatRoundModel, MindQuestModel, TurnModel
+from linguamentis.domain.mindquests.enums import LanguageLevel, MindQuestMode, MindQuestStatus
+from linguamentis.infrastructure.database.models import (
+    GermanEvaluationModel,
+    HatRoundModel,
+    MindQuestModel,
+    ThinkingEvaluationModel,
+    TurnModel,
+    UserActivityModel,
+)
 
 
 class MindQuestRepository(Protocol):
@@ -32,6 +40,9 @@ class MindQuestRepository(Protocol):
         ...
 
     async def save(self, mindquest: MindQuest) -> MindQuest:
+        ...
+
+    async def delete(self, mindquest_id: UUID) -> bool:
         ...
 
 
@@ -102,6 +113,7 @@ class SQLAlchemyMindQuestRepository:
                 user_id=mindquest.user_id,
                 topic=mindquest.topic,
                 target_level=mindquest.target_level.value,
+                mode=mindquest.mode.value,
                 status=mindquest.status.value,
                 current_hat=current_hat_val,
                 planned_hats=planned_json,
@@ -113,6 +125,7 @@ class SQLAlchemyMindQuestRepository:
         else:
             model.topic = mindquest.topic
             model.target_level = mindquest.target_level.value
+            model.mode = mindquest.mode.value
             model.status = mindquest.status.value
             model.current_hat = current_hat_val
             model.planned_hats = planned_json
@@ -169,6 +182,39 @@ class SQLAlchemyMindQuestRepository:
         await self._session.flush()
         return mindquest
 
+    async def delete(self, mindquest_id: UUID) -> bool:
+        stmt = (
+            select(MindQuestModel)
+            .where(MindQuestModel.id == mindquest_id)
+            .options(
+                selectinload(MindQuestModel.final_reflection),
+                selectinload(MindQuestModel.hat_rounds)
+                .selectinload(HatRoundModel.turns)
+                .selectinload(TurnModel.thinking_evaluation)
+                .selectinload(ThinkingEvaluationModel.evidence),
+                selectinload(MindQuestModel.hat_rounds)
+                .selectinload(HatRoundModel.turns)
+                .selectinload(TurnModel.german_evaluation)
+                .selectinload(GermanEvaluationModel.evidence),
+                selectinload(MindQuestModel.hat_rounds)
+                .selectinload(HatRoundModel.turns)
+                .selectinload(TurnModel.proposition),
+            )
+        )
+        res = await self._session.execute(stmt)
+        model = res.scalar_one_or_none()
+        if model is None:
+            return False
+
+        await self._session.execute(
+            sa_delete(UserActivityModel).where(
+                UserActivityModel.mindquest_id == mindquest_id
+            )
+        )
+        await self._session.delete(model)
+        await self._session.flush()
+        return True
+
 
 def _to_domain_mindquest(model: MindQuestModel) -> MindQuest:
     rounds: list[HatRound] = []
@@ -210,6 +256,7 @@ def _to_domain_mindquest(model: MindQuestModel) -> MindQuest:
         user_id=model.user_id,
         topic=model.topic,
         target_level=LanguageLevel(model.target_level),
+        mode=MindQuestMode(model.mode or MindQuestMode.ANSWERING.value),
         status=MindQuestStatus(model.status),
         current_hat=current_hat,
         hat_rounds=rounds,

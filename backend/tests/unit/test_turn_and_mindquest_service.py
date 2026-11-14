@@ -6,13 +6,17 @@ from uuid import uuid4
 
 import pytest
 
-from linguamentis.ai.models import Evidence, ThinkingEvaluationOutput
+from linguamentis.ai.models import Evidence, GermanEvaluationOutput, ThinkingEvaluationOutput
 from linguamentis.application.evaluation.service import EvaluationService
 from linguamentis.application.mindquests.prefetch import ChallengePrefetchCache
 from linguamentis.application.mindquests.service import MindQuestService
 from linguamentis.application.turns.service import TurnService
-from linguamentis.domain.hats.types import HatType
-from linguamentis.domain.mindquests.enums import LanguageLevel, MindQuestStatus
+from linguamentis.domain.hats.types import ARGUE_SELECTABLE_HATS, HatType
+from linguamentis.domain.mindquests.enums import (
+    LanguageLevel,
+    MindQuestMode,
+    MindQuestStatus,
+)
 from linguamentis.domain.users.entities import User
 from linguamentis.infrastructure.database.repositories import (
     SQLAlchemyEvaluationRepository,
@@ -98,25 +102,17 @@ async def test_multi_turn_hat_round_and_multi_hat_progression(
     assert start_res.active_hat == HatType.WHITE
     assert start_res.initial_turn.turn_number == 1
 
-    # Turn 1 gets a low thinking score (< 75) -> follow-up Turn 2 is created
+    # Even with a low thinking score (< 75), each hat has strictly one turn/round
     fake_llm_client.queue_response(ThinkingEvaluationOutput, _low_thinking_output())
     sub1 = await mq_service.submit_response(
         mindquest_id=mq.id, user_response="Es gibt viele Studien zur Nutzung."
     )
     assert sub1.thinking_evaluation.score < 75
-    assert sub1.round_should_complete is False
-    assert sub1.next_challenge is not None
+    assert sub1.round_should_complete is True
+    assert sub1.next_challenge is None
 
     updated_mq = await mq_service.get_mindquest(mq.id)
-    assert len(updated_mq.hat_rounds[0].turns) == 2
-
-    # Turn 2 gets default score (>= 75) -> round completes
-    sub2 = await mq_service.submit_response(
-        mindquest_id=mq.id,
-        user_response="Krankenhäuser berichten von 20 Prozent schnellerer Auswertung.",
-    )
-    assert sub2.round_should_complete is True
-    assert sub2.next_challenge is None
+    assert len(updated_mq.hat_rounds[0].turns) == 1
 
     # Advance through remaining mandatory hats: YELLOW -> GREEN -> RED -> BLACK -> BLUE
     remaining_hats = (
@@ -170,46 +166,7 @@ async def test_mindquest_and_turn_service_error_branches(
 
 
 @pytest.mark.asyncio
-async def test_max_three_turns_per_hat_round_forces_completion_even_with_low_scores(
-    db_session, fake_llm_client, fake_gateway, agent_registry
-):
-    user_repo, mq_service = _build_services(db_session, fake_gateway, agent_registry)
-    user_id = uuid4()
-    await user_repo.save(User(id=user_id, display_name="Learner"))
-
-    mq = await mq_service.create_mindquest(
-        user_id=user_id,
-        topic="Künstliche Intelligenz im Journalismus",
-        target_level=LanguageLevel.B2,
-        planned_hats=(HatType.BLACK,),
-    )
-    await mq_service.start_mindquest(mq.id)
-
-    # Queue 3 consecutive low-scoring thinking evaluations (< 75)
-    fake_llm_client.queue_response(
-        ThinkingEvaluationOutput,
-        _low_thinking_output(),
-        _low_thinking_output(),
-        _low_thinking_output(),
-    )
-
-    sub1 = await mq_service.submit_response(mq.id, "Turn 1 zu kurz.")
-    assert sub1.round_should_complete is False
-    assert sub1.next_challenge is not None
-
-    sub2 = await mq_service.submit_response(mq.id, "Turn 2 immer noch oberflächlich.")
-    assert sub2.round_should_complete is False
-    assert sub2.next_challenge is not None
-
-    # Turn 3 reaches MAX_TURNS_PER_HAT_ROUND = 3 -> must complete round despite low score
-    sub3 = await mq_service.submit_response(mq.id, "Turn 3 erreicht das Limit.")
-    assert sub3.thinking_evaluation.score < 75
-    assert sub3.round_should_complete is True
-    assert sub3.next_challenge is None
-
-
-@pytest.mark.asyncio
-async def test_full_five_hat_default_sequence_and_activity_logging(
+async def test_full_six_hat_default_sequence_and_activity_logging(
     db_session, fake_gateway, agent_registry
 ):
     from linguamentis.domain.hats.types import DEFAULT_HAT_SEQUENCE
@@ -259,3 +216,89 @@ async def test_full_five_hat_default_sequence_and_activity_logging(
         ActivityType.MINDQUEST_COMPLETED,
     }.issubset(activity_types)
 
+
+@pytest.mark.asyncio
+async def test_argue_mode_flow_locks_hat_until_above_80_and_forbids_blue_or_reuse(
+    db_session, fake_llm_client, fake_gateway, agent_registry
+):
+    user_repo, mq_service = _build_services(db_session, fake_gateway, agent_registry)
+    user_id = uuid4()
+    await user_repo.save(User(id=user_id, display_name="Debater"))
+
+    mq = await mq_service.create_mindquest(
+        user_id=user_id,
+        topic="Tempolimit auf Autobahnen",
+        target_level=LanguageLevel.C1,
+        mode=MindQuestMode.ARGUE,
+    )
+    assert mq.mode == MindQuestMode.ARGUE
+    assert mq.planned_hats == ARGUE_SELECTABLE_HATS
+    assert HatType.BLUE not in mq.planned_hats
+
+    # Blue hat can never be selected in Argue Mode
+    with pytest.raises(DomainError, match="Blue Hat"):
+        await mq_service.select_hat(mq.id, HatType.BLUE)
+
+    # Select BLACK hat first
+    sel = await mq_service.select_hat(mq.id, HatType.BLACK)
+    assert sel.active_hat == HatType.BLACK
+
+    # Cannot switch hat while current hat is active and below >80% average
+    with pytest.raises(DomainError, match="Cannot change hat"):
+        await mq_service.select_hat(mq.id, HatType.WHITE)
+
+    # Submit response with average <= 80% -> Devil's Advocate rejection, round stays open
+    fake_llm_client.queue_response(ThinkingEvaluationOutput, _low_thinking_output())
+    fake_llm_client.queue_response(
+        GermanEvaluationOutput,
+        GermanEvaluationOutput(
+            grammar=78,
+            vocabulary=78,
+            sentence_structure=78,
+            naturalness=78,
+            level_appropriateness=78,
+        ),
+    )
+    sub_reject = await mq_service.submit_response(
+        mindquest_id=mq.id, user_response="Es gibt Staus."
+    )
+    assert sub_reject.average_score <= 80.0
+    assert sub_reject.round_should_complete is False
+    assert sub_reject.next_challenge is not None
+
+    # Still cannot switch hats while rejected
+    with pytest.raises(DomainError, match="Cannot change hat"):
+        await mq_service.select_hat(mq.id, HatType.YELLOW)
+
+    # Submit stronger response (>80% average with default FakeLLMClient 82.0)
+    sub_pass = await mq_service.submit_response(
+        mindquest_id=mq.id,
+        user_response="Ein zentrales Risiko liegt in längeren Lieferzeiten im Güterverkehr.",
+    )
+    assert sub_pass.average_score > 80.0
+    assert sub_pass.round_should_complete is True
+    assert sub_pass.next_challenge is None
+
+    # Advance completes BLACK and waits for next user selection
+    adv1 = await mq_service.advance_mindquest(mq.id)
+    assert adv1.is_completed is False
+    assert adv1.next_hat is None
+    assert adv1.mindquest.status == MindQuestStatus.HAT_COMPLETED
+
+    # Already-completed BLACK hat cannot be selected again
+    with pytest.raises(DomainError, match="already been completed"):
+        await mq_service.select_hat(mq.id, HatType.BLACK)
+
+    # Complete the remaining 4 selectable hats (WHITE, YELLOW, GREEN, RED)
+    for remaining_hat in (HatType.WHITE, HatType.YELLOW, HatType.GREEN, HatType.RED):
+        await mq_service.select_hat(mq.id, remaining_hat)
+        sub = await mq_service.submit_response(
+            mindquest_id=mq.id,
+            user_response="Differenzierte Argumentation mit präziser C1-Ausdrucksweise.",
+        )
+        assert sub.round_should_complete is True
+        adv = await mq_service.advance_mindquest(mq.id)
+
+    assert adv.is_completed is True
+    assert adv.final_reflection is not None
+    assert adv.mindquest.status == MindQuestStatus.COMPLETED
