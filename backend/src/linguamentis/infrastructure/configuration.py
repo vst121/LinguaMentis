@@ -37,7 +37,11 @@ class Settings(BaseSettings):
     ai_model_thinking_evaluator: str = "gemini-2.5-flash"
     ai_model_german_evaluator: str = "gemini-2.5-flash"
     ai_model_reflection: str = "gemini-2.5-flash"
-    ai_model_transcription: str = ""
+    ai_model_transcription: str = "gemini-3.5-flash-lite"
+    ai_model_conversation: str = "gemini-3.5-flash-lite"
+    ai_model_tts: str = "gemini-3.8-flash-lite-tts"
+    ai_tts_voice: str = "Kore"
+    ai_disable_thinking_for_speed: bool = True
     ai_model_structured_fallback: str = "gemini-2.5-flash"
 
     ai_request_timeout_seconds: float = 120.0

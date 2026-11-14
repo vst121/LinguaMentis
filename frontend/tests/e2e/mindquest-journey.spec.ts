@@ -212,4 +212,73 @@ test.describe("LinguaMentis E2E MindQuest Journey", () => {
     await page.getByRole("button", { name: /Eintippen/i }).click();
     await expect(page.getByTestId("recording-indicator")).toBeHidden();
   });
+
+  test("conducts a spoken conversation with Conversation Agent across Thinking Hats", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      class ConversationMockSpeechRecognition {
+        lang = "de-DE";
+        continuous = true;
+        interimResults = true;
+        onresult: ((ev: unknown) => void) | null = null;
+        onerror: ((ev: unknown) => void) | null = null;
+        onend: (() => void) | null = null;
+        start() {
+          setTimeout(() => {
+            if (this.onresult) {
+              this.onresult({
+                resultIndex: 0,
+                results: {
+                  length: 1,
+                  0: {
+                    isFinal: true,
+                    0: {
+                      transcript:
+                        "Belegbare Studien zeigen klare Produktivitätsvorteile.",
+                    },
+                  },
+                },
+              });
+            }
+          }, 80);
+        }
+        stop() {
+          if (this.onend) this.onend();
+        }
+      }
+      const w = window as unknown as Record<string, unknown>;
+      w.SpeechRecognition = ConversationMockSpeechRecognition;
+      w.webkitSpeechRecognition = ConversationMockSpeechRecognition;
+    });
+
+    await page.goto("/mindquests");
+    await page
+      .getByPlaceholder(/Soll KI Hausaufgaben bewerten/i)
+      .fill("Mündliches Debatten-Gespräch");
+    await page.getByRole("button", { name: /MindQuest erstellen/i }).click();
+    await expect(page).toHaveURL(/\/mindquests\/[0-9a-f-]+$/);
+
+    // Start directly in spoken conversation mode
+    await page
+      .getByRole("button", { name: /Mündliches Gespräch starten/i })
+      .click();
+    await expect(page.getByTestId("conversation-view")).toBeVisible();
+
+    // If browser is playing opening WAV, skip or wait until listening starts
+    const skipBtn = page.getByRole("button", { name: /Direkt antworten/i });
+    if (await skipBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await skipBtn.click();
+    }
+
+    await expect(page.getByTestId("live-spoken-transcript")).toContainText(
+      "Belegbare Studien zeigen klare Produktivitätsvorteile."
+    );
+    await page.getByRole("button", { name: /Fertig gesprochen/i }).click();
+
+    // Verify Conversation Agent replies and scores appear in conversation log
+    await expect(
+      page.getByText(/Das ist ein spannender Gedanke/i)
+    ).toBeVisible();
+  });
 });

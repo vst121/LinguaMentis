@@ -8,6 +8,7 @@ from __future__ import annotations
 from linguamentis.agents.base import HatAgent
 from linguamentis.agents.black import BlackHatAgent
 from linguamentis.agents.blue import BlueHatAgent
+from linguamentis.agents.conversation import ConversationAgent
 from linguamentis.agents.green import GreenHatAgent
 from linguamentis.agents.red import RedHatAgent
 from linguamentis.agents.white import WhiteHatAgent
@@ -29,6 +30,7 @@ class AgentRegistry:
             HatType.GREEN: GreenHatAgent(gateway),
             HatType.BLUE: BlueHatAgent(gateway),
         }
+        self._conversation = ConversationAgent(gateway)
 
     def get(self, hat: HatType) -> HatAgent:
         agent = self._agents.get(hat)
@@ -39,3 +41,7 @@ class AgentRegistry:
     @property
     def blue(self) -> BlueHatAgent:
         return self._agents[HatType.BLUE]  # type: ignore[return-value]
+
+    @property
+    def conversation(self) -> ConversationAgent:
+        return self._conversation

@@ -199,3 +199,42 @@ async def test_api_error_handlers_and_edge_cases(async_client: AsyncClient, fake
     assert stt_bad_mime.status_code == 400
 
 
+@pytest.mark.asyncio
+async def test_conversation_mode_api_lifecycle(async_client: AsyncClient):
+    create_resp = await async_client.post(
+        "/api/v1/mindquests",
+        json={"topic": "Bargeldabschaffung in Europa", "target_level": "B2"},
+    )
+    assert create_resp.status_code == 201
+    mq_id = create_resp.json()["id"]
+
+    # 1. Open spoken conversation -> auto-starts MindQuest on WHITE hat and synthesizes speech
+    open_resp = await async_client.post(f"/api/v1/mindquests/{mq_id}/conversation/opening")
+    assert open_resp.status_code == 200
+    open_data = open_resp.json()
+    assert open_data["active_hat"] == "WHITE"
+    assert "Bargeldabschaffung in Europa" in open_data["spoken_text"]
+    assert open_data["audio_base64"] != ""
+    assert open_data["is_completed"] is False
+
+    # 2. Submit spoken turn -> evaluates Thinking & German, advances WHITE -> YELLOW
+    turn_resp = await async_client.post(
+        f"/api/v1/mindquests/{mq_id}/conversation/turn",
+        json={
+            "transcript": (
+                "Laut Bundesbank wird in Deutschland noch rund die Hälfte aller Einkäufe "
+                "bar bezahlt."
+            )
+        },
+    )
+    assert turn_resp.status_code == 200
+    turn_data = turn_resp.json()
+    assert turn_data["thinking_evaluation"]["score"] >= 0
+    assert turn_data["german_evaluation"]["score"] >= 0
+    assert turn_data["transitioned_hat"] == "YELLOW"
+    assert turn_data["active_hat"] == "YELLOW"
+    assert turn_data["spoken_reply"] != ""
+    assert turn_data["audio_base64"] != ""
+
+
+

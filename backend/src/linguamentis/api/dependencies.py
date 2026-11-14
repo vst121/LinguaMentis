@@ -14,6 +14,7 @@ from linguamentis.agents.registry import AgentRegistry
 from linguamentis.ai.gateway import AIGateway
 from linguamentis.ai.gemini import GeminiClient
 from linguamentis.ai.jev import DisabledDecisionVerifier, JevClient
+from linguamentis.application.conversation.service import ConversationService
 from linguamentis.application.evaluation.service import EvaluationService
 from linguamentis.application.learning.service import LearningService
 from linguamentis.application.mindquests.prefetch import ChallengePrefetchCache
@@ -175,3 +176,16 @@ def get_learning_service(
         evaluation_repo=evaluation_repo,
         activity_repo=activity_repo,
     )
+
+
+def get_conversation_service(
+    mindquest_service: Annotated[MindQuestService, Depends(get_mindquest_service)],
+    agent_registry: Annotated[AgentRegistry, Depends(get_agent_registry)],
+    gateway: Annotated[AIGateway, Depends(get_ai_gateway)],
+) -> ConversationService:
+    return ConversationService(
+        mindquest_service=mindquest_service,
+        agent_registry=agent_registry,
+        gateway=gateway,
+    )
+

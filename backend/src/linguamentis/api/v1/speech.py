@@ -63,3 +63,22 @@ async def transcribe_speech(
         mime_type=base_mime,
     )
     return SpeechTranscribeResponse(text=output.text.strip())
+
+
+class SpeechSynthesizeRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=3000)
+
+
+class SpeechSynthesizeResponse(BaseModel):
+    audio_base64: str
+    mime_type: str = "audio/wav"
+
+
+@router.post("/synthesize", response_model=SpeechSynthesizeResponse)
+async def synthesize_speech(
+    body: SpeechSynthesizeRequest,
+    gateway: Annotated[AIGateway, Depends(get_ai_gateway)],
+) -> SpeechSynthesizeResponse:
+    res = await gateway.synthesize_german_speech(text=body.text.strip())
+    return SpeechSynthesizeResponse(audio_base64=res.audio_base64, mime_type=res.mime_type)
+

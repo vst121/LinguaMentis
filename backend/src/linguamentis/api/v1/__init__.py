@@ -2,11 +2,13 @@
 
 from fastapi import APIRouter
 
+from linguamentis.api.v1.conversation import router as conversation_router
 from linguamentis.api.v1.learning import router as learning_router
 from linguamentis.api.v1.mindquests import router as mindquests_router
 from linguamentis.api.v1.speech import router as speech_router
 
 v1_router = APIRouter()
 v1_router.include_router(mindquests_router)
+v1_router.include_router(conversation_router)
 v1_router.include_router(learning_router)
 v1_router.include_router(speech_router)

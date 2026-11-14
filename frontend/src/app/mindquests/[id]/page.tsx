@@ -3,8 +3,9 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
-import { ArrowRight, Send } from "lucide-react";
+import { ArrowRight, MessageSquareText, Send, Volume2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { ConversationView } from "@/components/conversation/ConversationView";
 import { ScoreBar } from "@/components/evaluation/ProfileScoreCards";
 import { HatIndicator } from "@/components/hats/HatIndicator";
 import {
@@ -13,6 +14,7 @@ import {
 } from "@/components/speech/SpeechInputControls";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { useConversationSession } from "@/hooks/useConversationSession";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
 import {
   getMindQuest,
@@ -69,7 +71,8 @@ export default function MindQuestPage() {
     [feedback, setFeedback] = useState<SubmitResponseResponse | null>(null),
     [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [experienceMode, setExperienceMode] = useState<"written" | "conversation">("written");
   useEffect(() => {
     getMindQuest(id)
       .then((q) => {
@@ -118,6 +121,26 @@ export default function MindQuestPage() {
     startRecording,
     stopRecording,
   } = useSpeechToText(appendTranscript);
+
+  const handleConversationQuestUpdate = useCallback(
+    (updated: MindQuest, activeTurn: Turn | null) => {
+      setQuest(updated);
+      setTurn(activeTurn);
+      setFeedback(null);
+    },
+    []
+  );
+
+  const handleConversationCompleted = useCallback(() => {
+    router.replace(`/mindquests/${id}/reflection`);
+  }, [id, router]);
+
+  const conversation = useConversationSession({
+    mindquestId: id,
+    enabled: experienceMode === "conversation" && quest?.status !== "COMPLETED",
+    onQuestUpdated: handleConversationQuestUpdate,
+    onCompleted: handleConversationCompleted,
+  });
 
   async function send() {
     if (isRecording) {
@@ -254,7 +277,44 @@ export default function MindQuestPage() {
                 {quest.planned_hats.length} Perspektiven
               </p>
             </div>
-            {currentHat && <HatIndicator hat={currentHat} detail />}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div
+                role="group"
+                aria-label="MindQuest-Modus"
+                className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-xs font-medium"
+              >
+                <button
+                  type="button"
+                  aria-pressed={experienceMode === "written"}
+                  onClick={() => setExperienceMode("written")}
+                  className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition cursor-pointer ${
+                    experienceMode === "written"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <MessageSquareText size={14} />
+                  Schriftlich
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={experienceMode === "conversation"}
+                  onClick={() => {
+                    if (isRecording) void stopRecording();
+                    setExperienceMode("conversation");
+                  }}
+                  className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition cursor-pointer ${
+                    experienceMode === "conversation"
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <Volume2 size={14} />
+                  Gesprächsmodus
+                </button>
+              </div>
+              {currentHat && <HatIndicator hat={currentHat} detail />}
+            </div>
           </div>
           <div className="mt-4 flex gap-1.5">
             {quest.planned_hats.map((h) => {
@@ -294,6 +354,21 @@ export default function MindQuestPage() {
               </Link>
             </Card>
           </div>
+        ) : experienceMode === "conversation" ? (
+          <ConversationView
+            activeHat={currentHat}
+            phase={conversation.phase}
+            messages={conversation.messages}
+            liveTranscript={conversation.liveTranscript}
+            audioLevels={conversation.audioLevels}
+            silenceProgress={conversation.silenceProgress}
+            error={conversation.error}
+            onFinishSpeaking={() => void conversation.finishSpeaking()}
+            onSkipAgentSpeech={conversation.skipAgentSpeech}
+            onReplayAgentSpeech={conversation.replayAgentSpeech}
+            onPauseListening={conversation.pauseListening}
+            onResumeListening={() => void conversation.resumeListening()}
+          />
         ) : !turn ? (
           <div className="md:flex md:flex-1 md:min-h-0 md:items-center md:justify-center">
             <Card
@@ -301,9 +376,19 @@ export default function MindQuestPage() {
               description="Du bekommst eine fokussierte Frage und Feedback zu Denken und Sprache."
               className="w-full max-w-xl"
             >
-              <Button isLoading={busy} onClick={begin}>
-                MindQuest beginnen <ArrowRight className="ml-2" size={16} />
-              </Button>
+              <div className="flex flex-wrap gap-3">
+                <Button isLoading={busy} onClick={begin}>
+                  MindQuest beginnen <ArrowRight className="ml-2" size={16} />
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => setExperienceMode("conversation")}
+                >
+                  <Volume2 className="mr-2" size={16} />
+                  Mündliches Gespräch starten
+                </Button>
+              </div>
             </Card>
           </div>
         ) : (

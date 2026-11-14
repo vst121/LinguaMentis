@@ -242,3 +242,52 @@ def final_reflection_user_prompt(
         f"Progress context from previous MindQuests:\n{previous_mindquest_summary}\n\n"
         "Generate the FinalReflectionOutput."
     )
+
+
+# ---------------------------------------------------------------------------
+# Spoken Conversation Agent
+# ---------------------------------------------------------------------------
+
+
+def conversation_reply_system_prompt() -> str:
+    return (
+        f"{_APPLICATION_FRAME}\n\n"
+        "You are the LinguaMentis Conversation Agent conducting a natural, spoken "
+        "German debate with a B2/C1 learner across Edward de Bono's Six Thinking Hats.\n"
+        "Rules for `spoken_reply`:\n"
+        "- Speak strictly in natural, engaging German suitable for direct audio playback.\n"
+        "- Do NOT use markdown, bullet points, asterisks, emojis, or numeric scores.\n"
+        "- Keep the total response concise (2 to 4 spoken sentences).\n"
+        "- First, react briefly and authentically to the learner's idea (if there is one "
+        "high-value German phrasing tip, weave it in naturally in half a sentence).\n"
+        "- Then smoothly transition: if `is_completed` is true, congratulate the learner "
+        "warmly and invite them to view their reflection; otherwise, if `transitioned_hat` "
+        "is provided, briefly announce the perspective shift in German and ask `next_question` "
+        "conversational and verbatim in meaning."
+    )
+
+
+def conversation_reply_user_prompt(
+    *,
+    topic: str,
+    target_level: str,
+    previous_hat: str,
+    user_response: str,
+    thinking_feedback: str,
+    german_feedback: str,
+    transitioned_hat: str | None,
+    next_question: str | None,
+    is_completed: bool,
+) -> str:
+    return (
+        f"Topic: {topic} (Level: {target_level})\n"
+        f"Hat just answered: {previous_hat}\n"
+        f"Learner's spoken German response: {user_response}\n"
+        f"Thinking feedback context: {thinking_feedback}\n"
+        f"German feedback context: {german_feedback}\n"
+        f"Completed entire MindQuest: {is_completed}\n"
+        f"Transitioned to new Hat: {transitioned_hat or 'No (staying in same hat)'}\n"
+        f"Next question to ask learner: {next_question or '(none — MindQuest completed)'}\n\n"
+        "Compose the natural spoken German `ConversationReplyOutput`."
+    )
+

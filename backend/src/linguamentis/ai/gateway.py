@@ -12,11 +12,13 @@ from __future__ import annotations
 from linguamentis.ai import prompts
 from linguamentis.ai.client import LLMClient
 from linguamentis.ai.models import (
+    ConversationReplyOutput,
     FinalReflectionOutput,
     GermanEvaluationOutput,
     HatChallenge,
     HatFeedback,
     SpeechTranscriptionOutput,
+    SynthesizedSpeech,
     ThinkingEvaluationOutput,
 )
 from linguamentis.domain.hats.contracts import HatContract
@@ -173,4 +175,52 @@ class AIGateway:
         )
         logger.info("ai.speech.transcribed", model=model, mime_type=mime_type)
         return result  # type: ignore[return-value]
+
+    # -- Spoken Conversation & TTS -----------------------------------------
+
+    async def generate_conversation_reply(
+        self,
+        *,
+        topic: str,
+        target_level: str,
+        previous_hat: str,
+        user_response: str,
+        thinking_feedback: str,
+        german_feedback: str,
+        transitioned_hat: str | None,
+        next_question: str | None,
+        is_completed: bool,
+    ) -> ConversationReplyOutput:
+        model = self._settings.ai_model_conversation.strip() or self._settings.ai_model_hat
+        result = await self._client.generate_structured(
+            system_prompt=prompts.conversation_reply_system_prompt(),
+            user_prompt=prompts.conversation_reply_user_prompt(
+                topic=topic,
+                target_level=target_level,
+                previous_hat=previous_hat,
+                user_response=user_response,
+                thinking_feedback=thinking_feedback,
+                german_feedback=german_feedback,
+                transitioned_hat=transitioned_hat,
+                next_question=next_question,
+                is_completed=is_completed,
+            ),
+            response_model=ConversationReplyOutput,
+            model=model,
+            temperature=0.5,
+        )
+        logger.info("ai.conversation.reply_generated", model=model)
+        return result
+
+    async def synthesize_german_speech(self, *, text: str) -> SynthesizedSpeech:
+        model = self._settings.ai_model_tts
+        voice = self._settings.ai_tts_voice
+        result = await self._client.synthesize_speech(
+            text=text,
+            model=model,
+            voice_name=voice,
+        )
+        logger.info("ai.speech.synthesized", model=model, voice=voice)
+        return result  # type: ignore[return-value]
+
 

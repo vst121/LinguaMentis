@@ -11,7 +11,7 @@ from urllib.parse import quote
 import httpx
 from pydantic import BaseModel, ValidationError
 
-from linguamentis.ai.models import SpeechTranscriptionOutput
+from linguamentis.ai.models import SpeechTranscriptionOutput, SynthesizedSpeech
 from linguamentis.infrastructure.configuration import Settings
 from linguamentis.shared.exceptions import AIProviderError, StructuredOutputParsingError
 from linguamentis.shared.logging import get_logger
@@ -90,10 +90,10 @@ class GeminiClient:
     ) -> SpeechTranscriptionOutput:
         system_prompt = (
             "You are a verbatim German speech-to-text transcriber for LinguaMentis. "
-            "Transcribe the spoken German audio accurately into text. "
+            "Transcribe the spoken German audio accurately into plain text. "
             "IMPORTANT: Transcribe verbatim what the speaker said — do NOT auto-correct "
-            "grammar or vocabulary mistakes, because the learner's German will be evaluated "
-            "separately. Return JSON matching the SpeechTranscriptionOutput schema."
+            "grammar or vocabulary mistakes. Output ONLY the spoken German text (or an "
+            "empty string if silent), with no quotes, markdown, or commentary."
         )
         contents = [
             {
@@ -105,9 +105,7 @@ class GeminiClient:
                             "data": audio_base64,
                         }
                     },
-                    {
-                        "text": "Transcribe this German audio verbatim into the `text` field."
-                    },
+                    {"text": "Transcribe this German audio verbatim."},
                 ],
             }
         ]
@@ -115,25 +113,83 @@ class GeminiClient:
             contents=contents,
             system_prompt=system_prompt,
             model=model,
-            temperature=0.1,
-            response_model=SpeechTranscriptionOutput,
+            temperature=0.0,
+            response_model=None,
         )
-        try:
-            return SpeechTranscriptionOutput.model_validate_json(raw)
-        except ValidationError as exc:
+        cleaned = raw.strip()
+        if cleaned.startswith("{"):
             try:
-                parsed = json.loads(raw)
+                parsed = json.loads(cleaned)
                 if isinstance(parsed, dict):
                     for key in ("text", "transcript", "transcription"):
                         if isinstance(parsed.get(key), str):
-                            return SpeechTranscriptionOutput(text=parsed[key])
+                            return SpeechTranscriptionOutput(text=parsed[key].strip())
             except Exception:
                 pass
-            if raw and not raw.lstrip().startswith("{"):
-                return SpeechTranscriptionOutput(text=raw.strip())
-            raise StructuredOutputParsingError(
-                f"Failed to parse SpeechTranscriptionOutput from model '{model}'."
-            ) from exc
+        return SpeechTranscriptionOutput(text=cleaned)
+
+    async def synthesize_speech(
+        self,
+        *,
+        text: str,
+        model: str,
+        voice_name: str = "Kore",
+    ) -> SynthesizedSpeech:
+        import base64
+        import io
+        import wave
+
+        models_to_try = [model]
+        if model != "gemini-2.5-flash-preview-tts":
+            models_to_try.append("gemini-2.5-flash-preview-tts")
+
+        payload = {
+            "contents": [{"parts": [{"text": text}]}],
+            "generationConfig": {
+                "responseModalities": ["AUDIO"],
+                "speechConfig": {
+                    "voiceConfig": {
+                        "prebuiltVoiceConfig": {"voiceName": voice_name}
+                    }
+                },
+            },
+        }
+
+        last_err: Exception | None = None
+        for candidate_model in models_to_try:
+            try:
+                resp = await self._http.post(
+                    f"/v1beta/models/{quote(candidate_model, safe='')}:generateContent",
+                    headers={"x-goog-api-key": self._settings.gemini_api_key},
+                    json=payload,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                inline = data["candidates"][0]["content"]["parts"][0]["inlineData"]
+                b64_data: str = inline["data"]
+                mime: str = inline.get("mimeType", "audio/wav")
+
+                if mime.startswith("audio/L16") or "pcm" in mime.lower():
+                    pcm_bytes = base64.b64decode(b64_data)
+                    wav_buf = io.BytesIO()
+                    with wave.open(wav_buf, "wb") as wf:
+                        wf.setnchannels(1)
+                        wf.setsampwidth(2)
+                        wf.setframerate(24000)
+                        wf.writeframes(pcm_bytes)
+                    b64_data = base64.b64encode(wav_buf.getvalue()).decode("ascii")
+                    mime = "audio/wav"
+
+                return SynthesizedSpeech(audio_base64=b64_data, mime_type=mime)
+            except Exception as exc:
+                last_err = exc
+                logger.warning(
+                    "ai.gemini.tts_attempt_failed",
+                    model=candidate_model,
+                    error=str(exc),
+                )
+
+        raise AIProviderError(f"Gemini TTS synthesis failed: {last_err}") from last_err
 
     async def generate_structured(
         self,
@@ -232,16 +288,26 @@ class GeminiClient:
         system_prompt: str,
         model: str,
         temperature: float,
-        response_model: type[BaseModel],
+        response_model: type[BaseModel] | None,
     ) -> str:
+        gen_config: dict = {"temperature": temperature}
+        if response_model is not None:
+            gen_config["responseMimeType"] = "application/json"
+            gen_config["responseJsonSchema"] = _get_cached_schema(response_model)
+
+        lower_model = model.lower()
+        if (
+            self._settings.ai_disable_thinking_for_speed
+            and "lite" not in lower_model
+            and "transcribe" not in lower_model
+            and ("2.5" in lower_model or "3." in lower_model)
+        ):
+            gen_config["thinkingConfig"] = {"thinkingBudget": 0}
+
         payload = {
             "systemInstruction": {"parts": [{"text": system_prompt}]},
             "contents": contents,
-            "generationConfig": {
-                "temperature": temperature,
-                "responseMimeType": "application/json",
-                "responseJsonSchema": _get_cached_schema(response_model),
-            },
+            "generationConfig": gen_config,
         }
 
         last_exc: Exception | None = None

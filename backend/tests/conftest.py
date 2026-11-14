@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from linguamentis.agents.registry import AgentRegistry
 from linguamentis.ai.gateway import AIGateway
 from linguamentis.ai.models import (
+    ConversationReplyOutput,
     Correction,
     Evidence,
     FinalReflectionOutput,
@@ -26,6 +27,7 @@ from linguamentis.ai.models import (
     HatChallenge,
     HatFeedback,
     SpeechTranscriptionOutput,
+    SynthesizedSpeech,
     ThinkingEvaluationOutput,
     ThinkingReflectionSection,
 )
@@ -169,6 +171,14 @@ class FakeLLMClient:
                 text="Meiner Ansicht nach überwiegen hier die langfristigen Risiken."
             )
 
+        if response_model is ConversationReplyOutput:
+            return ConversationReplyOutput(
+                spoken_reply=(
+                    "Das ist ein spannender Gedanke! Lass uns nun die nächste "
+                    "Perspektive betrachten: Welche Chancen siehst du dabei?"
+                )
+            )
+
         raise ValueError(f"Unsupported response_model in FakeLLMClient: {response_model}")
 
     async def transcribe_audio(
@@ -184,6 +194,18 @@ class FakeLLMClient:
             response_model=SpeechTranscriptionOutput,
             model=model,
             temperature=0.1,
+        )
+
+    async def synthesize_speech(
+        self,
+        *,
+        text: str,
+        model: str,
+        voice_name: str = "Kore",
+    ) -> SynthesizedSpeech:
+        return SynthesizedSpeech(
+            audio_base64="UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=",
+            mime_type="audio/wav",
         )
 
 

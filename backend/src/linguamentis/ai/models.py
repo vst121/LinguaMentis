@@ -155,3 +155,19 @@ class SpeechTranscriptionOutput(BaseModel):
         description="Verbatim German transcript without grammar auto-correction.",
     )
 
+
+class ConversationReplyOutput(BaseModel):
+    """Spoken German turn reply produced by the ConversationAgent."""
+
+    spoken_reply: str = Field(
+        description="Natural spoken German reply (2-4 sentences, no markdown) for TTS playback."
+    )
+
+
+class SynthesizedSpeech(BaseModel):
+    """Base64-encoded synthesized speech audio ready for browser playback."""
+
+    audio_base64: str
+    mime_type: str = "audio/wav"
+
+

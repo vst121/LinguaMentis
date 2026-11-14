@@ -17,3 +17,15 @@ export async function transcribeAudio(
     body: JSON.stringify(data),
   });
 }
+
+export interface SpeechSynthesizeResponse {
+  audio_base64: string;
+  mime_type: string;
+}
+
+export async function synthesizeSpeech(text: string): Promise<SpeechSynthesizeResponse> {
+  return apiFetch<SpeechSynthesizeResponse>("/speech/synthesize", {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
+}

@@ -52,3 +52,14 @@ class LLMClient(Protocol):
         """Transcribe spoken German audio into a structured transcription output."""
         ...
 
+    async def synthesize_speech(
+        self,
+        *,
+        text: str,
+        model: str,
+        voice_name: str = "Kore",
+    ) -> BaseModel:
+        """Synthesize natural German speech audio from text."""
+        ...
+
+

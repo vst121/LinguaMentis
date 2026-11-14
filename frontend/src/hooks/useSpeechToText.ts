@@ -173,7 +173,15 @@ export function useSpeechToText(onAppend: (text: string) => void) {
         streamRef.current = stream;
         hasStream = true;
         if (typeof MediaRecorder !== "undefined") {
-          const rec = new MediaRecorder(stream);
+          const mime =
+            typeof MediaRecorder.isTypeSupported === "function" &&
+            MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+              ? "audio/webm;codecs=opus"
+              : undefined;
+          const rec = new MediaRecorder(
+            stream,
+            mime ? { mimeType: mime, audioBitsPerSecond: 24000 } : { audioBitsPerSecond: 24000 }
+          );
           rec.ondataavailable = (ev) => {
             if (ev.data?.size > 0) chunksRef.current.push(ev.data);
           };

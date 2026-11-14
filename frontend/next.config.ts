@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
   reactStrictMode: true,
+  experimental: {
+    proxyTimeout: 120_000,
+  },
   httpAgentOptions: {
     keepAlive: true,
   },
