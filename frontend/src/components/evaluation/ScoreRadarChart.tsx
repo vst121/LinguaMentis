@@ -20,14 +20,14 @@ const ACCENT_STYLES = {
     stroke: "#2563eb",
     dot: "#1d4ed8",
     activeDot: "#1e3a8a",
-    scoreText: "fill-blue-700",
+    scoreText: "fill-blue-700 dark:fill-blue-400",
   },
   emerald: {
     fill: "rgba(5, 150, 105, 0.22)",
     stroke: "#059669",
     dot: "#047857",
     activeDot: "#064e3b",
-    scoreText: "fill-emerald-700",
+    scoreText: "fill-emerald-700 dark:fill-emerald-400",
   },
 };
 
@@ -121,8 +121,11 @@ export function ScoreRadarChart({
           <polygon
             key={level}
             points={points}
-            fill={level === 100 ? "rgba(248, 250, 252, 0.7)" : "none"}
-            stroke="#e2e8f0"
+            className={
+              level === 100
+                ? "fill-slate-50/70 stroke-slate-200 dark:fill-slate-800/40 dark:stroke-slate-700"
+                : "fill-none stroke-slate-200 dark:stroke-slate-700"
+            }
             strokeWidth={level === 100 ? 1.5 : 1}
             strokeDasharray={level === 100 ? undefined : "3 3"}
           />
@@ -134,7 +137,7 @@ export function ScoreRadarChart({
             key={`lbl-${level}`}
             x={cx + 4}
             y={cy - (radius * level) / 100 + 3}
-            className="fill-slate-400 text-[9px] font-medium"
+            className="fill-slate-400 text-[9px] font-medium dark:fill-slate-500"
           >
             {level}
           </text>
@@ -150,7 +153,7 @@ export function ScoreRadarChart({
               y1={cy}
               x2={end.x}
               y2={end.y}
-              stroke="#e2e8f0"
+              className="stroke-slate-200 dark:stroke-slate-700"
               strokeWidth={1}
             />
           );
@@ -200,7 +203,7 @@ export function ScoreRadarChart({
                 x={p.labelX}
                 y={p.labelY}
                 textAnchor={p.textAnchor}
-                className="fill-slate-700 text-[11px] font-semibold"
+                className="fill-slate-700 text-[11px] font-semibold dark:fill-slate-200"
               >
                 {p.label}
               </text>

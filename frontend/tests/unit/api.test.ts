@@ -7,6 +7,7 @@ import {
   getFinalReflection,
   getMindQuest,
   listMindQuests,
+  selectHat,
   startMindQuest,
   submitResponse,
 } from "@/services/api/mindquests";
@@ -97,6 +98,15 @@ describe("API client and service functions", () => {
     expect(fetchMock).toHaveBeenLastCalledWith(
       "/api/v1/mindquests/mq-1/start",
       expect.objectContaining({ method: "POST" })
+    );
+
+    await selectHat("mq-1", "BLACK");
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      "/api/v1/mindquests/mq-1/select-hat",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ hat: "BLACK" }),
+      })
     );
 
     await submitResponse("mq-1", { response: "Meine Antwort" });

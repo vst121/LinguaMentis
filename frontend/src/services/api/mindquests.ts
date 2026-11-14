@@ -1,4 +1,5 @@
 import { apiFetch } from "./client";
+import { HatType } from "@/types/hat";
 import {
   AdvanceMindQuestResponse,
   CreateMindQuestRequest,
@@ -27,6 +28,16 @@ export async function getMindQuest(id: string): Promise<MindQuest> {
 export async function startMindQuest(id: string): Promise<StartMindQuestResponse> {
   return apiFetch<StartMindQuestResponse>(`/mindquests/${id}/start`, {
     method: "POST",
+  });
+}
+
+export async function selectHat(
+  id: string,
+  hat: HatType,
+): Promise<StartMindQuestResponse> {
+  return apiFetch<StartMindQuestResponse>(`/mindquests/${id}/select-hat`, {
+    method: "POST",
+    body: JSON.stringify({ hat }),
   });
 }
 

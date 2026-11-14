@@ -17,11 +17,16 @@ from linguamentis.application.learning.service import (
 )
 from linguamentis.application.mindquests.prefetch import ChallengePrefetchCache
 from linguamentis.application.turns.service import TurnService, TurnSubmissionResult
-from linguamentis.domain.hats.types import DEFAULT_HAT_SEQUENCE, HatType
+from linguamentis.domain.hats.types import (
+    ARGUE_SELECTABLE_HATS,
+    DEFAULT_HAT_SEQUENCE,
+    HatType,
+)
 from linguamentis.domain.mindquests.entities import MindQuest, Turn
 from linguamentis.domain.mindquests.enums import (
     ActivityType,
     LanguageLevel,
+    MindQuestMode,
     MindQuestStatus,
 )
 from linguamentis.domain.mindquests.value_objects import MindQuestContext
@@ -82,18 +87,24 @@ class MindQuestService:
         user_id: UUID,
         topic: str,
         target_level: LanguageLevel = LanguageLevel.B2,
+        mode: MindQuestMode = MindQuestMode.ANSWERING,
         planned_hats: tuple[HatType, ...] = DEFAULT_HAT_SEQUENCE,
     ) -> MindQuest:
         import uuid
 
-        # Enforce mandatory hat sequence: WHITE -> YELLOW -> GREEN -> RED -> BLACK -> BLUE
-        enforced_hats = DEFAULT_HAT_SEQUENCE
+        # Answering Mode enforces all 6 hats; Argue Mode uses 5 selectable hats (no BLUE)
+        enforced_hats = (
+            ARGUE_SELECTABLE_HATS
+            if mode == MindQuestMode.ARGUE
+            else DEFAULT_HAT_SEQUENCE
+        )
 
         mq = MindQuest(
             id=uuid.uuid4(),
             user_id=user_id,
             topic=topic,
             target_level=target_level,
+            mode=mode,
         )
         mq.select_topic(topic, enforced_hats)
         await self._mindquest_repo.save(mq)
@@ -102,11 +113,15 @@ class MindQuestService:
             user_id=user_id,
             activity_type=ActivityType.MINDQUEST_STARTED,
             mindquest_id=mq.id,
-            payload={"topic": topic, "target_level": target_level.value},
+            payload={
+                "topic": topic,
+                "target_level": target_level.value,
+                "mode": mode.value,
+            },
         )
 
-        # Warm the first hat challenge while the frontend navigates to the MindQuest view
-        if self._prefetch_cache is not None:
+        # In Answering Mode, warm the first hat challenge while frontend navigates
+        if mode == MindQuestMode.ANSWERING and self._prefetch_cache is not None:
             first_hat = mq.planned_hats[0] if mq.planned_hats else DEFAULT_HAT_SEQUENCE[0]
             first_context = MindQuestContext(
                 mindquest_id=mq.id,
@@ -142,6 +157,11 @@ class MindQuestService:
     async def start_mindquest(self, mindquest_id: UUID) -> StartMindQuestResult:
         """Begin MindQuest progress and activate the first hat round."""
         mq = await self.get_mindquest(mindquest_id)
+
+        if mq.mode == MindQuestMode.ARGUE:
+            raise DomainError(
+                "In Argue Mode, select one of the 5 available hats via select-hat."
+            )
 
         if mq.status == MindQuestStatus.CREATED:
             mq.select_topic(mq.topic, mq.planned_hats or DEFAULT_HAT_SEQUENCE)
@@ -199,6 +219,71 @@ class MindQuestService:
             challenge=challenge,
         )
 
+    async def select_hat(
+        self, mindquest_id: UUID, hat: HatType
+    ) -> StartMindQuestResult:
+        """Select and lock a hat in Argue Mode (never BLUE, never an already-completed hat)."""
+        mq = await self.get_mindquest(mindquest_id)
+
+        if mq.mode != MindQuestMode.ARGUE:
+            raise DomainError("Manual hat selection is only available in Argue Mode.")
+
+        if hat == HatType.BLUE or hat not in ARGUE_SELECTABLE_HATS:
+            raise DomainError("Blue Hat cannot be selected in Argue Mode.")
+
+        if mq.status == MindQuestStatus.HAT_ACTIVE:
+            raise DomainError(
+                "Cannot change hat while the current hat is active and below 80% average."
+            )
+
+        if hat in mq.completed_hats:
+            raise DomainError(f"Hat '{hat.value}' has already been completed.")
+
+        if mq.status == MindQuestStatus.CREATED:
+            mq.select_topic(mq.topic, mq.planned_hats or ARGUE_SELECTABLE_HATS)
+
+        if mq.status == MindQuestStatus.TOPIC_SELECTED:
+            mq.begin()
+
+        if mq.status not in (MindQuestStatus.IN_PROGRESS, MindQuestStatus.HAT_COMPLETED):
+            raise DomainError(
+                f"Cannot select a hat when MindQuest status is '{mq.status.value}'."
+            )
+
+        active_round = mq.activate_hat(hat)
+        context = MindQuestContext(
+            mindquest_id=mq.id,
+            topic=mq.topic,
+            target_level=mq.target_level.value,
+            current_hat=hat,
+            current_turn_number=1,
+            completed_hats=mq.completed_hats,
+        )
+        agent = self._agent_registry.get(hat)
+        challenge = await agent.create_challenge(context)
+
+        initial_turn = active_round.add_turn(
+            challenge_question=challenge.question,
+            challenge_instruction=challenge.instruction,
+            difficulty=challenge.difficulty,
+        )
+
+        await self._mindquest_repo.save(mq)
+
+        await self._activity_repo.log_activity(
+            user_id=mq.user_id,
+            activity_type=ActivityType.HAT_SELECTED,
+            mindquest_id=mq.id,
+            payload={"hat": hat.value},
+        )
+
+        return StartMindQuestResult(
+            mindquest=mq,
+            active_hat=hat,
+            initial_turn=initial_turn,
+            challenge=challenge,
+        )
+
     async def submit_response(
         self, mindquest_id: UUID, user_response: str
     ) -> TurnSubmissionResult:
@@ -247,6 +332,17 @@ class MindQuestService:
                 final_reflection=reflection,
             )
         else:
+            if mq.mode == MindQuestMode.ARGUE:
+                # In Argue Mode, wait for the learner to select the next remaining hat
+                await self._mindquest_repo.save(mq)
+                return AdvanceMindQuestResult(
+                    mindquest=mq,
+                    next_hat=None,
+                    initial_turn=None,
+                    challenge=None,
+                    is_completed=False,
+                )
+
             # Activate next hat in sequence
             next_hat = mq.remaining_planned_hats[0]
             active_round = mq.activate_hat(next_hat)

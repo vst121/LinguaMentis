@@ -12,13 +12,14 @@ import {
   deleteMindQuest,
   listMindQuests,
 } from "@/services/api/mindquests";
-import { MindQuest } from "@/types/mindquest";
+import { MindQuest, MindQuestMode } from "@/types/mindquest";
 
 export default function MindQuestsPage() {
   const router = useRouter();
   const [items, setItems] = useState<MindQuest[]>([]),
     [topic, setTopic] = useState(""),
     [level, setLevel] = useState<"B2" | "C1">("B2"),
+    [mode, setMode] = useState<MindQuestMode>("ANSWERING"),
     [loading, setLoading] = useState(true),
     [creating, setCreating] = useState(false),
     [deletingId, setDeletingId] = useState<string | null>(null),
@@ -38,6 +39,7 @@ export default function MindQuestsPage() {
       const quest = await createMindQuest({
         topic: topic.trim(),
         target_level: level,
+        mode,
       });
       router.push(`/mindquests/${quest.id}`);
     } catch {
@@ -78,7 +80,7 @@ export default function MindQuestsPage() {
     }
   }
   return (
-    <AppShell>
+    <AppShell dark={mode === "ARGUE"}>
       <div className="flex flex-col gap-3">
         <h1 className="text-lg font-bold">Woran möchtest du heute denken?</h1>
         <div className="grid gap-4 md:grid-cols-[minmax(280px,.8fr)_1.2fr] md:items-start">
@@ -98,7 +100,7 @@ export default function MindQuestsPage() {
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                     placeholder="z. B. Soll KI Hausaufgaben bewerten?"
-                    className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none ring-blue-500 focus:ring-2"
+                    className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 outline-none ring-blue-500 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                   />
                 </label>
                 <label className="block text-sm font-medium">
@@ -106,13 +108,54 @@ export default function MindQuestsPage() {
                   <select
                     value={level}
                     onChange={(e) => setLevel(e.target.value as "B2" | "C1")}
-                    className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5"
+                    className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                   >
                     <option>B2</option>
                     <option>C1</option>
                   </select>
                 </label>
-                {error && <p className="text-sm text-rose-700">{error}</p>}
+                <div>
+                  <span className="block text-sm font-medium">Modus</span>
+                  <div
+                    role="radiogroup"
+                    aria-label="Modus"
+                    className="mt-2 grid grid-cols-2 gap-2"
+                  >
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={mode === "ANSWERING"}
+                      onClick={() => setMode("ANSWERING")}
+                      className={`rounded-lg border px-3 py-2 text-left text-xs transition ${
+                        mode === "ANSWERING"
+                          ? "border-blue-600 bg-blue-50 text-blue-950 ring-1 ring-blue-600 dark:border-blue-400 dark:bg-blue-950/50 dark:text-blue-100"
+                          : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <span className="block font-semibold">Answering Mode</span>
+                      <span className="mt-0.5 block opacity-75">
+                        6 Hüte in fester Reihenfolge
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={mode === "ARGUE"}
+                      onClick={() => setMode("ARGUE")}
+                      className={`rounded-lg border px-3 py-2 text-left text-xs transition ${
+                        mode === "ARGUE"
+                          ? "border-rose-500 bg-rose-950/80 text-rose-100 ring-1 ring-rose-500"
+                          : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <span className="block font-semibold">Argue Mode</span>
+                      <span className="mt-0.5 block opacity-75">
+                        Devil&apos;s Advocate · &gt; 80 %
+                      </span>
+                    </button>
+                  </div>
+                </div>
+                {error && <p className="text-sm text-rose-700 dark:text-rose-400">{error}</p>}
               </div>
               <Button type="submit" isLoading={creating} className="w-full">
                 <Plus className="mr-2" size={16} />
@@ -123,10 +166,10 @@ export default function MindQuestsPage() {
           <div className="flex flex-col">
             <h2 className="mb-2.5 text-base font-semibold md:text-lg">Deine MindQuests</h2>
             {loading ? (
-              <p className="text-slate-500">Wird geladen …</p>
+              <p className="text-slate-500 dark:text-slate-400">Wird geladen …</p>
             ) : items.length === 0 ? (
               <Card>
-                <p className="text-slate-600">
+                <p className="text-slate-600 dark:text-slate-300">
                   Noch keine MindQuest. Dein erster Gedankengang wartet.
                 </p>
               </Card>
@@ -134,11 +177,14 @@ export default function MindQuestsPage() {
               <div className="grid gap-3 md:grid-cols-1 lg:grid-cols-2">
                 {items.map((q) => (
                   <Link href={`/mindquests/${q.id}`} key={q.id} className="block">
-                    <Card className="h-full transition hover:border-blue-300 hover:shadow-md">
+                    <Card className="h-full transition hover:border-blue-300 hover:shadow-md dark:hover:border-slate-600">
                       <div className="flex items-center justify-between gap-4">
                         <div className="min-w-0">
                           <div className="flex flex-wrap gap-2">
                             <Badge>{q.target_level}</Badge>
+                            {q.mode === "ARGUE" && (
+                              <Badge variant="danger">Argue Mode</Badge>
+                            )}
                             <Badge
                               variant={
                                 q.status === "COMPLETED" ? "success" : "info"
@@ -148,7 +194,7 @@ export default function MindQuestsPage() {
                             </Badge>
                           </div>
                           <h3 className="mt-2.5 truncate font-semibold">{q.topic}</h3>
-                          <p className="mt-1 text-sm text-slate-500">
+                          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                             {q.completed_hats.length} von {q.planned_hats.length}{" "}
                             Perspektiven abgeschlossen
                           </p>
@@ -160,7 +206,7 @@ export default function MindQuestsPage() {
                             disabled={deletingId === q.id}
                             aria-label={`MindQuest "${q.topic}" löschen`}
                             title="MindQuest löschen"
-                            className="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
+                            className="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50 dark:hover:bg-rose-950/60 dark:hover:text-rose-400"
                           >
                             <Trash2 size={16} />
                           </button>

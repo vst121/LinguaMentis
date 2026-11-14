@@ -63,8 +63,45 @@ describe("Frontend pages (Home, MindQuests list, Reflection, Learning, History)"
       expect(mqApi.createMindQuest).toHaveBeenCalledWith({
         topic: "Grundeinkommen",
         target_level: "C1",
+        mode: "ANSWERING",
       });
       expect(mockPush).toHaveBeenCalledWith("/mindquests/mq-new");
+    });
+  });
+
+  it("MindQuestsPage toggles dark theme and creates an Argue Mode MindQuest", async () => {
+    vi.mocked(mqApi.listMindQuests).mockResolvedValueOnce([]);
+    vi.mocked(mqApi.createMindQuest).mockResolvedValueOnce({
+      id: "mq-argue-1",
+      user_id: "u-1",
+      topic: "Tempolimit",
+      target_level: "B2",
+      mode: "ARGUE",
+      status: "TOPIC_SELECTED",
+      planned_hats: ["WHITE", "YELLOW", "GREEN", "RED", "BLACK"],
+      completed_hats: [],
+      hat_rounds: [],
+      created_at: "2026-11-14T10:00:00Z",
+      updated_at: "2026-11-14T10:00:00Z",
+    });
+
+    render(<MindQuestsPage />);
+    expect(await screen.findByText(/Noch keine MindQuest/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("radio", { name: /Argue Mode/i }));
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+
+    const input = screen.getByPlaceholderText(/Soll KI Hausaufgaben bewerten/i);
+    fireEvent.change(input, { target: { value: "Tempolimit" } });
+    fireEvent.submit(input.closest("form")!);
+
+    await waitFor(() => {
+      expect(mqApi.createMindQuest).toHaveBeenCalledWith({
+        topic: "Tempolimit",
+        target_level: "B2",
+        mode: "ARGUE",
+      });
+      expect(mockPush).toHaveBeenCalledWith("/mindquests/mq-argue-1");
     });
   });
 

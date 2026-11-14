@@ -255,6 +255,53 @@ def response_proposition_user_prompt(
 
 
 # ---------------------------------------------------------------------------
+# Argue Mode — Devil's Advocate argued rejection
+# ---------------------------------------------------------------------------
+
+
+def argue_rejection_system_prompt(contract: HatContract) -> str:
+    return (
+        f"{_APPLICATION_FRAME}\n\n"
+        "You are operating in ARGUE MODE as a demanding Devil's Advocate for the "
+        "hat contract below. The learner's response did NOT reach the required >80% "
+        "overall average across thinking and German quality, so it MUST BE REJECTED "
+        "with a sharp, well-reasoned counter-argument.\n\n"
+        f"{_format_contract(contract)}\n\n"
+        "Rules:\n"
+        "- Write completely in German, calibrated to the learner's target level.\n"
+        "- In `question`, clearly reject the current draft as Devil's Advocate: challenge "
+        "their exact claim with a concrete counter-argument, point out the biggest logical "
+        "or hat-adherence gap and/or linguistic weakness, and demand a stronger revision.\n"
+        "- In `instruction`, give a concise, actionable directive telling the learner what "
+        "must be improved in their next revision to convince you (and reach >80%).\n"
+        "- Stay strictly within this hat's perspective and never mention scores or contracts."
+    )
+
+
+def argue_rejection_user_prompt(
+    *,
+    context: MindQuestContext,
+    previous_challenge: str,
+    user_response: str,
+    average_score: float,
+    thinking_weaknesses: list[str],
+    german_weaknesses: list[str],
+) -> str:
+    return (
+        f"Topic: {context.topic}\n"
+        f"Target language level: {context.target_level}\n"
+        f"Current hat: {context.current_hat.value}\n"
+        f"Attempt number: {context.current_turn_number}\n"
+        f"Average score achieved: {average_score}/100 (required: > 80.0)\n"
+        f"Challenge/prompt answered: {previous_challenge}\n"
+        f"Learner's response (German):\n{user_response}\n\n"
+        f"Observed thinking gaps: {', '.join(thinking_weaknesses) or 'needs deeper reasoning'}\n"
+        f"Observed German gaps: {', '.join(german_weaknesses) or 'needs more precision'}\n\n"
+        "Generate the HatChallenge containing the Devil's Advocate argued rejection."
+    )
+
+
+# ---------------------------------------------------------------------------
 # Final reflection (Blue Agent)
 # ---------------------------------------------------------------------------
 

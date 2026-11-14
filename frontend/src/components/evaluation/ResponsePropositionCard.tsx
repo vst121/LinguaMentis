@@ -143,14 +143,14 @@ export function ResponsePropositionCard({
     >
       <div className="space-y-4">
         {originalResponse && (
-          <div className="rounded-lg bg-slate-50 px-3.5 py-2.5 text-xs leading-5 text-slate-600">
-            <span className="font-semibold text-slate-700">Deine Antwort: </span>
+          <div className="rounded-lg bg-slate-50 px-3.5 py-2.5 text-xs leading-5 text-slate-600 dark:bg-slate-800/70 dark:text-slate-300">
+            <span className="font-semibold text-slate-700 dark:text-slate-200">Deine Antwort: </span>
             {originalResponse}
           </div>
         )}
 
         <div
-          className="rounded-lg border border-indigo-200/80 bg-indigo-50/40 p-3.5 text-sm leading-7 text-slate-900"
+          className="rounded-lg border border-indigo-200/80 bg-indigo-50/40 p-3.5 text-sm leading-7 text-slate-900 dark:border-indigo-800/60 dark:bg-indigo-950/40 dark:text-slate-100"
           data-testid="proposition-improved-text"
         >
           {segments.map((seg, i) => {
@@ -194,12 +194,12 @@ export function ResponsePropositionCard({
                   onMouseLeave={() => setActiveNumber(null)}
                   className={`rounded-lg border p-2.5 text-sm transition ${
                     isActive
-                      ? "border-indigo-400 bg-indigo-50/50"
-                      : "border-slate-200 bg-white"
+                      ? "border-indigo-400 bg-indigo-50/50 dark:border-indigo-500 dark:bg-indigo-950/50"
+                      : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white">
+                    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[11px] font-bold text-white dark:bg-slate-200 dark:text-slate-900">
                       {num}
                     </span>
                     <span
@@ -211,15 +211,15 @@ export function ResponsePropositionCard({
                   <div className="mt-1.5 leading-5">
                     {h.original_phrase && (
                       <>
-                        <s className="text-slate-500">{h.original_phrase}</s>
+                        <s className="text-slate-500 dark:text-slate-400">{h.original_phrase}</s>
                         <span className="mx-1.5 text-slate-400">→</span>
                       </>
                     )}
-                    <strong className="font-semibold text-slate-900">
+                    <strong className="font-semibold text-slate-900 dark:text-slate-100">
                       {h.upgraded_phrase}
                     </strong>
                   </div>
-                  <p className="mt-1 text-xs leading-5 text-slate-600">
+                  <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-400">
                     {h.explanation}
                   </p>
                 </div>

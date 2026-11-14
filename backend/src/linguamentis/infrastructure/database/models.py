@@ -45,6 +45,7 @@ class MindQuestModel(Base):
     )
     topic: Mapped[str] = mapped_column(Text, nullable=False, default="")
     target_level: Mapped[str] = mapped_column(String(2), nullable=False)
+    mode: Mapped[str] = mapped_column(String(20), nullable=False, default="ANSWERING")
     status: Mapped[str] = mapped_column(String(40), nullable=False, default="CREATED")
     current_hat: Mapped[str | None] = mapped_column(String(10), nullable=True)
     planned_hats: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)

@@ -192,3 +192,44 @@ async def test_api_error_handlers_and_edge_cases(async_client: AsyncClient, fake
     del_404 = await async_client.delete(f"/api/v1/mindquests/{missing_id}")
     assert del_404.status_code == 404
 
+
+@pytest.mark.asyncio
+async def test_argue_mode_api_endpoints(async_client: AsyncClient):
+    create_resp = await async_client.post(
+        "/api/v1/mindquests",
+        json={
+            "topic": "Vier-Tage-Woche in Deutschland",
+            "target_level": "C1",
+            "mode": "ARGUE",
+        },
+    )
+    assert create_resp.status_code == 201
+    mq_data = create_resp.json()
+    mq_id = mq_data["id"]
+    assert mq_data["mode"] == "ARGUE"
+    assert mq_data["planned_hats"] == ["WHITE", "YELLOW", "GREEN", "RED", "BLACK"]
+
+    # Selecting BLUE is rejected
+    blue_resp = await async_client.post(
+        f"/api/v1/mindquests/{mq_id}/select-hat",
+        json={"hat": "BLUE"},
+    )
+    assert blue_resp.status_code == 400
+
+    # Selecting RED succeeds and activates RED
+    sel_resp = await async_client.post(
+        f"/api/v1/mindquests/{mq_id}/select-hat",
+        json={"hat": "RED"},
+    )
+    assert sel_resp.status_code == 200
+    assert sel_resp.json()["active_hat"] == "RED"
+
+    # Submitting response returns average_score > 80 with default FakeLLMClient
+    sub_resp = await async_client.post(
+        f"/api/v1/mindquests/{mq_id}/responses",
+        json={"response": "Spontan weckt diese Idee bei mir sowohl Neugier als auch Skepsis."},
+    )
+    assert sub_resp.status_code == 200
+    assert sub_resp.json()["average_score"] > 80.0
+    assert sub_resp.json()["round_should_complete"] is True
+

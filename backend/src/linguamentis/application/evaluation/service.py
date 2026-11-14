@@ -15,7 +15,7 @@ from uuid import UUID
 
 from linguamentis.ai.gateway import AIGateway
 from linguamentis.ai.jev import DecisionVerifier, DisabledDecisionVerifier
-from linguamentis.ai.models import HatFeedback
+from linguamentis.ai.models import HatChallenge, HatFeedback
 from linguamentis.domain.evaluations.evidence import Correction, Evidence
 from linguamentis.domain.evaluations.german import GermanEvaluation
 from linguamentis.domain.evaluations.proposition import (
@@ -23,7 +23,7 @@ from linguamentis.domain.evaluations.proposition import (
     ResponseProposition,
 )
 from linguamentis.domain.evaluations.thinking import ThinkingEvaluation
-from linguamentis.domain.hats.contracts import get_hat_contract
+from linguamentis.domain.hats.contracts import HatContract, get_hat_contract
 from linguamentis.domain.mindquests.entities import Turn
 from linguamentis.domain.mindquests.enums import ActivityType
 from linguamentis.domain.mindquests.value_objects import MindQuestContext
@@ -199,6 +199,27 @@ class EvaluationService:
             user_response=user_response,
             thinking_summary=thinking_summary,
             german_summary=german_summary,
+        )
+
+    async def generate_argue_rejection(
+        self,
+        *,
+        contract: HatContract,
+        context: MindQuestContext,
+        previous_challenge: str,
+        user_response: str,
+        average_score: float,
+        thinking_weaknesses: list[str],
+        german_weaknesses: list[str],
+    ) -> HatChallenge:
+        return await self._gateway.generate_argue_rejection(
+            contract=contract,
+            context=context,
+            previous_challenge=previous_challenge,
+            user_response=user_response,
+            average_score=average_score,
+            thinking_weaknesses=thinking_weaknesses,
+            german_weaknesses=german_weaknesses,
         )
 
     async def persist_evaluations(

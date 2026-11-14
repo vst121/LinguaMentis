@@ -29,6 +29,7 @@ from linguamentis.api.v1.schemas import (
     MindQuestResponse,
     PropositionHighlightDTO,
     ResponsePropositionDTO,
+    SelectHatRequest,
     StartMindQuestResponse,
     SubmitResponseRequest,
     SubmitResponseResponse,
@@ -73,6 +74,7 @@ def _map_mindquest(mq: MindQuest) -> MindQuestResponse:
         user_id=mq.user_id,
         topic=mq.topic,
         target_level=mq.target_level,
+        mode=mq.mode,
         status=mq.status,
         current_hat=mq.current_hat,
         planned_hats=list(mq.planned_hats),
@@ -94,6 +96,7 @@ async def create_mindquest(
         user_id=settings.default_user_id,
         topic=body.topic,
         target_level=body.target_level,
+        mode=body.mode,
         planned_hats=tuple(body.planned_hats),
     )
     return _map_mindquest(mq)
@@ -136,6 +139,23 @@ async def start_mindquest(
     service: Annotated[MindQuestService, Depends(get_mindquest_service)],
 ) -> StartMindQuestResponse:
     result = await service.start_mindquest(id)
+    return StartMindQuestResponse(
+        mindquest=_map_mindquest(result.mindquest),
+        active_hat=result.active_hat,
+        initial_turn=_map_turn(result.initial_turn),
+        challenge_question=result.challenge.question,
+        challenge_instruction=result.challenge.instruction,
+        difficulty=result.challenge.difficulty,
+    )
+
+
+@router.post("/{id}/select-hat", response_model=StartMindQuestResponse)
+async def select_hat(
+    id: UUID,
+    body: SelectHatRequest,
+    service: Annotated[MindQuestService, Depends(get_mindquest_service)],
+) -> StartMindQuestResponse:
+    result = await service.select_hat(id, body.hat)
     return StartMindQuestResponse(
         mindquest=_map_mindquest(result.mindquest),
         active_hat=result.active_hat,
@@ -232,6 +252,7 @@ async def submit_response(
         german_evaluation=g_dto,
         feedback=f_dto,
         proposition=p_dto,
+        average_score=res.average_score,
         next_challenge_question=res.next_challenge.question if res.next_challenge else None,
         next_challenge_instruction=res.next_challenge.instruction if res.next_challenge else None,
         round_should_complete=res.round_should_complete,
@@ -248,6 +269,7 @@ def _map_reflection_payload(
         "mindquest_id": str(reflection.mindquest_id),
         "topic": mq.topic,
         "target_level": mq.target_level.value,
+        "mode": mq.mode.value,
         "hats_completed": len(mq.completed_hats),
         "hats_total": len(mq.planned_hats),
         "thinking_overall": metrics.thinking_overall,

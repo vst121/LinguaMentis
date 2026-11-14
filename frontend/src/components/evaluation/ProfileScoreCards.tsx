@@ -53,22 +53,22 @@ export function ProfileMetricsSection({
 }: ProfileMetricsSectionProps) {
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs shadow-sm sm:text-sm">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs shadow-sm sm:text-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-center gap-1.5">
-          <span className="text-slate-500">{primaryCardLabel}:</span>
-          <strong className="font-bold text-slate-900">{primaryCardValue}</strong>
+          <span className="text-slate-500 dark:text-slate-400">{primaryCardLabel}:</span>
+          <strong className="font-bold text-slate-900 dark:text-slate-100">{primaryCardValue}</strong>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-slate-500">Denken:</span>
-          <strong className="font-bold text-blue-700">
+          <span className="text-slate-500 dark:text-slate-400">Denken:</span>
+          <strong className="font-bold text-blue-700 dark:text-blue-400">
             {thinkingOverall !== null && thinkingOverall !== undefined
               ? thinkingOverall
               : "—"}
           </strong>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-slate-500">Deutsch:</span>
-          <strong className="font-bold text-emerald-700">
+          <span className="text-slate-500 dark:text-slate-400">Deutsch:</span>
+          <strong className="font-bold text-emerald-700 dark:text-emerald-400">
             {germanOverall !== null && germanOverall !== undefined
               ? germanOverall
               : "—"}

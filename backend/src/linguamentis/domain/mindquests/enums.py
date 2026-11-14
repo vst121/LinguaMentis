@@ -12,6 +12,13 @@ class LanguageLevel(StrEnum):
     C1 = "C1"
 
 
+class MindQuestMode(StrEnum):
+    """Interaction mode for a MindQuest."""
+
+    ANSWERING = "ANSWERING"
+    ARGUE = "ARGUE"
+
+
 class MindQuestStatus(StrEnum):
     """The MindQuest lifecycle, per Architecture.md #11 (MindQuest State Machine).
 

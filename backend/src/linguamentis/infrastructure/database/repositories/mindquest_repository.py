@@ -16,7 +16,7 @@ from sqlalchemy.orm import selectinload
 
 from linguamentis.domain.hats.types import HatType
 from linguamentis.domain.mindquests.entities import HatRound, MindQuest, Turn
-from linguamentis.domain.mindquests.enums import LanguageLevel, MindQuestStatus
+from linguamentis.domain.mindquests.enums import LanguageLevel, MindQuestMode, MindQuestStatus
 from linguamentis.infrastructure.database.models import (
     GermanEvaluationModel,
     HatRoundModel,
@@ -113,6 +113,7 @@ class SQLAlchemyMindQuestRepository:
                 user_id=mindquest.user_id,
                 topic=mindquest.topic,
                 target_level=mindquest.target_level.value,
+                mode=mindquest.mode.value,
                 status=mindquest.status.value,
                 current_hat=current_hat_val,
                 planned_hats=planned_json,
@@ -124,6 +125,7 @@ class SQLAlchemyMindQuestRepository:
         else:
             model.topic = mindquest.topic
             model.target_level = mindquest.target_level.value
+            model.mode = mindquest.mode.value
             model.status = mindquest.status.value
             model.current_hat = current_hat_val
             model.planned_hats = planned_json
@@ -254,6 +256,7 @@ def _to_domain_mindquest(model: MindQuestModel) -> MindQuest:
         user_id=model.user_id,
         topic=model.topic,
         target_level=LanguageLevel(model.target_level),
+        mode=MindQuestMode(model.mode or MindQuestMode.ANSWERING.value),
         status=MindQuestStatus(model.status),
         current_hat=current_hat,
         hat_rounds=rounds,
