@@ -408,9 +408,11 @@ make test
 Individual test and lint targets:
 
 ```bash
-make test-backend   # Backend unit, integration & offline evaluation dataset tests (pytest)
-make test-frontend  # Frontend unit, component & page tests (Vitest + React Testing Library)
-make test-e2e       # End-to-end browser tests across Next.js & FastAPI (Playwright)
+make test-backend   # Backend unit, integration, speed & offline evaluation tests (pytest)
+make test-frontend  # Frontend unit, component, page & responsiveness tests (Vitest + RTL)
+make test-speed     # Deterministic backend & frontend speed/parallelism/query-count tests
+make test-e2e       # End-to-end browser tests + E2E latency budgets (Playwright)
+make benchmark-live # Step-by-step latency profiler against PostgreSQL & AI in Dev Container
 make test-eval      # Opt-in live Gemini evaluation regression harness
 make lint           # Backend (ruff) + Frontend (ESLint & TypeScript) checks
 ```

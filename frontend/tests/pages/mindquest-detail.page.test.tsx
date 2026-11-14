@@ -196,4 +196,56 @@ describe("MindQuestPage interactive flow", () => {
     ).toBeInTheDocument();
     expect(textarea).toHaveValue("Entwurf bleibt erhalten");
   });
+
+  it("redirects immediately to reflection when opening an already COMPLETED MindQuest and counts words accurately", async () => {
+    vi.mocked(mqApi.getMindQuest).mockResolvedValueOnce({
+      ...baseQuest,
+      status: "COMPLETED",
+    });
+
+    const { unmount } = render(<MindQuestPage />);
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith("/mindquests/mq-123/reflection");
+    });
+    unmount();
+
+    // Multi-hat word count and Shift+Enter check
+    const activeTurn = {
+      id: "turn-1",
+      turn_number: 1,
+      hat: "BLACK" as const,
+      challenge_question: "Welche Risiken?",
+      challenge_instruction: "Nur Risiken.",
+      difficulty: 2,
+      created_at: "2026-11-14T10:01:00Z",
+    };
+    vi.mocked(mqApi.getMindQuest).mockResolvedValueOnce({
+      ...baseQuest,
+      status: "HAT_ACTIVE",
+      current_hat: "BLACK",
+      planned_hats: ["BLACK", "YELLOW"],
+      hat_rounds: [
+        {
+          id: "round-1",
+          hat: "BLACK",
+          sequence_index: 0,
+          turns: [activeTurn],
+          started_at: "2026-11-14T10:01:00Z",
+        },
+      ],
+    });
+
+    render(<MindQuestPage />);
+    const textarea = await screen.findByPlaceholderText(/Schreibe deine Antwort hier/i);
+    expect(screen.getByText("0 Wörter")).toBeInTheDocument();
+
+    fireEvent.change(textarea, {
+      target: { value: "Vier   klare   deutsche   Wörter" },
+    });
+    expect(screen.getByText("4 Wörter")).toBeInTheDocument();
+
+    // Shift+Enter does not trigger submitResponse
+    fireEvent.keyDown(textarea, { key: "Enter", shiftKey: true });
+    expect(mqApi.submitResponse).not.toHaveBeenCalled();
+  });
 });

@@ -37,9 +37,10 @@ packages = ["src/linguamentis"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 markers = [
     "evaluation: marks AI evaluation harness tests (run live with RUN_AI_EVALUATION=1)",
+    "speed: marks deterministic performance, parallelism, prefetch, and SQL query-count tests",
 ]
 
 [tool.ruff]

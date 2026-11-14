@@ -167,3 +167,95 @@ async def test_mindquest_and_turn_service_error_branches(
 
     with pytest.raises(DomainError):
         await mq_service.advance_mindquest(mq.id)
+
+
+@pytest.mark.asyncio
+async def test_max_three_turns_per_hat_round_forces_completion_even_with_low_scores(
+    db_session, fake_llm_client, fake_gateway, agent_registry
+):
+    user_repo, mq_service = _build_services(db_session, fake_gateway, agent_registry)
+    user_id = uuid4()
+    await user_repo.save(User(id=user_id, display_name="Learner"))
+
+    mq = await mq_service.create_mindquest(
+        user_id=user_id,
+        topic="Künstliche Intelligenz im Journalismus",
+        target_level=LanguageLevel.B2,
+        planned_hats=(HatType.BLACK,),
+    )
+    await mq_service.start_mindquest(mq.id)
+
+    # Queue 3 consecutive low-scoring thinking evaluations (< 75)
+    fake_llm_client.queue_response(
+        ThinkingEvaluationOutput,
+        _low_thinking_output(),
+        _low_thinking_output(),
+        _low_thinking_output(),
+    )
+
+    sub1 = await mq_service.submit_response(mq.id, "Turn 1 zu kurz.")
+    assert sub1.round_should_complete is False
+    assert sub1.next_challenge is not None
+
+    sub2 = await mq_service.submit_response(mq.id, "Turn 2 immer noch oberflächlich.")
+    assert sub2.round_should_complete is False
+    assert sub2.next_challenge is not None
+
+    # Turn 3 reaches MAX_TURNS_PER_HAT_ROUND = 3 -> must complete round despite low score
+    sub3 = await mq_service.submit_response(mq.id, "Turn 3 erreicht das Limit.")
+    assert sub3.thinking_evaluation.score < 75
+    assert sub3.round_should_complete is True
+    assert sub3.next_challenge is None
+
+
+@pytest.mark.asyncio
+async def test_full_five_hat_default_sequence_and_activity_logging(
+    db_session, fake_gateway, agent_registry
+):
+    from linguamentis.domain.hats.types import DEFAULT_HAT_SEQUENCE
+
+    user_repo, mq_service = _build_services(db_session, fake_gateway, agent_registry)
+    act_repo = SQLAlchemyUserActivityRepository(db_session)
+    user_id = uuid4()
+    await user_repo.save(User(id=user_id, display_name="Full Journey Learner"))
+
+    mq = await mq_service.create_mindquest(
+        user_id=user_id,
+        topic="Vier-Tage-Woche in Deutschland",
+        target_level=LanguageLevel.C1,
+        planned_hats=DEFAULT_HAT_SEQUENCE,
+    )
+    assert len(mq.planned_hats) == len(DEFAULT_HAT_SEQUENCE)
+
+    start_res = await mq_service.start_mindquest(mq.id)
+    assert start_res.active_hat == DEFAULT_HAT_SEQUENCE[0]
+
+    for idx, expected_hat in enumerate(DEFAULT_HAT_SEQUENCE):
+        current = await mq_service.get_mindquest(mq.id)
+        assert current.current_hat == expected_hat
+        sub = await mq_service.submit_response(
+            mq.id, f"Fundierte C1-Antwort für Perspektive {expected_hat.value}."
+        )
+        assert sub.round_should_complete is True
+        adv = await mq_service.advance_mindquest(mq.id)
+        if idx < len(DEFAULT_HAT_SEQUENCE) - 1:
+            assert adv.is_completed is False
+            assert adv.next_hat == DEFAULT_HAT_SEQUENCE[idx + 1]
+        else:
+            assert adv.is_completed is True
+            assert adv.final_reflection is not None
+
+    from linguamentis.domain.mindquests.enums import ActivityType
+
+    activities = await act_repo.list_by_user(user_id, limit=100)
+    activity_types = {a.activity_type for a in activities}
+    assert {
+        ActivityType.MINDQUEST_STARTED,
+        ActivityType.HAT_SELECTED,
+        ActivityType.RESPONSE_SUBMITTED,
+        ActivityType.THINKING_EVALUATED,
+        ActivityType.GERMAN_EVALUATED,
+        ActivityType.HAT_COMPLETED,
+        ActivityType.MINDQUEST_COMPLETED,
+    }.issubset(activity_types)
+

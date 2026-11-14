@@ -42,10 +42,11 @@ from linguamentis.main import app
 class FakeLLMClient:
     """Mock LLM client returning deterministic structured objects for testing."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, simulated_delay_seconds: float = 0.0) -> None:
         self.queued_responses: dict[type, list[object]] = {}
         self.error_to_raise: Exception | None = None
         self.calls: list[dict[str, object]] = []
+        self.simulated_delay_seconds = simulated_delay_seconds
 
     def queue_response(self, response_model: type, *items: object) -> None:
         self.queued_responses.setdefault(response_model, []).extend(items)
@@ -59,6 +60,8 @@ class FakeLLMClient:
         model: str,
         temperature: float = 0.4,
     ):
+        import asyncio
+
         self.calls.append(
             {
                 "system_prompt": system_prompt,
@@ -68,6 +71,8 @@ class FakeLLMClient:
                 "temperature": temperature,
             }
         )
+        if self.simulated_delay_seconds > 0:
+            await asyncio.sleep(self.simulated_delay_seconds)
         if self.error_to_raise is not None:
             raise self.error_to_raise
 

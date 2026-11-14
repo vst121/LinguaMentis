@@ -144,4 +144,51 @@ describe("Frontend pages (Home, MindQuests list, Reflection, Learning, History)"
     expect(await screen.findByText("Homeoffice-Pflicht")).toBeInTheDocument();
     expect(screen.getByText("Mind Quest Completed")).toBeInTheDocument();
   });
+
+  it("handles keyboard Enter vs Shift+Enter on MindQuestsPage and renders empty & error states across pages", async () => {
+    vi.mocked(mqApi.listMindQuests).mockResolvedValueOnce([]);
+    render(<MindQuestsPage />);
+    expect(
+      await screen.findByText(/Noch keine MindQuest\. Dein erster Gedankengang wartet\./i)
+    ).toBeInTheDocument();
+
+    const input = screen.getByPlaceholderText(/Soll KI Hausaufgaben bewerten/i);
+    fireEvent.change(input, { target: { value: "Thema per Enter" } });
+
+    // Shift+Enter must NOT submit
+    fireEvent.keyDown(input.closest("form")!, { key: "Enter", shiftKey: true });
+    expect(mqApi.createMindQuest).not.toHaveBeenCalled();
+
+    // Error states across ReflectionPage, LearningPage, HistoryPage
+    vi.mocked(mqApi.getFinalReflection).mockRejectedValueOnce(new Error("404"));
+    render(<ReflectionPage />);
+    expect(
+      await screen.findByText("Die Reflexion ist noch nicht verfügbar.")
+    ).toBeInTheDocument();
+
+    vi.mocked(learningApi.getLearningProfile).mockResolvedValueOnce({
+      user_id: "u-1",
+      mindquests_completed: 0,
+      thinking_overall: null,
+      german_overall: null,
+      thinking_dimensions: [],
+      german_dimensions: [],
+      strongest_thinking_dimension: null,
+      weakest_thinking_dimension: null,
+      strongest_german_dimension: null,
+      weakest_german_dimension: null,
+    });
+    render(<LearningPage />);
+    expect(
+      (await screen.findAllByText("Deine Werte erscheinen nach der ersten Auswertung.")).length
+    ).toBe(2);
+    expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(2);
+
+    vi.mocked(learningApi.getUserMindQuests).mockRejectedValueOnce(new Error("fail"));
+    vi.mocked(learningApi.getUserActivities).mockRejectedValueOnce(new Error("fail"));
+    render(<HistoryPage />);
+    expect(
+      await screen.findByText("Dein Verlauf konnte nicht geladen werden.")
+    ).toBeInTheDocument();
+  });
 });

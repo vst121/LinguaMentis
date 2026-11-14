@@ -46,7 +46,11 @@ engine = create_async_engine(
     e2e_settings.database_url, connect_args={"check_same_thread": False}
 )
 session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-fake_gateway = AIGateway(client=FakeLLMClient(), settings=e2e_settings)  # type: ignore[arg-type]
+simulated_delay = float(os.getenv("E2E_SIMULATED_LLM_DELAY_SECONDS", "0.0"))
+fake_gateway = AIGateway(
+    client=FakeLLMClient(simulated_delay_seconds=simulated_delay),
+    settings=e2e_settings,
+)  # type: ignore[arg-type]
 
 
 async def _override_get_db_session() -> AsyncGenerator[AsyncSession, None]:

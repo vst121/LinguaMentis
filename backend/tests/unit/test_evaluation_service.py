@@ -69,3 +69,67 @@ async def test_evaluate_turn_response_parallel_execution(fake_gateway, db_sessio
     persisted_german = await eval_repo.get_german_by_turn(turn_id)
     assert persisted_german is not None
     assert persisted_german.score == res.german.score
+
+
+@pytest.mark.asyncio
+async def test_evaluation_service_with_active_and_failing_jev_verifier(fake_gateway, db_session):
+    from linguamentis.ai.jev import JevDecision
+
+    calls: list[str] = []
+
+    class HighConfidenceJev:
+        async def evaluate_hat_adherence(
+            self, *, hat: str, challenge: str, response: str
+        ) -> JevDecision:
+            calls.append(hat)
+            return JevDecision("adherent", 0.95, {"adherent": 0.95})
+
+    class FailingJev:
+        async def evaluate_hat_adherence(
+            self, *, hat: str, challenge: str, response: str
+        ) -> JevDecision:
+            raise RuntimeError("Jev service unreachable")
+
+    eval_repo = SQLAlchemyEvaluationRepository(db_session)
+    act_repo = SQLAlchemyUserActivityRepository(db_session)
+    turn = Turn(
+        id=uuid4(),
+        hat_round_id=uuid4(),
+        turn_number=1,
+        hat=HatType.BLACK,
+        challenge_question="Welche Risiken gibt es?",
+        challenge_instruction="Black Hat",
+        difficulty=3,
+    )
+    context = MindQuestContext(
+        mindquest_id=uuid4(),
+        topic="KI im Alltag",
+        target_level=LanguageLevel.B2.value,
+        current_hat=HatType.BLACK,
+        current_turn_number=1,
+    )
+
+    service_ok = EvaluationService(
+        gateway=fake_gateway,
+        evaluation_repo=eval_repo,
+        activity_repo=act_repo,
+        decision_verifier=HighConfidenceJev(),
+    )
+    t_eval, g_eval = await service_ok.evaluate_dimensions(
+        turn=turn, context=context, user_response="Risiko ist hoch."
+    )
+    assert calls == ["BLACK"]
+    assert t_eval.score > 0 and g_eval.score > 0
+
+    # Failing Jev verifier must be swallowed gracefully without breaking evaluation
+    service_fail = EvaluationService(
+        gateway=fake_gateway,
+        evaluation_repo=eval_repo,
+        activity_repo=act_repo,
+        decision_verifier=FailingJev(),
+    )
+    t_eval2, g_eval2 = await service_fail.evaluate_dimensions(
+        turn=turn, context=context, user_response="Risiko bleibt bestehen."
+    )
+    assert t_eval2.score > 0 and g_eval2.score > 0
+

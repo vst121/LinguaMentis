@@ -92,4 +92,57 @@ test.describe("LinguaMentis E2E MindQuest Journey", () => {
     await page.getByRole("link", { name: /Start/i }).click();
     await expect(page).toHaveURL(/\/$/);
   });
+
+  test("handles 404 MindQuest and missing reflection gracefully without crashing", async ({
+    page,
+  }) => {
+    await page.goto("/mindquests/00000000-0000-0000-0000-999999999999");
+    await expect(
+      page.getByText("Diese MindQuest konnte nicht geladen werden.")
+    ).toBeVisible();
+
+    await page.goto(
+      "/mindquests/00000000-0000-0000-0000-999999999999/reflection"
+    );
+    await expect(
+      page.getByText("Die Reflexion ist noch nicht verfügbar.")
+    ).toBeVisible();
+  });
+
+  test("meets E2E speed budgets for navigation, optimistic UI, and MindQuest transitions", async ({
+    page,
+  }) => {
+    const tHome = Date.now();
+    await page.goto("/");
+    await expect(page.getByRole("link", { name: /MindQuest starten/i })).toBeVisible();
+    expect(Date.now() - tHome).toBeLessThan(2000);
+
+    // Client-side route transition speed budget (< 800ms)
+    const tNav = Date.now();
+    await page.getByRole("link", { name: /MindQuest starten/i }).click();
+    await expect(
+      page.getByRole("heading", { name: /Woran möchtest du heute denken\?/i })
+    ).toBeVisible();
+    expect(Date.now() - tNav).toBeLessThan(800);
+
+    // Create MindQuest via Enter key and measure start & evaluation latency
+    const input = page.getByPlaceholder(/Soll KI Hausaufgaben bewerten/i);
+    await input.fill("Geschwindigkeitstest Debatte");
+    await input.press("Enter");
+    await expect(page).toHaveURL(/\/mindquests\/[0-9a-f-]+$/);
+
+    const tStart = Date.now();
+    await page.getByRole("button", { name: /MindQuest beginnen/i }).click();
+    await expect(
+      page.getByText("Welche Risiken siehst du bei diesem Vorhaben?")
+    ).toBeVisible();
+    expect(Date.now() - tStart).toBeLessThan(800);
+
+    const textarea = page.getByPlaceholder(/Schreibe deine Antwort hier/i);
+    await textarea.fill("Schnelle Antwort per Enter-Taste.");
+    const tEval = Date.now();
+    await textarea.press("Enter");
+    await expect(page.getByText("Dein Feedback")).toBeVisible();
+    expect(Date.now() - tEval).toBeLessThan(800);
+  });
 });

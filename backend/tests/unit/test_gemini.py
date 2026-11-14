@@ -203,3 +203,98 @@ async def test_gemini_client_raises_ai_provider_error_on_exhausted_http_errors()
         )
     await http_client.aclose()
 
+
+@pytest.mark.asyncio
+async def test_gemini_client_self_corrects_on_invalid_json_then_succeeds():
+    attempts = 0
+
+    def handle_request(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        body = json.loads(request.content)
+        if attempts == 1:
+            return httpx.Response(
+                200,
+                json={"candidates": [{"content": {"parts": [{"text": "{broken json"}]}}]},
+            )
+        # Second attempt includes correction prompt in contents
+        assert len(body["contents"]) == 2
+        return httpx.Response(
+            200,
+            json={"candidates": [{"content": {"parts": [{"text": '{"message":"corrected"}'}]}}]},
+        )
+
+    http_client = httpx.AsyncClient(
+        transport=httpx.MockTransport(handle_request),
+        base_url="https://generativelanguage.googleapis.com",
+    )
+    client = GeminiClient(
+        Settings(gemini_api_key="test-key", ai_max_retries=1),
+        http_client=http_client,
+    )
+    res = await client.generate_structured(
+        system_prompt="Sys",
+        user_prompt="User",
+        response_model=SampleOutput,
+        model="gemini-2.5-flash",
+    )
+    await http_client.aclose()
+    assert attempts == 2
+    assert res.message == "corrected"
+
+
+@pytest.mark.asyncio
+async def test_gemini_client_non_retryable_401_and_malformed_candidates():
+    from linguamentis.ai.gemini import _get_cached_schema
+    from linguamentis.shared.exceptions import AIProviderError
+
+    # Schema cache returns identical dict object on repeated calls
+    assert _get_cached_schema(SampleOutput) is _get_cached_schema(SampleOutput)
+
+    calls = 0
+
+    def handle_401(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(401, json={"error": "unauthorized"})
+
+    http_401 = httpx.AsyncClient(
+        transport=httpx.MockTransport(handle_401),
+        base_url="https://generativelanguage.googleapis.com",
+    )
+    client_401 = GeminiClient(
+        Settings(gemini_api_key="bad-key", ai_max_retries=3),
+        http_client=http_401,
+    )
+    with pytest.raises(AIProviderError) as exc_info:
+        await client_401.generate_structured(
+            system_prompt="Sys",
+            user_prompt="User",
+            response_model=SampleOutput,
+            model="gemini-2.5-flash",
+        )
+    await http_401.aclose()
+    # 401 is not in _RETRYABLE_STATUS_CODES -> must fail on 1st call without retrying
+    assert calls == 1
+    assert exc_info.value.is_format_error is False
+
+    # Empty candidates list -> AIProviderError with is_format_error=True
+    http_empty = httpx.AsyncClient(
+        transport=httpx.MockTransport(lambda req: httpx.Response(200, json={"candidates": []})),
+        base_url="https://generativelanguage.googleapis.com",
+    )
+    client_empty = GeminiClient(
+        Settings(gemini_api_key="key", ai_max_retries=0),
+        http_client=http_empty,
+    )
+    with pytest.raises(AIProviderError) as empty_exc:
+        await client_empty.generate_structured(
+            system_prompt="Sys",
+            user_prompt="User",
+            response_model=SampleOutput,
+            model="gemini-2.5-flash",
+        )
+    await http_empty.aclose()
+    assert empty_exc.value.is_format_error is True
+
+
