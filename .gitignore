@@ -112,3 +112,5 @@ venv.bak/
 *.swo
 *~
 .DS_Store
+
+frontend/package-lock.json
