@@ -81,7 +81,7 @@ class TurnService:
             user_id=mindquest.user_id,
             activity_type=ActivityType.RESPONSE_SUBMITTED,
             mindquest_id=mindquest.id,
-            payload={"turn_id": str(latest_turn.id), "hat": mindquest.current_hat.value},
+            payload={"turn_id": str(latest_turn.id), "hat": active_round.hat.value},
         )
 
         # Build MindQuestContext for evaluation and next challenge

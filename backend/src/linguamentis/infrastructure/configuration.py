@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     ai_model_german_evaluator: str = "gemini-2.5-flash"
     ai_model_reflection: str = "gemini-2.5-flash"
 
-    ai_request_timeout_seconds: float = 60.0
+    ai_request_timeout_seconds: float = 120.0
     ai_max_retries: int = 2
     jev_enabled: bool = False
     jev_api_key: str = ""
@@ -59,4 +59,4 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    return Settings()  # type: ignore[call-arg]

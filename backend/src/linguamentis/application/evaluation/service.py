@@ -67,7 +67,9 @@ class EvaluationService:
 
         try:
             decision = await self._decision_verifier.evaluate_hat_adherence(
-                hat=context.current_hat.value, challenge=turn.challenge_question, response=user_response
+                hat=context.current_hat.value,
+                challenge=turn.challenge_question,
+                response=user_response,
             )
             logger.info("ai.jev.hat_adherence", turn_id=str(turn.id), choice=decision.choice,
                         confidence=decision.confidence,
