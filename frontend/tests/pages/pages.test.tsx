@@ -105,6 +105,21 @@ describe("Frontend pages (Home, MindQuests list, Reflection, Learning, History)"
     });
   });
 
+  it("MindQuestsPage blocks submission and reminds the user when topic is empty", async () => {
+    vi.mocked(mqApi.listMindQuests).mockResolvedValueOnce([]);
+    const createSpy = vi.mocked(mqApi.createMindQuest);
+    createSpy.mockClear();
+
+    render(<MindQuestsPage />);
+    expect(await screen.findByText(/Noch keine MindQuest/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /MindQuest erstellen/i }));
+    expect(
+      await screen.findByText("Bitte gib zuerst ein Thema für deine MindQuest ein."),
+    ).toBeInTheDocument();
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
   it("MindQuestsPage deletes an individual MindQuest from the list without navigating", async () => {
     vi.mocked(mqApi.listMindQuests).mockResolvedValueOnce([
       {

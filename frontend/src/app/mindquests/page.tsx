@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, type SubmitEvent } from "react";
+import { useEffect, useRef, useState, type SubmitEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Plus, Trash2 } from "lucide-react";
@@ -16,6 +16,7 @@ import { MindQuest, MindQuestMode } from "@/types/mindquest";
 
 export default function MindQuestsPage() {
   const router = useRouter();
+  const topicInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<MindQuest[]>([]),
     [topic, setTopic] = useState(""),
     [level, setLevel] = useState<"B2" | "C1">("B2"),
@@ -32,12 +33,23 @@ export default function MindQuestsPage() {
   }, []);
   async function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (creating || !topic.trim()) return;
+    if (creating) return;
+    const trimmedTopic = topic.trim();
+    if (!trimmedTopic) {
+      setError("Bitte gib zuerst ein Thema für deine MindQuest ein.");
+      topicInputRef.current?.focus();
+      return;
+    }
+    if (trimmedTopic.length < 3) {
+      setError("Das Thema muss mindestens 3 Zeichen lang sein.");
+      topicInputRef.current?.focus();
+      return;
+    }
     setCreating(true);
     setError("");
     try {
       const quest = await createMindQuest({
-        topic: topic.trim(),
+        topic: trimmedTopic,
         target_level: level,
         mode,
       });
@@ -97,10 +109,19 @@ export default function MindQuestsPage() {
                 <label className="block text-sm font-medium">
                   Thema
                   <input
+                    ref={topicInputRef}
                     value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
+                    onChange={(e) => {
+                      setTopic(e.target.value);
+                      if (error) setError("");
+                    }}
                     placeholder="z. B. Soll KI Hausaufgaben bewerten?"
-                    className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 outline-none ring-blue-500 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                    aria-invalid={Boolean(error && topic.trim().length < 3)}
+                    className={`mt-2 w-full rounded-lg border bg-white px-3 py-2.5 text-slate-900 outline-none focus:ring-2 dark:bg-slate-950 dark:text-slate-100 ${
+                      error && topic.trim().length < 3
+                        ? "border-amber-500 ring-1 ring-amber-500 focus:ring-amber-500"
+                        : "border-slate-300 ring-blue-500 dark:border-slate-700"
+                    }`}
                   />
                 </label>
                 <label className="block text-sm font-medium">
@@ -155,7 +176,11 @@ export default function MindQuestsPage() {
                     </button>
                   </div>
                 </div>
-                {error && <p className="text-sm text-amber-700 dark:text-amber-300">{error}</p>}
+                {error && (
+                  <p role="alert" className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                    {error}
+                  </p>
+                )}
               </div>
               <Button type="submit" isLoading={creating} className="w-full">
                 <Plus className="mr-2" size={16} />

@@ -86,8 +86,11 @@ test.describe("LinguaMentis E2E MindQuest Journey", () => {
   }) => {
     await page.goto("/mindquests");
     await page.getByRole("button", { name: /MindQuest erstellen/i }).click();
-    // Should remain on /mindquests when topic is empty
+    // Should remain on /mindquests and show reminder when topic is empty
     await expect(page).toHaveURL(/\/mindquests$/);
+    await expect(
+      page.getByText("Bitte gib zuerst ein Thema für deine MindQuest ein."),
+    ).toBeVisible();
 
     await page.getByRole("link", { name: /Start/i }).click();
     await expect(page).toHaveURL(/\/$/);
