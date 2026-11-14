@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Protocol
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -26,6 +26,9 @@ class MindQuestRepository(Protocol):
     async def list_by_user(
         self, user_id: UUID, limit: int = 50, offset: int = 0
     ) -> list[MindQuest]:
+        ...
+
+    async def count_completed_by_user(self, user_id: UUID) -> int:
         ...
 
     async def save(self, mindquest: MindQuest) -> MindQuest:
@@ -66,6 +69,18 @@ class SQLAlchemyMindQuestRepository:
         res = await self._session.execute(stmt)
         models = res.scalars().all()
         return [_to_domain_mindquest(m) for m in models]
+
+    async def count_completed_by_user(self, user_id: UUID) -> int:
+        stmt = (
+            select(func.count())
+            .select_from(MindQuestModel)
+            .where(
+                MindQuestModel.user_id == user_id,
+                MindQuestModel.status == MindQuestStatus.COMPLETED.value,
+            )
+        )
+        res = await self._session.execute(stmt)
+        return int(res.scalar_one())
 
     async def save(self, mindquest: MindQuest) -> MindQuest:
         stmt = (

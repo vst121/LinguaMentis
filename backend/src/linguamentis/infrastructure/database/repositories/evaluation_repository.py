@@ -24,6 +24,7 @@ from linguamentis.infrastructure.database.models import (
     FinalReflectionModel,
     GermanEvaluationModel,
     HatRoundModel,
+    MindQuestModel,
     ThinkingEvaluationModel,
     TurnModel,
 )
@@ -70,6 +71,16 @@ class EvaluationRepository(Protocol):
 
     async def list_german_evaluations_by_mindquest(
         self, mindquest_id: UUID
+    ) -> list[GermanEvaluation]:
+        ...
+
+    async def list_thinking_evaluations_by_user(
+        self, user_id: UUID
+    ) -> list[ThinkingEvaluation]:
+        ...
+
+    async def list_german_evaluations_by_user(
+        self, user_id: UUID
     ) -> list[GermanEvaluation]:
         ...
 
@@ -322,12 +333,46 @@ class SQLAlchemyEvaluationRepository:
         models = res.scalars().all()
         return [_to_domain_german(m) for m in models]
 
+    async def list_thinking_evaluations_by_user(
+        self, user_id: UUID
+    ) -> list[ThinkingEvaluation]:
+        stmt = (
+            select(ThinkingEvaluationModel)
+            .join(ThinkingEvaluationModel.turn)
+            .join(TurnModel.hat_round)
+            .join(HatRoundModel.mindquest)
+            .where(MindQuestModel.user_id == user_id)
+        )
+        res = await self._session.execute(stmt)
+        models = res.scalars().all()
+        return [_to_domain_thinking(m, include_evidence=False) for m in models]
 
-def _to_domain_thinking(model: ThinkingEvaluationModel) -> ThinkingEvaluation:
-    evidence = [
-        Evidence(dimension=e.dimension, observation=e.observation, impact=e.impact)
-        for e in model.evidence
-    ]
+    async def list_german_evaluations_by_user(
+        self, user_id: UUID
+    ) -> list[GermanEvaluation]:
+        stmt = (
+            select(GermanEvaluationModel)
+            .join(GermanEvaluationModel.turn)
+            .join(TurnModel.hat_round)
+            .join(HatRoundModel.mindquest)
+            .where(MindQuestModel.user_id == user_id)
+        )
+        res = await self._session.execute(stmt)
+        models = res.scalars().all()
+        return [_to_domain_german(m, include_evidence=False) for m in models]
+
+
+def _to_domain_thinking(
+    model: ThinkingEvaluationModel, *, include_evidence: bool = True
+) -> ThinkingEvaluation:
+    evidence = (
+        [
+            Evidence(dimension=e.dimension, observation=e.observation, impact=e.impact)
+            for e in model.evidence
+        ]
+        if include_evidence
+        else []
+    )
     return ThinkingEvaluation(
         id=model.id,
         turn_id=model.turn_id,
@@ -344,11 +389,17 @@ def _to_domain_thinking(model: ThinkingEvaluationModel) -> ThinkingEvaluation:
     )
 
 
-def _to_domain_german(model: GermanEvaluationModel) -> GermanEvaluation:
-    evidence = [
-        Evidence(dimension=e.dimension, observation=e.observation, impact=e.impact)
-        for e in model.evidence
-    ]
+def _to_domain_german(
+    model: GermanEvaluationModel, *, include_evidence: bool = True
+) -> GermanEvaluation:
+    evidence = (
+        [
+            Evidence(dimension=e.dimension, observation=e.observation, impact=e.impact)
+            for e in model.evidence
+        ]
+        if include_evidence
+        else []
+    )
     corrections = [
         Correction(
             original=c.get("original", ""),

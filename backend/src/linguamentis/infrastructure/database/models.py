@@ -62,7 +62,10 @@ class MindQuestModel(Base):
         back_populates="mindquest", uselist=False, cascade="all, delete-orphan"
     )
 
-    __table_args__ = (Index("ix_mind_quests_user_id", "user_id"),)
+    __table_args__ = (
+        Index("ix_mind_quests_user_id", "user_id"),
+        Index("ix_mind_quests_user_id_created_at", "user_id", "created_at"),
+    )
 
 
 class HatRoundModel(Base):
@@ -184,6 +187,11 @@ class EvidenceModel(Base):
     )
     german_evaluation: Mapped[GermanEvaluationModel | None] = relationship(
         back_populates="evidence", foreign_keys=[german_evaluation_id]
+    )
+
+    __table_args__ = (
+        Index("ix_evidence_thinking_eval_id", "thinking_evaluation_id"),
+        Index("ix_evidence_german_eval_id", "german_evaluation_id"),
     )
 
 

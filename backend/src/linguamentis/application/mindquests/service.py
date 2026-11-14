@@ -11,6 +11,7 @@ from uuid import UUID
 
 from linguamentis.agents.registry import AgentRegistry
 from linguamentis.ai.models import HatChallenge
+from linguamentis.application.mindquests.prefetch import ChallengePrefetchCache
 from linguamentis.application.turns.service import TurnService, TurnSubmissionResult
 from linguamentis.domain.hats.types import DEFAULT_HAT_SEQUENCE, HatType
 from linguamentis.domain.mindquests.entities import MindQuest, Turn
@@ -62,12 +63,14 @@ class MindQuestService:
         turn_service: TurnService,
         agent_registry: AgentRegistry,
         activity_repo: UserActivityRepository,
+        prefetch_cache: ChallengePrefetchCache | None = None,
     ) -> None:
         self._mindquest_repo = mindquest_repo
         self._evaluation_repo = evaluation_repo
         self._turn_service = turn_service
         self._agent_registry = agent_registry
         self._activity_repo = activity_repo
+        self._prefetch_cache = prefetch_cache
 
     async def create_mindquest(
         self,
@@ -94,6 +97,23 @@ class MindQuestService:
             mindquest_id=mq.id,
             payload={"topic": topic, "target_level": target_level.value},
         )
+
+        # Warm the first hat challenge while the frontend navigates to the MindQuest view
+        if self._prefetch_cache is not None:
+            first_hat = mq.planned_hats[0] if mq.planned_hats else HatType.BLACK
+            first_context = MindQuestContext(
+                mindquest_id=mq.id,
+                topic=mq.topic,
+                target_level=mq.target_level.value,
+                current_hat=first_hat,
+                current_turn_number=1,
+                completed_hats=(),
+            )
+            agent = self._agent_registry.get(first_hat)
+            self._prefetch_cache.schedule_hat_challenge(
+                mq.id, first_hat, agent.create_challenge(first_context)
+            )
+
         return mq
 
     async def get_mindquest(self, mindquest_id: UUID) -> MindQuest:
@@ -135,8 +155,15 @@ class MindQuestService:
             completed_hats=(),
         )
 
-        agent = self._agent_registry.get(first_hat)
-        challenge = await agent.create_challenge(context)
+        # Use speculative prefetched challenge if already generated
+        challenge = (
+            await self._prefetch_cache.consume_hat_challenge(mq.id, first_hat)
+            if self._prefetch_cache is not None
+            else None
+        )
+        if challenge is None:
+            agent = self._agent_registry.get(first_hat)
+            challenge = await agent.create_challenge(context)
 
         initial_turn = active_round.add_turn(
             challenge_question=challenge.question,
@@ -221,8 +248,15 @@ class MindQuestService:
                 completed_hats=mq.completed_hats,
             )
 
-            agent = self._agent_registry.get(next_hat)
-            challenge = await agent.create_challenge(context)
+            # Use speculative prefetched challenge if available
+            challenge = (
+                await self._prefetch_cache.consume_hat_challenge(mq.id, next_hat)
+                if self._prefetch_cache is not None
+                else None
+            )
+            if challenge is None:
+                agent = self._agent_registry.get(next_hat)
+                challenge = await agent.create_challenge(context)
 
             initial_turn = active_round.add_turn(
                 challenge_question=challenge.question,
@@ -266,12 +300,18 @@ class MindQuestService:
             hat_summaries_list.append(f"Hat {r.hat.value}:\n{turns_text}")
         hat_summaries_str = "\n\n".join(hat_summaries_list)
 
-        blue_agent = self._agent_registry.blue
-        reflection_out = await blue_agent.generate_final_reflection(
-            topic=mq.topic,
-            target_level=mq.target_level.value,
-            hat_summaries=hat_summaries_str,
+        reflection_out = (
+            await self._prefetch_cache.consume_final_reflection(mq.id)
+            if self._prefetch_cache is not None
+            else None
         )
+        if reflection_out is None:
+            blue_agent = self._agent_registry.blue
+            reflection_out = await blue_agent.generate_final_reflection(
+                topic=mq.topic,
+                target_level=mq.target_level.value,
+                hat_summaries=hat_summaries_str,
+            )
 
         reflection = FinalReflection(
             id=uuid.uuid4(),

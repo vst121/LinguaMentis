@@ -72,7 +72,6 @@ class SQLAlchemyUserActivityRepository:
             created_at=activity.created_at,
         )
         self._session.add(model)
-        await self._session.flush()
         return activity
 
     async def list_by_user(

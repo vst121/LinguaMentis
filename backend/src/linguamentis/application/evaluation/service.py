@@ -54,30 +54,35 @@ class EvaluationService:
         self._activity_repo = activity_repo
         self._decision_verifier = decision_verifier or DisabledDecisionVerifier()
 
-    async def evaluate_turn_response(
+    async def evaluate_dimensions(
         self,
         *,
-        user_id: UUID,
         turn: Turn,
         context: MindQuestContext,
         user_response: str,
-    ) -> EvaluationResult:
-        """Run parallel evaluations for Thinking Quality and German Quality."""
+    ) -> tuple[ThinkingEvaluation, GermanEvaluation]:
+        """Run Thinking, German, and optional Jev checks in parallel."""
         contract = get_hat_contract(context.current_hat)
 
-        try:
-            decision = await self._decision_verifier.evaluate_hat_adherence(
-                hat=context.current_hat.value,
-                challenge=turn.challenge_question,
-                response=user_response,
-            )
-            logger.info("ai.jev.hat_adherence", turn_id=str(turn.id), choice=decision.choice,
-                        confidence=decision.confidence,
-                        route="auto" if decision.confidence >= 0.90 else "llm_review")
-        except Exception as exc:
-            logger.warning("ai.jev.unavailable", turn_id=str(turn.id), error=str(exc))
+        async def _verify_jev() -> None:
+            if isinstance(self._decision_verifier, DisabledDecisionVerifier):
+                return
+            try:
+                decision = await self._decision_verifier.evaluate_hat_adherence(
+                    hat=context.current_hat.value,
+                    challenge=turn.challenge_question,
+                    response=user_response,
+                )
+                logger.info(
+                    "ai.jev.hat_adherence",
+                    turn_id=str(turn.id),
+                    choice=decision.choice,
+                    confidence=decision.confidence,
+                    route="auto" if decision.confidence >= 0.90 else "llm_review",
+                )
+            except Exception as exc:
+                logger.warning("ai.jev.unavailable", turn_id=str(turn.id), error=str(exc))
 
-        # Execute Thinking & German evaluation in parallel (Architecture.md #34)
         thinking_task = self._gateway.evaluate_thinking(
             contract=contract,
             context=context,
@@ -90,9 +95,10 @@ class EvaluationService:
             user_response=user_response,
         )
 
-        thinking_out, german_out = await asyncio.gather(thinking_task, german_task)
+        thinking_out, german_out, _ = await asyncio.gather(
+            thinking_task, german_task, _verify_jev()
+        )
 
-        # Map Thinking output -> domain ThinkingEvaluation
         thinking_eval = ThinkingEvaluation(
             id=uuid.uuid4(),
             turn_id=turn.id,
@@ -110,7 +116,6 @@ class EvaluationService:
             recommendations=thinking_out.recommendations,
         )
 
-        # Map German output -> domain GermanEvaluation
         german_eval = GermanEvaluation(
             id=uuid.uuid4(),
             turn_id=turn.id,
@@ -136,39 +141,53 @@ class EvaluationService:
             weaknesses=german_out.weaknesses,
             recommendations=german_out.recommendations,
         )
+        return thinking_eval, german_eval
 
-        # Generate structured HatFeedback (Thinking feedback first, then German)
+    async def generate_feedback(
+        self,
+        *,
+        challenge_question: str,
+        user_response: str,
+        thinking_eval: ThinkingEvaluation,
+        german_eval: GermanEvaluation,
+    ) -> HatFeedback:
         thinking_summary = (
             f"Score: {thinking_eval.score}/100 ({thinking_eval.score_anchor()}). "
             f"Strengths: {', '.join(thinking_eval.strengths)}"
         )
-
         german_summary = (
             f"Score: {german_eval.score}/100 ({german_eval.score_anchor()}). "
             f"Strengths: {', '.join(german_eval.strengths)}"
         )
-
-        feedback = await self._gateway.generate_feedback(
-            challenge_question=turn.challenge_question,
+        return await self._gateway.generate_feedback(
+            challenge_question=challenge_question,
             user_response=user_response,
             thinking_summary=thinking_summary,
             german_summary=german_summary,
         )
 
-        # Persist evaluations & log activities
+    async def persist_evaluations(
+        self,
+        *,
+        user_id: UUID,
+        turn: Turn,
+        mindquest_id: UUID,
+        thinking_eval: ThinkingEvaluation,
+        german_eval: GermanEvaluation,
+    ) -> None:
         await self._evaluation_repo.save_thinking(thinking_eval)
         await self._evaluation_repo.save_german(german_eval)
 
         await self._activity_repo.log_activity(
             user_id=user_id,
             activity_type=ActivityType.THINKING_EVALUATED,
-            mindquest_id=context.mindquest_id,
+            mindquest_id=mindquest_id,
             payload={"turn_id": str(turn.id), "score": thinking_eval.score},
         )
         await self._activity_repo.log_activity(
             user_id=user_id,
             activity_type=ActivityType.GERMAN_EVALUATED,
-            mindquest_id=context.mindquest_id,
+            mindquest_id=mindquest_id,
             payload={"turn_id": str(turn.id), "score": german_eval.score},
         )
 
@@ -179,6 +198,31 @@ class EvaluationService:
             german_score=german_eval.score,
         )
 
+    async def evaluate_turn_response(
+        self,
+        *,
+        user_id: UUID,
+        turn: Turn,
+        context: MindQuestContext,
+        user_response: str,
+    ) -> EvaluationResult:
+        """Run parallel evaluations for Thinking Quality and German Quality."""
+        thinking_eval, german_eval = await self.evaluate_dimensions(
+            turn=turn, context=context, user_response=user_response
+        )
+        feedback = await self.generate_feedback(
+            challenge_question=turn.challenge_question,
+            user_response=user_response,
+            thinking_eval=thinking_eval,
+            german_eval=german_eval,
+        )
+        await self.persist_evaluations(
+            user_id=user_id,
+            turn=turn,
+            mindquest_id=context.mindquest_id,
+            thinking_eval=thinking_eval,
+            german_eval=german_eval,
+        )
         return EvaluationResult(
             thinking=thinking_eval,
             german=german_eval,

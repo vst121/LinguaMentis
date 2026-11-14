@@ -35,21 +35,9 @@ class LearningService:
         self._activity_repo = activity_repo
 
     async def get_user_learning_profile(self, user_id: UUID) -> UserLearningProfile:
-        user_quests = await self._mindquest_repo.list_by_user(user_id, limit=200)
-        completed_quests = [q for q in user_quests if q.status.value == "COMPLETED"]
-
-        # Collect all evaluations across user's mindquests
-        all_thinking = []
-        all_german = []
-        for quest in user_quests:
-            t_evals = await self._evaluation_repo.list_thinking_evaluations_by_mindquest(
-                quest.id
-            )
-            g_evals = await self._evaluation_repo.list_german_evaluations_by_mindquest(
-                quest.id
-            )
-            all_thinking.extend(t_evals)
-            all_german.extend(g_evals)
+        completed_count = await self._mindquest_repo.count_completed_by_user(user_id)
+        all_thinking = await self._evaluation_repo.list_thinking_evaluations_by_user(user_id)
+        all_german = await self._evaluation_repo.list_german_evaluations_by_user(user_id)
 
         thinking_overall = (
             sum(e.score for e in all_thinking) / len(all_thinking) if all_thinking else None
@@ -101,7 +89,7 @@ class LearningService:
 
         return UserLearningProfile(
             user_id=user_id,
-            mindquests_completed=len(completed_quests),
+            mindquests_completed=completed_count,
             thinking_overall=round(thinking_overall, 1) if thinking_overall else None,
             german_overall=round(german_overall, 1) if german_overall else None,
             thinking_dimensions=tuple(thinking_dimension_scores),

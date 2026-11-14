@@ -21,6 +21,15 @@ T = TypeVar("T", bound=BaseModel)
 
 _RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 _CODE_FENCE_RE = re.compile(r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.DOTALL)
+_SCHEMA_CACHE: dict[type[BaseModel], dict] = {}
+
+
+def _get_cached_schema(response_model: type[BaseModel]) -> dict:
+    schema = _SCHEMA_CACHE.get(response_model)
+    if schema is None:
+        schema = response_model.model_json_schema()
+        _SCHEMA_CACHE[response_model] = schema
+    return schema
 
 
 def _clean_json_text(raw: str) -> str:
@@ -51,7 +60,21 @@ class GeminiClient:
         self._http = http_client or httpx.AsyncClient(
             base_url=settings.gemini_base_url,
             timeout=settings.ai_request_timeout_seconds,
+            limits=httpx.Limits(
+                max_keepalive_connections=20,
+                max_connections=50,
+                keepalive_expiry=120.0,
+            ),
         )
+
+    async def warmup(self) -> None:
+        """Establish a warm TLS connection to Gemini API before the first user turn."""
+        if not self._owns_client:
+            return
+        try:
+            await self._http.head("/v1beta/models", timeout=5.0)
+        except Exception:
+            pass
 
     async def aclose(self) -> None:
         if self._owns_client:
@@ -162,7 +185,7 @@ class GeminiClient:
             "generationConfig": {
                 "temperature": temperature,
                 "responseMimeType": "application/json",
-                "responseJsonSchema": response_model.model_json_schema(),
+                "responseJsonSchema": _get_cached_schema(response_model),
             },
         }
 

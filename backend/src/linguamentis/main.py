@@ -6,12 +6,15 @@ domain exception handling, database initialization, and routing.
 
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
+from linguamentis.api.dependencies import get_gemini_client, shutdown_ai_resources
 from linguamentis.api.router import api_router
 from linguamentis.infrastructure.configuration import get_settings
 from linguamentis.infrastructure.database.models import Base
@@ -48,8 +51,14 @@ async def lifespan(app: FastAPI):
         )
         await session.commit()
 
+    # Warm the upstream Gemini TLS connection pool in the background
+    warmup_task = asyncio.create_task(get_gemini_client(settings).warmup())
+
     logger.info("app.started", env=settings.app_env)
     yield
+    if not warmup_task.done():
+        warmup_task.cancel()
+    await shutdown_ai_resources()
     logger.info("app.shutting_down")
 
 
@@ -60,7 +69,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware
+# Compression and CORS middleware
+app.add_middleware(GZipMiddleware, minimum_size=500)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

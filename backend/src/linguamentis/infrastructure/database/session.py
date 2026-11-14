@@ -20,9 +20,18 @@ from linguamentis.infrastructure.configuration import Settings, get_settings
 
 def create_engine_from_url(database_url: str) -> AsyncEngine:
     """Create an AsyncEngine supporting both PostgreSQL (asyncpg) and SQLite (aiosqlite)."""
-    kwargs = {}
+    kwargs: dict = {}
     if database_url.startswith("sqlite"):
         kwargs["connect_args"] = {"check_same_thread": False}
+    else:
+        kwargs.update(
+            {
+                "pool_size": 10,
+                "max_overflow": 20,
+                "pool_pre_ping": True,
+                "pool_recycle": 1800,
+            }
+        )
     return create_async_engine(database_url, echo=False, future=True, **kwargs)
 
 

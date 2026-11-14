@@ -38,6 +38,7 @@ export default function MindQuestPage() {
   const [quest, setQuest] = useState<MindQuest | null>(null),
     [turn, setTurn] = useState<Turn | null>(null),
     [draft, setDraft] = useState(""),
+    [pendingResponse, setPendingResponse] = useState<string | null>(null),
     [feedback, setFeedback] = useState<SubmitResponseResponse | null>(null),
     [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
@@ -48,10 +49,13 @@ export default function MindQuestPage() {
         setQuest(q);
         const round = q.hat_rounds.find((r) => r.hat === q.current_hat);
         setTurn(round?.turns.at(-1) ?? null);
+        if (q.planned_hats.length - q.completed_hats.length <= 1) {
+          router.prefetch(`/mindquests/${id}/reflection`);
+        }
       })
       .catch(() => setError("Diese MindQuest konnte nicht geladen werden."))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, router]);
   async function begin() {
     setBusy(true);
     setError("");
@@ -67,12 +71,25 @@ export default function MindQuestPage() {
   }
   async function send() {
     if (busy || !draft.trim()) return;
+    const submitted = draft.trim();
     setBusy(true);
     setError("");
+    setPendingResponse(submitted);
+    setDraft("");
     try {
-      setFeedback(await submitResponse(id, { response: draft.trim() }));
-      setDraft("");
+      const res = await submitResponse(id, { response: submitted });
+      setFeedback(res);
+      setPendingResponse(null);
+      if (
+        res.round_should_complete &&
+        quest &&
+        quest.planned_hats.length - quest.completed_hats.length <= 1
+      ) {
+        router.prefetch(`/mindquests/${id}/reflection`);
+      }
     } catch {
+      setDraft(submitted);
+      setPendingResponse(null);
       setError("Deine Antwort konnte nicht gesendet werden.");
     } finally {
       setBusy(false);
@@ -90,11 +107,23 @@ export default function MindQuestPage() {
     }
   }
   async function nextStep() {
-    setBusy(true);
     setError("");
-    try {
-      // If the current hat round needs another turn, load the follow-up turn without skipping the hat
-      if (feedback && !feedback.round_should_complete) {
+    // Instant local transition when the backend already returned the next intra-hat challenge
+    if (feedback && !feedback.round_should_complete) {
+      if (feedback.next_challenge_question && turn) {
+        setTurn({
+          ...turn,
+          turn_number: turn.turn_number + 1,
+          challenge_question: feedback.next_challenge_question,
+          challenge_instruction: feedback.next_challenge_instruction ?? "",
+          user_response: null,
+          responded_at: null,
+        });
+        setFeedback(null);
+        return;
+      }
+      setBusy(true);
+      try {
         const refreshed = await getMindQuest(id);
         setQuest(refreshed);
         const activeRound = refreshed.hat_rounds.find(
@@ -102,9 +131,16 @@ export default function MindQuestPage() {
         );
         setTurn(activeRound?.turns.at(-1) ?? null);
         setFeedback(null);
-        return;
+      } catch {
+        setError("Nächster Schritt nicht möglich.");
+      } finally {
+        setBusy(false);
       }
+      return;
+    }
 
+    setBusy(true);
+    try {
       const result = await advanceMindQuest(id);
       setQuest(result.mindquest);
       setFeedback(null);
@@ -196,7 +232,20 @@ export default function MindQuestPage() {
                 {turn.challenge_instruction}
               </p>
             </Card>
-            {!feedback ? (
+            {pendingResponse ? (
+              <Card
+                title="Deine Antwort"
+                description="Denken und Deutsch werden gleichzeitig ausgewertet …"
+              >
+                <p className="rounded-lg bg-slate-50 p-4 text-sm leading-6 text-slate-700">
+                  {pendingResponse}
+                </p>
+                <div className="mt-4 flex items-center gap-2 text-sm text-blue-700">
+                  <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-blue-600" />
+                  Auswertung läuft …
+                </div>
+              </Card>
+            ) : !feedback ? (
               <Card
                 title="Deine Antwort"
                 description="Formuliere deine Gedanken auf Deutsch. Qualität ist wichtiger als Länge."
