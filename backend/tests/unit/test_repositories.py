@@ -61,3 +61,14 @@ async def test_mindquest_repository_save_and_get(db_session):
     assert len(fetched.hat_rounds) == 1
     assert fetched.hat_rounds[0].hat == HatType.BLACK
     assert len(fetched.hat_rounds[0].turns) == 1
+
+    # Ensure default user idempotency
+    def_user1 = await user_repo.ensure_default_user(user_id, "Default")
+    def_user2 = await user_repo.ensure_default_user(user_id, "Default")
+    assert def_user1.id == def_user2.id
+
+    # Test list_by_user and count_completed_by_user
+    listed = await mq_repo.list_by_user(user_id, limit=10, offset=0)
+    assert len(listed) == 1
+    assert await mq_repo.count_completed_by_user(user_id) == 0
+

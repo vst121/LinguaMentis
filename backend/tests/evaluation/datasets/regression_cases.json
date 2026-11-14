@@ -1,0 +1,50 @@
+[
+  {
+    "id": "black_hat_strong_german_weak",
+    "topic": "Autonomes Fahren in Innenstädten",
+    "hat": "BLACK",
+    "target_level": "B2",
+    "challenge_question": "Welche konkreten Sicherheits- und Haftungsrisiken siehst du beim autonomen Fahren?",
+    "user_response": "Ein groß Risiko ist, dass die Sensoren bei stark Regen oder Schnee versagen kann und niemand weiß wer haftet bei ein Unfall.",
+    "reference_thinking": {
+      "hat_adherence": 90,
+      "relevance": 88,
+      "reasoning": 82,
+      "depth": 78,
+      "specificity": 84
+    },
+    "reference_german": {
+      "grammar": 48,
+      "vocabulary": 68,
+      "sentence_structure": 55,
+      "naturalness": 58,
+      "level_appropriateness": 52
+    },
+    "expected_thinking_min": 75,
+    "expected_german_max": 65
+  },
+  {
+    "id": "black_hat_off_mode_perfect_german",
+    "topic": "Autonomes Fahren in Innenstädten",
+    "hat": "BLACK",
+    "target_level": "C1",
+    "challenge_question": "Welche konkreten Sicherheits- und Haftungsrisiken siehst du beim autonomen Fahren?",
+    "user_response": "Autonomes Fahren bietet hervorragende Chancen für eine nachhaltige Mobilitätswende und wird den städtischen Verkehrsfluss erheblich beschleunigen.",
+    "reference_thinking": {
+      "hat_adherence": 20,
+      "relevance": 45,
+      "reasoning": 60,
+      "depth": 50,
+      "specificity": 55
+    },
+    "reference_german": {
+      "grammar": 95,
+      "vocabulary": 92,
+      "sentence_structure": 94,
+      "naturalness": 92,
+      "level_appropriateness": 90
+    },
+    "expected_thinking_max": 55,
+    "expected_german_min": 85
+  }
+]

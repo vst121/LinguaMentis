@@ -8,7 +8,7 @@ for arg in "$@"; do
       SKIP_SYNC=true
       ;;
     --help|-h)
-      echo "Usage: ./start.sh [--skip-sync]"
+      echo "Usage: ./scripts/dev.sh [--skip-sync]"
       exit 0
       ;;
     *)
@@ -18,12 +18,16 @@ for arg in "$@"; do
   esac
 done
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKEND_DIR="$ROOT_DIR/backend"
 FRONTEND_DIR="$ROOT_DIR/frontend"
-COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
 ENV_FILE="$BACKEND_DIR/.env"
 ENV_EXAMPLE_FILE="$BACKEND_DIR/.env.example"
+
+DB_HOST="${POSTGRES_HOST:-postgres}"
+DB_PORT="${POSTGRES_PORT:-5432}"
+DB_USER="${POSTGRES_USER:-linguamentis}"
+DB_NAME="${POSTGRES_DB:-linguamentis}"
 
 # Ensure uv is discoverable if installed in the default user bin directory
 if [ -d "$HOME/.local/bin" ] && [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
@@ -51,19 +55,23 @@ stop_process_tree() {
 }
 
 wait_for_postgres() {
-  echo "Waiting for PostgreSQL to accept connections..."
+  echo "Waiting for PostgreSQL ($DB_HOST:$DB_PORT) to accept connections..."
   for _ in $(seq 1 30); do
-    if docker compose -f "$COMPOSE_FILE" exec -T postgres pg_isready -U linguamentis -d linguamentis >/dev/null 2>&1; then
+    if command -v pg_isready >/dev/null 2>&1; then
+      if pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1; then
+        return 0
+      fi
+    elif python3 -c "import socket; s = socket.create_connection(('$DB_HOST', int('$DB_PORT')), timeout=1); s.close()" >/dev/null 2>&1; then
       return 0
     fi
     sleep 1
   done
-  echo "Error: PostgreSQL did not become ready on port 5438 in time." >&2
+  echo "Error: PostgreSQL did not become ready at $DB_HOST:$DB_PORT in time." >&2
   exit 1
 }
 
 log_step "Checking required tools..."
-for tool in docker uv node; do
+for tool in uv node; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     echo "Error: Required tool '$tool' was not found in PATH." >&2
     exit 1
@@ -94,40 +102,32 @@ if ! grep -Eq '^\s*GEMINI_API_KEY=.+' "$ENV_FILE" || grep -Eq '^\s*GEMINI_API_KE
   echo "Warning: GEMINI_API_KEY does not appear to be configured in backend/.env."
 fi
 
-log_step "Checking Docker daemon..."
-if ! docker info >/dev/null 2>&1; then
-  echo "Error: Docker is not running. Start Docker and try again." >&2
-  exit 1
-fi
-
-log_step "Starting PostgreSQL container..."
-docker compose -f "$COMPOSE_FILE" up -d postgres
-wait_for_postgres
-
 if [ "$SKIP_SYNC" = false ]; then
-  log_step "Syncing backend dependencies (uv sync --all-extras)..."
-  (cd "$BACKEND_DIR" && uv sync --all-extras)
+  log_step "Syncing backend dependencies (uv sync)..."
+  (cd "$BACKEND_DIR" && uv sync --extra dev)
 fi
 
-if [ ! -d "$FRONTEND_DIR/node_modules" ]; then
+if [ ! -x "$FRONTEND_DIR/node_modules/.bin/next" ]; then
   log_step "Installing frontend dependencies ($PKG_MANAGER install)..."
   (cd "$FRONTEND_DIR" && "$PKG_MANAGER" install)
 fi
+
+log_step "Checking PostgreSQL connection..."
+wait_for_postgres
 
 BACKEND_PID=""
 FRONTEND_PID=""
 
 start_backend() {
-  (cd "$BACKEND_DIR" && exec uv run python -m uvicorn linguamentis.main:app --reload --host 127.0.0.1 --port 8000) &
+  (cd "$BACKEND_DIR" && exec uv run python -m uvicorn linguamentis.main:app --reload --host 0.0.0.0 --port 8000) &
   BACKEND_PID=$!
 }
 
 start_frontend() {
-  # Remove production build output if present so next dev does not mix manifests with vendor-chunks
   if [ -f "$FRONTEND_DIR/.next/BUILD_ID" ]; then
     rm -rf "$FRONTEND_DIR/.next"
   fi
-  (cd "$FRONTEND_DIR" && exec "$PKG_MANAGER" run dev) &
+  (cd "$FRONTEND_DIR" && HOSTNAME=0.0.0.0 exec "$PKG_MANAGER" run dev) &
   FRONTEND_PID=$!
 }
 
@@ -136,7 +136,7 @@ print_help() {
   printf "  r  | restart  - Restart both Backend and Frontend\n"
   printf "  rb | backend  - Restart Backend only\n"
   printf "  rf | frontend - Restart Frontend only\n"
-  printf "  db            - Restart PostgreSQL container\n"
+  printf "  db            - Check PostgreSQL readiness\n"
   printf "  s  | status   - Show process status and URLs\n"
   printf "  h  | help     - Show this help\n"
   printf "  q  | quit     - Stop Backend and Frontend and exit (or press Ctrl+C)\n\n"
@@ -152,28 +152,28 @@ print_status() {
     f_state="RUNNING (PID $FRONTEND_PID)"
   fi
   printf "\nService status:\n"
-  printf "  - Backend:  %s -> http://127.0.0.1:8000/health\n" "$b_state"
+  printf "  - Backend:  %s -> http://localhost:8000/health\n" "$b_state"
   printf "  - Frontend: %s -> http://localhost:3000\n" "$f_state"
-  printf "  - API Docs: http://127.0.0.1:8000/docs\n\n"
+  printf "  - API Docs: http://localhost:8000/docs\n\n"
 }
 
 cleanup() {
   printf "\nStopping Backend and Frontend...\n"
   stop_process_tree "${FRONTEND_PID:-}"
   stop_process_tree "${BACKEND_PID:-}"
-  printf "Services stopped (PostgreSQL remains running in Docker).\n"
+  printf "Services stopped (PostgreSQL remains running in the Devcontainer network).\n"
 }
 
 trap cleanup EXIT INT TERM
 
-log_step "Starting Backend (FastAPI) and Frontend (Next.js)..."
+log_step "Starting Backend (FastAPI on 0.0.0.0:8000) and Frontend (Next.js on 0.0.0.0:3000)..."
 start_backend
 start_frontend
 
 printf "\nLinguaMentis is running:\n"
 printf "  - Frontend: http://localhost:3000\n"
-printf "  - Backend:  http://127.0.0.1:8000/health\n"
-printf "  - API Docs: http://127.0.0.1:8000/docs\n"
+printf "  - Backend:  http://localhost:8000/health\n"
+printf "  - API Docs: http://localhost:8000/docs\n"
 print_help
 
 BACKEND_WARNED=false
@@ -205,6 +205,7 @@ while true; do
           log_step "Restarting Backend and Frontend..."
           stop_process_tree "$FRONTEND_PID"
           stop_process_tree "$BACKEND_PID"
+          wait_for_postgres
           start_backend
           start_frontend
           BACKEND_WARNED=false
@@ -214,6 +215,7 @@ while true; do
         rb|backend)
           log_step "Restarting Backend..."
           stop_process_tree "$BACKEND_PID"
+          wait_for_postgres
           start_backend
           BACKEND_WARNED=false
           echo "Backend restarted."
@@ -226,10 +228,9 @@ while true; do
           echo "Frontend restarted."
           ;;
         db)
-          log_step "Restarting PostgreSQL container..."
-          docker compose -f "$COMPOSE_FILE" restart postgres
+          log_step "Checking PostgreSQL connection..."
           wait_for_postgres
-          echo "PostgreSQL is ready."
+          echo "PostgreSQL is ready at $DB_HOST:$DB_PORT."
           ;;
         s|status)
           print_status

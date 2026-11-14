@@ -212,37 +212,37 @@ The key architectural principle is:
 ## Project Structure
 
 ```text
-
 linguamentis/
-│
+├── .devcontainer/
+│   ├── Dockerfile
+│   ├── devcontainer.json
+│   └── docker-compose.yml
 ├── backend/
-│   ├── src/
-│   │   └── linguamentis/
-│   │       ├── api/
-│   │       ├── application/
-│   │       ├── domain/
-│   │       ├── agents/
-│   │       ├── ai/
-│   │       └── infrastructure/
-│   │
+│   ├── src/linguamentis/
+│   │   ├── agents/
+│   │   ├── ai/
+│   │   ├── api/
+│   │   ├── application/
+│   │   ├── domain/
+│   │   ├── infrastructure/
+│   │   └── shared/
 │   └── tests/
-│
 ├── frontend/
-│   └── src/
-│       ├── app/
-│       ├── components/
-│       ├── services/
-│       └── types/
-│
+│   ├── src/
+│   │   ├── app/
+│   │   ├── components/
+│   │   ├── lib/
+│   │   ├── services/
+│   │   └── types/
+│   └── tests/
 ├── docs/
 │   ├── PRD.md
 │   ├── Architecture.md
 │   ├── HatContracts.md
-│   ├── EvaluationRubric.md
-│   └── AIContracts.md
-│
-└── docker-compose.yml
-
+│   └── EvaluationRubric.md
+├── scripts/
+│   └── dev.sh
+└── Makefile
 ```
 
 ---
@@ -329,40 +329,17 @@ Once this flow works end-to-end, the remaining hats can be added.
 
 ---
 
-## Running Locally
+## Development (Dev Container)
 
-### Backend
+LinguaMentis uses a **VS Code Dev Container** as the standard development environment (`.devcontainer/`). It provides Python 3.12, `uv`, Node.js, `pnpm`, and a dedicated PostgreSQL 17 service (`postgres:5432`) out of the box.
 
-```bash
-
-cd backend
-
-uv sync
-
-uv run uvicorn linguamentis.main:app --reload
-
-```
-
-### Frontend
+1. Open the repository in VS Code and run **Dev Containers: Reopen in Container**.
+2. Set `GEMINI_API_KEY` in `backend/.env` (created automatically from `backend/.env.example`).
+3. Start both Backend (`http://localhost:8000`) and Frontend (`http://localhost:3000`):
 
 ```bash
-
-cd frontend
-
-npm install
-
-npm run dev
-
-```
-
-### Database
-
-PostgreSQL can be started with:
-
-```bash
-
-docker compose up -d postgres
-
+make dev
+# or: ./scripts/dev.sh
 ```
 
 ---
@@ -405,28 +382,14 @@ To use LinguaMentis, the end user needs:
 Create a `.env` file for the backend.
 
 ```env
-
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5438/linguamentis
-
+DATABASE_URL=postgresql+asyncpg://linguamentis:linguamentis@postgres:5432/linguamentis
 GEMINI_API_KEY=your-gemini-api-key
 
+AI_MODEL_BLUE=gemini-2.5-flash
 AI_MODEL_HAT=gemini-2.5-flash
 AI_MODEL_THINKING_EVALUATOR=gemini-2.5-flash
 AI_MODEL_GERMAN_EVALUATOR=gemini-2.5-flash
 AI_MODEL_REFLECTION=gemini-2.5-flash
-
-
-
-AI_MODEL_BLUE=...
-
-AI_MODEL_HAT=...
-
-AI_MODEL_THINKING_EVALUATOR=...
-
-AI_MODEL_GERMAN_EVALUATOR=...
-
-AI_MODEL_REFLECTION=...
-
 ```
 
 The Gemini API key is **server-side only** and must never be exposed to the frontend. Model
@@ -434,27 +397,23 @@ settings must contain Gemini model IDs, not API keys.
 
 ---
 
-## Testing
+## Testing & Quality Checks
 
-Run unit and integration tests:
+Run all unit, component, and integration tests across Backend and Frontend:
 
 ```bash
-
-cd backend
-
-uv run pytest
-
+make test
 ```
 
-AI evaluation tests are kept separately:
+Individual test and lint targets:
 
-```text
-
-backend/tests/evaluation/
-
+```bash
+make test-backend   # Backend unit, integration & offline evaluation dataset tests (pytest)
+make test-frontend  # Frontend unit, component & page tests (Vitest + React Testing Library)
+make test-e2e       # End-to-end browser tests across Next.js & FastAPI (Playwright)
+make test-eval      # Opt-in live Gemini evaluation regression harness
+make lint           # Backend (ruff) + Frontend (ESLint & TypeScript) checks
 ```
-
-These will eventually provide a regression harness for comparing prompts, models, and evaluator quality.
 
 ---
 

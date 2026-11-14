@@ -104,3 +104,80 @@ async def test_user_learning_profile_and_activities(async_client: AsyncClient):
     activities_resp = await async_client.get(f"/api/v1/users/{default_user_id}/activities")
     assert activities_resp.status_code == 200
     assert isinstance(activities_resp.json(), list)
+
+    user_mqs_resp = await async_client.get(f"/api/v1/users/{default_user_id}/mindquests")
+    assert user_mqs_resp.status_code == 200
+    assert isinstance(user_mqs_resp.json(), list)
+
+
+@pytest.mark.asyncio
+async def test_api_error_handlers_and_edge_cases(async_client: AsyncClient, fake_llm_client):
+    from uuid import uuid4
+
+    from linguamentis.shared.exceptions import AIGatewayError
+
+    missing_id = uuid4()
+
+    # 1. 404 NotFoundError on unknown MindQuest
+    resp_404 = await async_client.get(f"/api/v1/mindquests/{missing_id}")
+    assert resp_404.status_code == 404
+    assert resp_404.json()["error"] == "Not Found"
+
+    # 2. 404 on missing reflection
+    refl_404 = await async_client.get(f"/api/v1/mindquests/{missing_id}/reflection")
+    assert refl_404.status_code == 404
+
+    # 3. 422 Validation error on too short topic
+    resp_422 = await async_client.post(
+        "/api/v1/mindquests",
+        json={"topic": "ab", "target_level": "B2"},
+    )
+    assert resp_422.status_code == 422
+
+    # 4. Create valid MindQuest and test list + get + invalid state transition (400)
+    create_resp = await async_client.post(
+        "/api/v1/mindquests",
+        json={"topic": "Künstliche Intelligenz in Schulen", "target_level": "B2"},
+    )
+    assert create_resp.status_code == 201
+    mq_id = create_resp.json()["id"]
+
+    list_resp = await async_client.get("/api/v1/mindquests")
+    assert list_resp.status_code == 200
+    assert any(item["id"] == mq_id for item in list_resp.json())
+
+    get_resp = await async_client.get(f"/api/v1/mindquests/{mq_id}")
+    assert get_resp.status_code == 200
+    assert get_resp.json()["topic"] == "Künstliche Intelligenz in Schulen"
+
+    # Submitting response before starting -> 400 Domain Violation
+    bad_submit = await async_client.post(
+        f"/api/v1/mindquests/{mq_id}/responses",
+        json={"response": "Zu früh geantwortet."},
+    )
+    assert bad_submit.status_code == 400
+    assert bad_submit.json()["error"] == "Domain Violation"
+
+    # Advancing before starting (in TOPIC_SELECTED) -> 400 Invalid State Transition
+    bad_advance = await async_client.post(f"/api/v1/mindquests/{mq_id}/advance")
+    assert bad_advance.status_code == 400
+    assert bad_advance.json()["error"] == "Invalid State Transition"
+
+    # Start twice -> second start triggers 400 Domain Violation
+    await async_client.post(f"/api/v1/mindquests/{mq_id}/start")
+    second_start = await async_client.post(f"/api/v1/mindquests/{mq_id}/start")
+    assert second_start.status_code == 400
+    assert second_start.json()["error"] == "Domain Violation"
+
+    # 5. Simulate AIGatewayError -> 502 Bad Gateway
+    fake_llm_client.error_to_raise = AIGatewayError("Upstream Gemini failure")
+    try:
+        resp_502 = await async_client.post(
+            f"/api/v1/mindquests/{mq_id}/responses",
+            json={"response": "Ein ernsthaftes Risiko besteht im Datenschutz."},
+        )
+        assert resp_502.status_code == 502
+        assert resp_502.json()["error"] == "AI Gateway Failure"
+    finally:
+        fake_llm_client.error_to_raise = None
+

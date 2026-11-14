@@ -42,6 +42,14 @@ from linguamentis.main import app
 class FakeLLMClient:
     """Mock LLM client returning deterministic structured objects for testing."""
 
+    def __init__(self) -> None:
+        self.queued_responses: dict[type, list[object]] = {}
+        self.error_to_raise: Exception | None = None
+        self.calls: list[dict[str, object]] = []
+
+    def queue_response(self, response_model: type, *items: object) -> None:
+        self.queued_responses.setdefault(response_model, []).extend(items)
+
     async def generate_structured(
         self,
         *,
@@ -51,6 +59,22 @@ class FakeLLMClient:
         model: str,
         temperature: float = 0.4,
     ):
+        self.calls.append(
+            {
+                "system_prompt": system_prompt,
+                "user_prompt": user_prompt,
+                "response_model": response_model,
+                "model": model,
+                "temperature": temperature,
+            }
+        )
+        if self.error_to_raise is not None:
+            raise self.error_to_raise
+
+        queued = self.queued_responses.get(response_model)
+        if queued:
+            return queued.pop(0)
+
         if response_model is HatChallenge:
             return HatChallenge(
                 question="Welche Risiken siehst du bei diesem Vorhaben?",
@@ -165,9 +189,13 @@ async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
 
 
 @pytest.fixture
-def fake_gateway(test_settings: Settings) -> AIGateway:
-    client = FakeLLMClient()
-    return AIGateway(client=client, settings=test_settings)  # type: ignore[arg-type]
+def fake_llm_client() -> FakeLLMClient:
+    return FakeLLMClient()
+
+
+@pytest.fixture
+def fake_gateway(test_settings: Settings, fake_llm_client: FakeLLMClient) -> AIGateway:
+    return AIGateway(client=fake_llm_client, settings=test_settings)  # type: ignore[arg-type]
 
 
 @pytest.fixture

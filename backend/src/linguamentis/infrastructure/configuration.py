@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     )
 
     # Database
-    database_url: str = "postgresql+asyncpg://linguamentis:linguamentis@localhost:5438/linguamentis"
+    database_url: str = "postgresql+asyncpg://linguamentis:linguamentis@postgres:5432/linguamentis"
 
     # Gemini
     gemini_api_key: str

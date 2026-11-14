@@ -82,3 +82,85 @@ async def test_learning_service_bulk_profile_aggregation(db_session):
     profile = await service.get_user_learning_profile(user_id)
     assert profile.mindquests_completed == 1
     assert profile.thinking_overall is None
+
+
+@pytest.mark.asyncio
+async def test_learning_service_profile_with_populated_evaluations_and_activities(db_session):
+    from linguamentis.domain.evaluations.evidence import Correction, Evidence
+    from linguamentis.domain.evaluations.german import GermanEvaluation
+    from linguamentis.domain.evaluations.thinking import ThinkingEvaluation
+    from linguamentis.domain.mindquests.enums import ActivityType
+
+    user_repo = SQLAlchemyUserRepository(db_session)
+    mq_repo = SQLAlchemyMindQuestRepository(db_session)
+    eval_repo = SQLAlchemyEvaluationRepository(db_session)
+    act_repo = SQLAlchemyUserActivityRepository(db_session)
+
+    user_id = uuid4()
+    await user_repo.save(User(id=user_id, display_name="Learner"))
+
+    mq = MindQuest(
+        id=uuid4(),
+        user_id=user_id,
+        topic="Digitalisierung",
+        target_level=LanguageLevel.C1,
+    )
+    mq.select_topic(mq.topic, (HatType.BLACK,))
+    mq.begin()
+    round_ = mq.activate_hat(HatType.BLACK)
+    turn = round_.add_turn(
+        challenge_question="Risiken?",
+        challenge_instruction="Black Hat",
+        difficulty=3,
+    )
+    turn.record_response("Ein großes Risiko ist der Datenschutz.")
+    mq.complete_current_hat()
+    mq.finish_all_hats()
+    mq.start_final_evaluation()
+    mq.complete()
+    await mq_repo.save(mq)
+
+    await eval_repo.save_thinking(
+        ThinkingEvaluation(
+            id=uuid4(),
+            turn_id=turn.id,
+            hat_adherence=95,
+            relevance=85,
+            reasoning=80,
+            depth=60,
+            specificity=75,
+            evidence=[Evidence("hat_adherence", "Focused on risk", "Good")],
+        )
+    )
+    await eval_repo.save_german(
+        GermanEvaluation(
+            id=uuid4(),
+            turn_id=turn.id,
+            grammar=92,
+            vocabulary=84,
+            sentence_structure=80,
+            naturalness=68,
+            level_appropriateness=78,
+            corrections=[Correction("ist der", "besteht im", "Style", "vocabulary")],
+        )
+    )
+    await act_repo.log_activity(user_id, ActivityType.MINDQUEST_COMPLETED, mq.id, {"ok": True})
+
+    service = LearningService(
+        mindquest_repo=mq_repo,
+        evaluation_repo=eval_repo,
+        activity_repo=act_repo,
+    )
+    profile = await service.get_user_learning_profile(user_id)
+    assert profile.mindquests_completed == 1
+    assert profile.thinking_overall is not None
+    assert profile.german_overall is not None
+    assert profile.strongest_thinking_dimension == "hat_adherence"
+    assert profile.weakest_thinking_dimension == "depth"
+    assert profile.strongest_german_dimension == "grammar"
+    assert profile.weakest_german_dimension == "naturalness"
+
+    activities = await service.list_user_activities(user_id, limit=10, offset=0)
+    assert len(activities) == 1
+    assert activities[0].activity_type == ActivityType.MINDQUEST_COMPLETED
+
