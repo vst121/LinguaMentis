@@ -18,7 +18,11 @@
       "onAutoForward": "silent"
     }
   },
-  "initializeCommand": "mkdir -p backend/.venv frontend/node_modules",
+  "initializeCommand": [
+    "node",
+    "-e",
+    "const fs = require('fs'); fs.mkdirSync('backend/.venv', { recursive: true }); fs.mkdirSync('frontend/node_modules', { recursive: true });"
+  ],
   "postCreateCommand": "sudo chown -R vscode:vscode backend/.venv frontend/node_modules && ([ -f backend/.env ] || cp backend/.env.example backend/.env) && (cd backend && uv sync --extra dev) && (cd frontend && pnpm install)",
   "customizations": {
     "vscode": {

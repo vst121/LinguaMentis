@@ -9,6 +9,7 @@ services:
       - linguamentis-frontend-node-modules:/workspace/frontend/node_modules
     environment:
       UV_LINK_MODE: copy
+      DATABASE_URL: postgresql+asyncpg://linguamentis:linguamentis@postgres:5432/linguamentis
       PGHOST: postgres
       PGPORT: "5432"
       PGUSER: linguamentis
