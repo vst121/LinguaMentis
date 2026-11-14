@@ -212,6 +212,49 @@ def hat_feedback_user_prompt(
 
 
 # ---------------------------------------------------------------------------
+# Elaborated response proposition (Hat Agent model rewrite)
+# ---------------------------------------------------------------------------
+
+
+def response_proposition_system_prompt(contract: HatContract) -> str:
+    return (
+        f"{_APPLICATION_FRAME}\n\n"
+        "You are the Hat Agent for the contract below. Your task is to craft an "
+        "elaborated, higher-level German version of what the learner just wrote so "
+        "they can learn how to express their exact same idea more articulately.\n\n"
+        f"{_format_contract(contract)}\n\n"
+        "Rules:\n"
+        "- STRICT ALIGNMENT: Keep the learner's core idea, stance, and reasoning. Do NOT "
+        "invent unrelated arguments, contradict their viewpoint, or drift outside this "
+        "hat's thinking mode.\n"
+        "- ELABORATED GERMAN: Elevate the wording and syntax clearly above a simple/basic "
+        "draft (use richer vocabulary, precise verbs/nouns, idiomatic debate Redemittel, "
+        "and cohesive complex structures such as subordinate clauses, Nominalstil, or "
+        "Konjunktiv II where natural). Calibrate to strong upper-B2 when target level is "
+        "B2, and eloquent C1 when target level is C1.\n"
+        "- HIGHLIGHTS: Provide 2-6 PropositionHighlightOutput items pointing out the most "
+        "valuable upgrades. Every upgraded_phrase MUST appear verbatim (exact spelling and "
+        "casing) inside improved_response so the UI can highlight it inline. Pair each "
+        "with the corresponding original_phrase from the learner's response (or empty "
+        "string if newly added for cohesion), a category (vocabulary | syntax | idiom | "
+        "precision | connector), and a brief, helpful explanation in German."
+    )
+
+
+def response_proposition_user_prompt(
+    *, context: MindQuestContext, challenge_question: str, user_response: str
+) -> str:
+    return (
+        f"Topic: {context.topic}\n"
+        f"Target language level: {context.target_level}\n"
+        f"Current hat: {context.current_hat.value}\n"
+        f"Challenge given to the learner: {challenge_question}\n\n"
+        f"Learner's original response (German):\n{user_response}\n\n"
+        "Generate the ResponsePropositionOutput."
+    )
+
+
+# ---------------------------------------------------------------------------
 # Final reflection (Blue Agent)
 # ---------------------------------------------------------------------------
 

@@ -60,6 +60,9 @@ async def test_evaluate_turn_response_parallel_execution(fake_gateway, db_sessio
     assert res.german.score >= 0
     assert res.feedback.thinking_feedback != ""
     assert res.feedback.german_feedback != ""
+    assert res.proposition.turn_id == turn_id
+    assert res.proposition.improved_response != ""
+    assert len(res.proposition.highlights) >= 1
 
     # Verify persisted in database
     persisted_thinking = await eval_repo.get_thinking_by_turn(turn_id)
@@ -69,3 +72,8 @@ async def test_evaluate_turn_response_parallel_execution(fake_gateway, db_sessio
     persisted_german = await eval_repo.get_german_by_turn(turn_id)
     assert persisted_german is not None
     assert persisted_german.score == res.german.score
+
+    persisted_prop = await eval_repo.get_proposition_by_turn(turn_id)
+    assert persisted_prop is not None
+    assert persisted_prop.improved_response == res.proposition.improved_response
+    assert len(persisted_prop.highlights) == len(res.proposition.highlights)

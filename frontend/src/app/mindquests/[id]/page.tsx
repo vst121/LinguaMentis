@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { ArrowRight, Send } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { ScoreBar } from "@/components/evaluation/ProfileScoreCards";
+import { ResponsePropositionCard } from "@/components/evaluation/ResponsePropositionCard";
 import { HatIndicator } from "@/components/hats/HatIndicator";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -441,6 +442,12 @@ export default function MindQuestPage() {
                       />
                     </div>
                   </Card>
+                  {feedback.proposition && (
+                    <ResponsePropositionCard
+                      proposition={feedback.proposition}
+                      originalResponse={feedback.turn.user_response ?? undefined}
+                    />
+                  )}
                   {feedback.german_evaluation.corrections.length > 0 && (
                     <Card title="Verbesserungen" className="md:col-span-2">
                       <div className="grid gap-3 lg:grid-cols-2">

@@ -50,6 +50,19 @@ export interface HatFeedback {
   encouragement?: string;
 }
 
+export interface PropositionHighlight {
+  upgraded_phrase: string;
+  original_phrase: string;
+  explanation: string;
+  category: string;
+}
+
+export interface ResponseProposition {
+  id: string;
+  improved_response: string;
+  highlights: PropositionHighlight[];
+}
+
 export interface ThinkingReflectionSection {
   overall_summary: string;
   strongest_thinking_modes?: string[];

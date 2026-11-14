@@ -121,11 +121,25 @@ class HatFeedbackDTO(BaseModel):
     encouragement: str = ""
 
 
+class PropositionHighlightDTO(BaseModel):
+    upgraded_phrase: str
+    original_phrase: str = ""
+    explanation: str
+    category: str
+
+
+class ResponsePropositionDTO(BaseModel):
+    id: UUID
+    improved_response: str
+    highlights: list[PropositionHighlightDTO]
+
+
 class SubmitResponseResponse(BaseModel):
     turn: TurnResponse
     thinking_evaluation: ThinkingEvaluationDTO
     german_evaluation: GermanEvaluationDTO
     feedback: HatFeedbackDTO
+    proposition: ResponsePropositionDTO | None = None
     next_challenge_question: str | None = None
     next_challenge_instruction: str | None = None
     round_should_complete: bool

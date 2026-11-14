@@ -51,6 +51,9 @@ async def test_mindquest_lifecycle_api(async_client: AsyncClient):
         assert sub_data["thinking_evaluation"]["score"] >= 0
         assert sub_data["german_evaluation"]["score"] >= 0
         assert "feedback" in sub_data
+        assert sub_data["proposition"] is not None
+        assert sub_data["proposition"]["improved_response"] != ""
+        assert len(sub_data["proposition"]["highlights"]) >= 1
 
         advance_resp = await async_client.post(f"/api/v1/mindquests/{mq_id}/advance")
         assert advance_resp.status_code == 200

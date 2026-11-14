@@ -27,6 +27,8 @@ from linguamentis.api.v1.schemas import (
     HatFeedbackDTO,
     HatRoundResponse,
     MindQuestResponse,
+    PropositionHighlightDTO,
+    ResponsePropositionDTO,
     StartMindQuestResponse,
     SubmitResponseRequest,
     SubmitResponseResponse,
@@ -197,11 +199,30 @@ async def submit_response(
         encouragement=res.feedback.encouragement,
     )
 
+    p_dto = (
+        ResponsePropositionDTO(
+            id=res.proposition.id,
+            improved_response=res.proposition.improved_response,
+            highlights=[
+                PropositionHighlightDTO(
+                    upgraded_phrase=h.upgraded_phrase,
+                    original_phrase=h.original_phrase,
+                    explanation=h.explanation,
+                    category=h.category,
+                )
+                for h in res.proposition.highlights
+            ],
+        )
+        if res.proposition is not None
+        else None
+    )
+
     return SubmitResponseResponse(
         turn=_map_turn(res.turn),
         thinking_evaluation=t_dto,
         german_evaluation=g_dto,
         feedback=f_dto,
+        proposition=p_dto,
         next_challenge_question=res.next_challenge.question if res.next_challenge else None,
         next_challenge_instruction=res.next_challenge.instruction if res.next_challenge else None,
         round_should_complete=res.round_should_complete,

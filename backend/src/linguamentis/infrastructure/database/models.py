@@ -111,6 +111,9 @@ class TurnModel(Base):
     german_evaluation: Mapped[GermanEvaluationModel | None] = relationship(
         back_populates="turn", uselist=False, cascade="all, delete-orphan"
     )
+    proposition: Mapped[ResponsePropositionModel | None] = relationship(
+        back_populates="turn", uselist=False, cascade="all, delete-orphan"
+    )
 
     __table_args__ = (Index("ix_turns_hat_round_id", "hat_round_id"),)
 
@@ -193,6 +196,20 @@ class EvidenceModel(Base):
         Index("ix_evidence_thinking_eval_id", "thinking_evaluation_id"),
         Index("ix_evidence_german_eval_id", "german_evaluation_id"),
     )
+
+
+class ResponsePropositionModel(Base):
+    __tablename__ = "response_propositions"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    turn_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("turns.id"), nullable=False, unique=True
+    )
+    improved_response: Mapped[str] = mapped_column(Text, nullable=False)
+    highlights: Mapped[list[dict]] = mapped_column(JSON, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+    turn: Mapped[TurnModel] = relationship(back_populates="proposition")
 
 
 class FinalReflectionModel(Base):

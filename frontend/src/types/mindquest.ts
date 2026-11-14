@@ -3,6 +3,7 @@ import {
   FinalReflection,
   GermanEvaluation,
   HatFeedback,
+  ResponseProposition,
   ThinkingEvaluation,
 } from "./evaluation";
 
@@ -79,6 +80,7 @@ export interface SubmitResponseResponse {
   thinking_evaluation: ThinkingEvaluation;
   german_evaluation: GermanEvaluation;
   feedback: HatFeedback;
+  proposition?: ResponseProposition | null;
   next_challenge_question?: string | null;
   next_challenge_instruction?: string | null;
   round_should_complete: boolean;

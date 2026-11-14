@@ -14,6 +14,7 @@ from linguamentis.ai.models import HatChallenge, HatFeedback
 from linguamentis.application.evaluation.service import EvaluationService
 from linguamentis.application.mindquests.prefetch import ChallengePrefetchCache
 from linguamentis.domain.evaluations.german import GermanEvaluation
+from linguamentis.domain.evaluations.proposition import ResponseProposition
 from linguamentis.domain.evaluations.thinking import ThinkingEvaluation
 from linguamentis.domain.hats.types import HatType
 from linguamentis.domain.mindquests.entities import MindQuest, Turn
@@ -42,6 +43,7 @@ class TurnSubmissionResult:
     feedback: HatFeedback
     next_challenge: HatChallenge | None
     round_should_complete: bool
+    proposition: ResponseProposition | None = None
 
 
 class TurnService:
@@ -110,11 +112,18 @@ class TurnService:
             previous_responses=tuple(previous_turn_contexts),
         )
 
-        # Evaluate dimensions first so we immediately know whether another turn is needed
-        thinking_eval, german_eval = await self._evaluation_service.evaluate_dimensions(
-            turn=latest_turn,
-            context=context,
-            user_response=user_response,
+        # Evaluate dimensions and generate aligned elaborated proposition in parallel
+        (thinking_eval, german_eval), proposition = await asyncio.gather(
+            self._evaluation_service.evaluate_dimensions(
+                turn=latest_turn,
+                context=context,
+                user_response=user_response,
+            ),
+            self._evaluation_service.generate_proposition(
+                turn=latest_turn,
+                context=context,
+                user_response=user_response,
+            ),
         )
 
         # Check if the hat round has reached completion threshold
@@ -178,6 +187,7 @@ class TurnService:
             mindquest_id=mindquest.id,
             thinking_eval=thinking_eval,
             german_eval=german_eval,
+            proposition=proposition,
         )
 
         await self._mindquest_repo.save(mindquest)
@@ -189,6 +199,7 @@ class TurnService:
             feedback=feedback,
             next_challenge=next_challenge,
             round_should_complete=round_should_complete,
+            proposition=proposition,
         )
 
     def _schedule_post_round_prefetch(

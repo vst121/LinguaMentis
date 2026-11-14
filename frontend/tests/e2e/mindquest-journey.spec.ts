@@ -42,10 +42,11 @@ test.describe("LinguaMentis E2E MindQuest Journey", () => {
       );
       await page.getByRole("button", { name: /Antwort auswerten/i }).click();
 
-      // Verify independent Thinking and German evaluations + corrections appear
+      // Verify independent Thinking and German evaluations + elaborated proposition appear
       await expect(page.getByText("Dein Feedback")).toBeVisible();
       await expect(page.getByText("Denken", { exact: true })).toBeVisible();
       await expect(page.getByText("Deutsch", { exact: true })).toBeVisible();
+      await expect(page.getByText("Sprach-Upgrade: Elaborierte Antwort")).toBeVisible();
       await expect(page.getByText("Verbesserungen")).toBeVisible();
 
       if (hatIdx < 5) {

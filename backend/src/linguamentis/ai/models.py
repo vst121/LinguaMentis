@@ -110,6 +110,39 @@ class HatFeedback(BaseModel):
     encouragement: str = Field(default="", description="Optional short encouraging remark.")
 
 
+class PropositionHighlightOutput(BaseModel):
+    """A single highlighted improvement inside ``ResponsePropositionOutput``."""
+
+    upgraded_phrase: str = Field(
+        description="Exact verbatim substring from improved_response showing the upgrade."
+    )
+    original_phrase: str = Field(
+        default="",
+        description="Corresponding simpler or imperfect phrase from the learner's response, "
+        "or empty string if newly introduced.",
+    )
+    explanation: str = Field(
+        description="Concise German explanation of why this upgrade improves style, "
+        "vocabulary, or structure."
+    )
+    category: str = Field(
+        description="vocabulary | syntax | idiom | precision | connector"
+    )
+
+
+class ResponsePropositionOutput(BaseModel):
+    """Agent-crafted, elaborated German version of the learner's response."""
+
+    improved_response: str = Field(
+        description="A cohesive, elaborated German version of the learner's response that "
+        "preserves their exact stance and ideas at a higher language level."
+    )
+    highlights: list[PropositionHighlightOutput] = Field(
+        default_factory=list,
+        description="2-6 key upgrades whose upgraded_phrase appears verbatim in improved_response.",
+    )
+
+
 class ThinkingReflectionSection(BaseModel):
     overall_summary: str
     strongest_thinking_modes: list[str] = Field(default_factory=list)

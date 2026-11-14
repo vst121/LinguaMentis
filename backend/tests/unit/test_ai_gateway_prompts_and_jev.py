@@ -22,6 +22,7 @@ async def test_ai_gateway_uses_configured_capability_models(fake_llm_client):
     settings = Settings(
         database_url="sqlite+aiosqlite:///:memory:",
         gemini_api_key="test-key",
+        ai_model_blue="model-blue-v1",
         ai_model_hat="model-hat-v1",
         ai_model_thinking_evaluator="model-thinking-v1",
         ai_model_german_evaluator="model-german-v1",
@@ -66,6 +67,24 @@ async def test_ai_gateway_uses_configured_capability_models(fake_llm_client):
     )
     assert fake_llm_client.calls[-1]["model"] == "model-hat-v1"
     assert fake_llm_client.calls[-1]["temperature"] == 0.5
+
+    await gateway.generate_response_proposition(
+        contract=contract,
+        context=context,
+        challenge_question="Welche Risiken?",
+        user_response="Atommüll ist schwer zu lagern.",
+    )
+    assert fake_llm_client.calls[-1]["model"] == "model-hat-v1"
+    assert fake_llm_client.calls[-1]["temperature"] == 0.5
+
+    blue_contract = get_hat_contract(HatType.BLUE)
+    await gateway.generate_response_proposition(
+        contract=blue_contract,
+        context=context,
+        challenge_question="Wie fassen wir zusammen?",
+        user_response="Wir müssen alles abwägen.",
+    )
+    assert fake_llm_client.calls[-1]["model"] == "model-blue-v1"
 
     await gateway.generate_final_reflection(
         topic="Atomkraft in Europa",
@@ -112,6 +131,17 @@ def test_prompts_include_contract_context_and_previous_turns():
     assert "autofreie Sonntage" in user_prompt
     assert "Thinking score: 78" in user_prompt
     assert "BLACK" in user_prompt
+
+    prop_sys = prompts.response_proposition_system_prompt(contract)
+    prop_user = prompts.response_proposition_user_prompt(
+        context=context,
+        challenge_question="Welche neuen Ansätze gibt es?",
+        user_response="Man könnte Busse kostenlos machen.",
+    )
+    assert "STRICT ALIGNMENT" in prop_sys
+    assert "Green Hat" in prop_sys
+    assert "Mobilität der Zukunft" in prop_user
+    assert "Man könnte Busse kostenlos machen." in prop_user
 
 
 @pytest.mark.asyncio

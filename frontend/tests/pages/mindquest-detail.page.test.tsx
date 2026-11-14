@@ -105,6 +105,25 @@ describe("MindQuestPage interactive flow", () => {
         german_feedback: "Achte auf Artikel am Satzanfang.",
         encouragement: "Weiter so!",
       },
+      proposition: {
+        id: "prop-1",
+        improved_response:
+          "Ein gravierendes Risiko besteht darin, dass die Haltbarkeit von Lebensmitteln erheblich sinkt.",
+        highlights: [
+          {
+            upgraded_phrase: "Ein gravierendes Risiko besteht darin",
+            original_phrase: "",
+            explanation: "Stilistisch gehobene Argumentationseinleitung.",
+            category: "syntax",
+          },
+          {
+            upgraded_phrase: "erheblich sinkt",
+            original_phrase: "könnte sinken",
+            explanation: "Präziseres Adverb zur Verstärkung der Aussage.",
+            category: "vocabulary",
+          },
+        ],
+      },
       round_should_complete: true,
     });
 
@@ -148,6 +167,12 @@ describe("MindQuestPage interactive flow", () => {
     expect(screen.getByText("Die Haltbarkeit von Lebensmitteln")).toBeInTheDocument();
     expect(screen.getByText("86 / 100")).toBeInTheDocument();
     expect(screen.getAllByText("78 / 100").length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getByText("Sprach-Upgrade: Elaborierte Antwort")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Stilistisch gehobene Argumentationseinleitung.")
+    ).toBeInTheDocument();
 
     // 5. Click "Abschlussreflexion ansehen" to advance to reflection
     fireEvent.click(
