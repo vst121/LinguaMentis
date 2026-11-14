@@ -105,8 +105,8 @@ docker compose -f "$COMPOSE_FILE" up -d postgres
 wait_for_postgres
 
 if [ "$SKIP_SYNC" = false ]; then
-  log_step "Syncing backend dependencies (uv sync)..."
-  (cd "$BACKEND_DIR" && uv sync)
+  log_step "Syncing backend dependencies (uv sync --all-extras)..."
+  (cd "$BACKEND_DIR" && uv sync --all-extras)
 fi
 
 if [ ! -d "$FRONTEND_DIR/node_modules" ]; then

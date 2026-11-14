@@ -95,3 +95,84 @@ async def test_gemini_client_retries_transient_timeout():
 
     assert attempts == 2
     assert result == SampleOutput(message="recovered")
+
+
+@pytest.mark.asyncio
+async def test_gemini_client_ignores_thought_parts_and_strips_fences():
+    def handle_request(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {"thought": True, "text": "internal reasoning"},
+                                {"text": '```json\n{"message":"clean"}\n```'},
+                            ]
+                        }
+                    }
+                ]
+            },
+        )
+
+    http_client = httpx.AsyncClient(
+        transport=httpx.MockTransport(handle_request),
+        base_url="https://generativelanguage.googleapis.com",
+    )
+    client = GeminiClient(Settings(gemini_api_key="test-key"), http_client=http_client)
+
+    result = await client.generate_structured(
+        system_prompt="Be concise",
+        user_prompt="Say hello",
+        response_model=SampleOutput,
+        model="gemini-4-hydrogen",
+    )
+    await http_client.aclose()
+
+    assert result == SampleOutput(message="clean")
+
+
+@pytest.mark.asyncio
+async def test_gemini_client_falls_back_on_structured_format_failure():
+    called_models: list[str] = []
+
+    def handle_request(request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        if "gemini-4-hydrogen" in url:
+            called_models.append("gemini-4-hydrogen")
+            return httpx.Response(
+                200,
+                json={"candidates": [{"content": {"parts": [{"text": "not valid json"}]}}]},
+            )
+        called_models.append("gemini-2.5-flash")
+        return httpx.Response(
+            200,
+            json={
+                "candidates": [{"content": {"parts": [{"text": '{"message":"from-fallback"}'}]}}]
+            },
+        )
+
+    http_client = httpx.AsyncClient(
+        transport=httpx.MockTransport(handle_request),
+        base_url="https://generativelanguage.googleapis.com",
+    )
+    client = GeminiClient(
+        Settings(
+            gemini_api_key="test-key",
+            ai_max_retries=1,
+            ai_model_structured_fallback="gemini-2.5-flash",
+        ),
+        http_client=http_client,
+    )
+
+    result = await client.generate_structured(
+        system_prompt="Be concise",
+        user_prompt="Say hello",
+        response_model=SampleOutput,
+        model="gemini-4-hydrogen",
+    )
+    await http_client.aclose()
+
+    assert result == SampleOutput(message="from-fallback")
+    assert called_models == ["gemini-4-hydrogen", "gemini-4-hydrogen", "gemini-2.5-flash"]

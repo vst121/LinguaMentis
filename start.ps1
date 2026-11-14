@@ -216,14 +216,14 @@ if ((Invoke-QuietNative { docker info }) -ne 0) {
 Ensure-PostgresReady
 
 if (-not $SkipSync) {
-    Write-Step "Syncing backend dependencies (uv sync)..."
+    Write-Step "Syncing backend dependencies (uv sync --all-extras)..."
     Push-Location $BackendDir
     $prevPreference = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try {
-        uv sync
+        uv sync --all-extras
         if ($LASTEXITCODE -ne 0) {
-            throw "'uv sync' failed with exit code $LASTEXITCODE."
+            throw "'uv sync --all-extras' failed with exit code $LASTEXITCODE."
         }
     } finally {
         $ErrorActionPreference = $prevPreference

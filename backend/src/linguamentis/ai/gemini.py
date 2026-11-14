@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from typing import TypeVar
 from urllib.parse import quote
 
@@ -19,6 +20,24 @@ logger = get_logger(__name__)
 T = TypeVar("T", bound=BaseModel)
 
 _RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
+_CODE_FENCE_RE = re.compile(r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.DOTALL)
+
+
+def _clean_json_text(raw: str) -> str:
+    match = _CODE_FENCE_RE.match(raw)
+    return match.group(1).strip() if match else raw.strip()
+
+
+def _extract_response_text(data: dict) -> str:
+    parts = data["candidates"][0]["content"]["parts"]
+    non_thought_texts = [
+        part["text"]
+        for part in parts
+        if isinstance(part, dict) and not part.get("thought") and isinstance(part.get("text"), str)
+    ]
+    if non_thought_texts:
+        return _clean_json_text("\n".join(non_thought_texts))
+    return _clean_json_text(parts[0]["text"])
 
 
 class GeminiClient:
@@ -46,6 +65,45 @@ class GeminiClient:
         response_model: type[T],
         model: str,
         temperature: float = 0.4,
+    ) -> T:
+        try:
+            return await self._generate_with_model(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                response_model=response_model,
+                model=model,
+                temperature=temperature,
+            )
+        except (StructuredOutputParsingError, AIProviderError) as exc:
+            fallback_model = self._settings.ai_model_structured_fallback.strip()
+            if not fallback_model or fallback_model == model:
+                raise
+            if isinstance(exc, AIProviderError) and not exc.is_format_error:
+                raise
+
+            logger.warning(
+                "ai.structured_output.fallback_triggered",
+                primary_model=model,
+                fallback_model=fallback_model,
+                response_schema=response_model.__name__,
+                error=str(exc),
+            )
+            return await self._generate_with_model(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                response_model=response_model,
+                model=fallback_model,
+                temperature=temperature,
+            )
+
+    async def _generate_with_model(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+        response_model: type[T],
+        model: str,
+        temperature: float,
     ) -> T:
         last_error: ValidationError | None = None
         contents = [{"role": "user", "parts": [{"text": user_prompt}]}]
@@ -134,7 +192,10 @@ class GeminiClient:
                     )
                     await asyncio.sleep(0.5 * (attempt + 1))
                     continue
-                raise AIProviderError(f"Gemini request failed: {exc}") from exc
+                is_format = status_code == 400
+                raise AIProviderError(
+                    f"Gemini request failed: {exc}", is_format_error=is_format
+                ) from exc
             except (httpx.TimeoutException, httpx.NetworkError) as exc:
                 last_exc = exc
                 if attempt < self._settings.ai_max_retries:
@@ -156,8 +217,9 @@ class GeminiClient:
         data: dict = {}
         try:
             data = response.json()
-            return data["candidates"][0]["content"]["parts"][0]["text"]
+            return _extract_response_text(data)
         except (ValueError, KeyError, IndexError, TypeError) as exc:
             raise AIProviderError(
-                f"Unexpected Gemini response shape: {json.dumps(data)[:500]}"
+                f"Unexpected Gemini response shape: {json.dumps(data)[:500]}",
+                is_format_error=True,
             ) from exc

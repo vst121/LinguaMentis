@@ -54,6 +54,10 @@ class AIGatewayError(LinguaMentisError):
 class AIProviderError(AIGatewayError):
     """Raised when the upstream LLM provider fails or times out."""
 
+    def __init__(self, message: str, *, is_format_error: bool = False) -> None:
+        self.is_format_error = is_format_error
+        super().__init__(message)
+
 
 class StructuredOutputParsingError(AIGatewayError):
     """Raised when the LLM response cannot be parsed into the expected schema."""
