@@ -176,3 +176,30 @@ async def test_gemini_client_falls_back_on_structured_format_failure():
 
     assert result == SampleOutput(message="from-fallback")
     assert called_models == ["gemini-4-hydrogen", "gemini-4-hydrogen", "gemini-2.5-flash"]
+
+
+@pytest.mark.asyncio
+async def test_gemini_client_raises_ai_provider_error_on_exhausted_http_errors():
+    from linguamentis.shared.exceptions import AIProviderError
+
+    def handle_request(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(503, json={"error": {"message": "Service unavailable"}})
+
+    http_client = httpx.AsyncClient(
+        transport=httpx.MockTransport(handle_request),
+        base_url="https://generativelanguage.googleapis.com",
+    )
+    client = GeminiClient(
+        Settings(gemini_api_key="test-key", ai_max_retries=0),
+        http_client=http_client,
+    )
+
+    with pytest.raises(AIProviderError):
+        await client.generate_structured(
+            system_prompt="Be concise",
+            user_prompt="Say hello",
+            response_model=SampleOutput,
+            model="gemini-2.5-flash",
+        )
+    await http_client.aclose()
+

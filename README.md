@@ -331,38 +331,48 @@ Once this flow works end-to-end, the remaining hats can be added.
 
 ## Running Locally
 
-### Backend
+### Option A: Dev Container (Isolated in Docker)
+
+1. Open the project in VS Code and select **Dev Containers: Reopen in Container** (builds the `app` and `postgres` containers and automatically installs backend and frontend dependencies).
+2. Ensure `GEMINI_API_KEY` is set in `backend/.env` (`DATABASE_URL` points to `postgres:5432` inside the container network).
+3. Start Backend and Frontend inside the container terminal:
 
 ```bash
+make dev-container
+# or: ./scripts/start-container.sh
+```
 
+### Option B: Host Setup
+
+```bash
+make dev
+# or: ./scripts/start.sh
+```
+
+Or start each service manually:
+
+#### Backend
+
+```bash
 cd backend
-
 uv sync
-
 uv run uvicorn linguamentis.main:app --reload
-
 ```
 
-### Frontend
+#### Frontend
 
 ```bash
-
 cd frontend
-
-npm install
-
-npm run dev
-
+pnpm install
+pnpm run dev
 ```
 
-### Database
+#### Database
 
 PostgreSQL can be started with:
 
 ```bash
-
 docker compose up -d postgres
-
 ```
 
 ---
@@ -405,28 +415,14 @@ To use LinguaMentis, the end user needs:
 Create a `.env` file for the backend.
 
 ```env
-
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5438/linguamentis
-
 GEMINI_API_KEY=your-gemini-api-key
 
+AI_MODEL_BLUE=gemini-2.5-flash
 AI_MODEL_HAT=gemini-2.5-flash
 AI_MODEL_THINKING_EVALUATOR=gemini-2.5-flash
 AI_MODEL_GERMAN_EVALUATOR=gemini-2.5-flash
 AI_MODEL_REFLECTION=gemini-2.5-flash
-
-
-
-AI_MODEL_BLUE=...
-
-AI_MODEL_HAT=...
-
-AI_MODEL_THINKING_EVALUATOR=...
-
-AI_MODEL_GERMAN_EVALUATOR=...
-
-AI_MODEL_REFLECTION=...
-
 ```
 
 The Gemini API key is **server-side only** and must never be exposed to the frontend. Model
@@ -434,27 +430,23 @@ settings must contain Gemini model IDs, not API keys.
 
 ---
 
-## Testing
+## Testing & Quality Checks
 
-Run unit and integration tests:
+Run all unit, component, and integration tests across Backend and Frontend:
 
 ```bash
-
-cd backend
-
-uv run pytest
-
+make test
 ```
 
-AI evaluation tests are kept separately:
+Individual test and lint targets:
 
-```text
-
-backend/tests/evaluation/
-
+```bash
+make test-backend   # Backend unit, integration & offline evaluation dataset tests (pytest)
+make test-frontend  # Frontend unit, component & page tests (Vitest + React Testing Library)
+make test-e2e       # End-to-end browser tests across Next.js & FastAPI (Playwright)
+make test-eval      # Opt-in live Gemini evaluation regression harness
+make lint           # Backend (ruff) + Frontend (ESLint & TypeScript) checks
 ```
-
-These will eventually provide a regression harness for comparing prompts, models, and evaluator quality.
 
 ---
 

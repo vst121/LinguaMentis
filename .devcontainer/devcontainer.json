@@ -1,0 +1,42 @@
+{
+  "name": "LinguaMentis Dev Container",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "vscode",
+  "forwardPorts": [
+    3000,
+    8000
+  ],
+  "portsAttributes": {
+    "3000": {
+      "label": "Frontend (Next.js)",
+      "onAutoForward": "notify"
+    },
+    "8000": {
+      "label": "Backend (FastAPI)",
+      "onAutoForward": "silent"
+    }
+  },
+  "initializeCommand": "mkdir -p backend/.venv frontend/node_modules",
+  "postCreateCommand": "sudo chown -R vscode:vscode backend/.venv frontend/node_modules && ([ -f backend/.env ] || (cp backend/.env.example backend/.env && sed -i 's|@localhost:5438/|@postgres:5432/|g' backend/.env)) && (cd backend && uv sync --extra dev) && (cd frontend && pnpm install)",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "dbaeumer.vscode-eslint",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/workspace/backend/.venv/bin/python",
+        "python.analysis.extraPaths": [
+          "/workspace/backend/src"
+        ],
+        "eslint.workingDirectories": [
+          "frontend"
+        ]
+      }
+    }
+  }
+}

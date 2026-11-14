@@ -13,7 +13,8 @@ if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction Sile
 $RunningOnWindows = if ($PSVersionTable.PSEdition -eq "Core") { $IsWindows } else { $true }
 $PathSep = [System.IO.Path]::PathSeparator
 
-$RootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ScriptsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$RootDir = Split-Path -Parent $ScriptsDir
 $BackendDir = Join-Path $RootDir "backend"
 $FrontendDir = Join-Path $RootDir "frontend"
 $ComposeFile = Join-Path $RootDir "docker-compose.yml"

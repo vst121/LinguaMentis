@@ -1,0 +1,39 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+      - linguamentis-backend-venv:/workspace/backend/.venv
+      - linguamentis-frontend-node-modules:/workspace/frontend/node_modules
+    environment:
+      UV_LINK_MODE: copy
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: linguamentis
+      PGDATABASE: linguamentis
+    command: sleep infinity
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: linguamentis
+      POSTGRES_USER: linguamentis
+      POSTGRES_PASSWORD: linguamentis
+    volumes:
+      - linguamentis-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U linguamentis -d linguamentis"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  linguamentis-postgres-data:
+  linguamentis-backend-venv:
+  linguamentis-frontend-node-modules:

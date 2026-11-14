@@ -1,0 +1,154 @@
+"""Unit tests for TurnService and MindQuestService multi-turn & multi-hat logic."""
+
+from __future__ import annotations
+
+from uuid import uuid4
+
+import pytest
+
+from linguamentis.ai.models import Evidence, ThinkingEvaluationOutput
+from linguamentis.application.evaluation.service import EvaluationService
+from linguamentis.application.mindquests.prefetch import ChallengePrefetchCache
+from linguamentis.application.mindquests.service import MindQuestService
+from linguamentis.application.turns.service import TurnService
+from linguamentis.domain.hats.types import HatType
+from linguamentis.domain.mindquests.enums import LanguageLevel, MindQuestStatus
+from linguamentis.domain.users.entities import User
+from linguamentis.infrastructure.database.repositories import (
+    SQLAlchemyEvaluationRepository,
+    SQLAlchemyMindQuestRepository,
+    SQLAlchemyUserActivityRepository,
+    SQLAlchemyUserRepository,
+)
+from linguamentis.shared.exceptions import DomainError, NotFoundError
+
+
+def _low_thinking_output() -> ThinkingEvaluationOutput:
+    return ThinkingEvaluationOutput(
+        hat_adherence=55,
+        relevance=60,
+        reasoning=50,
+        depth=50,
+        specificity=55,
+        evidence=[
+            Evidence(
+                dimension="depth",
+                observation="Very brief statement.",
+                impact="Needs deeper risk exploration.",
+            )
+        ],
+        strengths=["On topic"],
+        weaknesses=["Too shallow"],
+        recommendations=["Give a concrete example"],
+    )
+
+
+def _build_services(db_session, fake_gateway, agent_registry, prefetch_cache=None):
+    user_repo = SQLAlchemyUserRepository(db_session)
+    mq_repo = SQLAlchemyMindQuestRepository(db_session)
+    eval_repo = SQLAlchemyEvaluationRepository(db_session)
+    act_repo = SQLAlchemyUserActivityRepository(db_session)
+    eval_service = EvaluationService(
+        gateway=fake_gateway, evaluation_repo=eval_repo, activity_repo=act_repo
+    )
+    turn_service = TurnService(
+        mindquest_repo=mq_repo,
+        evaluation_service=eval_service,
+        agent_registry=agent_registry,
+        activity_repo=act_repo,
+        prefetch_cache=prefetch_cache,
+    )
+    mq_service = MindQuestService(
+        mindquest_repo=mq_repo,
+        evaluation_repo=eval_repo,
+        turn_service=turn_service,
+        agent_registry=agent_registry,
+        activity_repo=act_repo,
+        prefetch_cache=prefetch_cache,
+    )
+    return user_repo, mq_service
+
+
+@pytest.mark.asyncio
+async def test_multi_turn_hat_round_and_multi_hat_progression(
+    db_session, fake_llm_client, fake_gateway, agent_registry
+):
+    prefetch_cache = ChallengePrefetchCache()
+    user_repo, mq_service = _build_services(
+        db_session, fake_gateway, agent_registry, prefetch_cache
+    )
+    user_id = uuid4()
+    await user_repo.save(User(id=user_id, display_name="Learner"))
+
+    mq = await mq_service.create_mindquest(
+        user_id=user_id,
+        topic="KI in der Medizin",
+        target_level=LanguageLevel.B2,
+        planned_hats=(HatType.BLACK, HatType.YELLOW),
+    )
+    start_res = await mq_service.start_mindquest(mq.id)
+    assert start_res.active_hat == HatType.BLACK
+    assert start_res.initial_turn.turn_number == 1
+
+    # Turn 1 gets a low thinking score (< 75) -> follow-up Turn 2 is created
+    fake_llm_client.queue_response(ThinkingEvaluationOutput, _low_thinking_output())
+    sub1 = await mq_service.submit_response(
+        mindquest_id=mq.id, user_response="Es könnte Fehler geben."
+    )
+    assert sub1.thinking_evaluation.score < 75
+    assert sub1.round_should_complete is False
+    assert sub1.next_challenge is not None
+
+    updated_mq = await mq_service.get_mindquest(mq.id)
+    assert len(updated_mq.hat_rounds[0].turns) == 2
+
+    # Turn 2 gets default score (>= 75) -> round completes
+    sub2 = await mq_service.submit_response(
+        mindquest_id=mq.id,
+        user_response="Verzerrte Trainingsdaten können zu Fehldiagnosen führen.",
+    )
+    assert sub2.round_should_complete is True
+    assert sub2.next_challenge is None
+
+    # Advance to next hat (YELLOW)
+    adv1 = await mq_service.advance_mindquest(mq.id)
+    assert adv1.is_completed is False
+    assert adv1.next_hat == HatType.YELLOW
+    assert adv1.initial_turn is not None
+
+    # Complete YELLOW hat and advance to final reflection
+    await mq_service.submit_response(
+        mindquest_id=mq.id,
+        user_response="Früherkennung wird durch Mustererkennung deutlich schneller.",
+    )
+    adv2 = await mq_service.advance_mindquest(mq.id)
+    assert adv2.is_completed is True
+    assert adv2.final_reflection is not None
+    assert adv2.mindquest.status == MindQuestStatus.COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_mindquest_and_turn_service_error_branches(
+    db_session, fake_gateway, agent_registry
+):
+    user_repo, mq_service = _build_services(db_session, fake_gateway, agent_registry)
+    user_id = uuid4()
+    await user_repo.save(User(id=user_id, display_name="Learner"))
+
+    with pytest.raises(NotFoundError):
+        await mq_service.get_mindquest(uuid4())
+
+    mq = await mq_service.create_mindquest(
+        user_id=user_id,
+        topic="Test Thema",
+        target_level=LanguageLevel.B2,
+        planned_hats=(HatType.BLACK,),
+    )
+
+    with pytest.raises(DomainError, match="Expected HAT_ACTIVE"):
+        await mq_service.submit_response(
+            mindquest_id=mq.id, user_response="Antwort vor dem Start"
+        )
+
+    with pytest.raises(DomainError):
+        await mq_service.advance_mindquest(mq.id)
