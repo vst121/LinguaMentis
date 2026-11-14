@@ -16,7 +16,7 @@ from linguamentis.application.evaluation.service import EvaluationService
 from linguamentis.application.turns.service import TurnService
 from linguamentis.domain.hats.types import HatType
 from linguamentis.domain.mindquests.entities import MindQuest, Turn
-from linguamentis.domain.mindquests.enums import LanguageLevel
+from linguamentis.domain.mindquests.enums import LanguageLevel, MindQuestMode
 from linguamentis.domain.mindquests.value_objects import MindQuestContext
 from linguamentis.domain.users.entities import User
 from linguamentis.infrastructure.database.repositories import (
@@ -113,7 +113,13 @@ async def test_turn_service_runs_feedback_and_follow_up_challenge_in_parallel(
     user_id = uuid4()
     await user_repo.save(User(id=user_id, display_name="Speed Learner"))
 
-    mq = MindQuest(id=uuid4(), user_id=user_id, topic="Speed Test", target_level=LanguageLevel.B2)
+    mq = MindQuest(
+        id=uuid4(),
+        user_id=user_id,
+        topic="Speed Test",
+        target_level=LanguageLevel.B2,
+        mode=MindQuestMode.ARGUE,
+    )
     mq.select_topic("Speed Test", (HatType.BLACK,))
     mq.begin()
     r = mq.activate_hat(HatType.BLACK)
