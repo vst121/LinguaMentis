@@ -66,7 +66,7 @@ export default function MindQuestPage() {
     }
   }
   async function send() {
-    if (!draft.trim()) return;
+    if (busy || !draft.trim()) return;
     setBusy(true);
     setError("");
     try {
@@ -76,6 +76,17 @@ export default function MindQuestPage() {
       setError("Deine Antwort konnte nicht gesendet werden.");
     } finally {
       setBusy(false);
+    }
+  }
+  function handleResponseSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    void send();
+  }
+  function handleResponseKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    // Submit on Enter; allow newline only when Shift+Enter is pressed
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault();
+      void send();
     }
   }
   async function nextStep() {
@@ -190,25 +201,28 @@ export default function MindQuestPage() {
                 title="Deine Antwort"
                 description="Formuliere deine Gedanken auf Deutsch. Qualität ist wichtiger als Länge."
               >
-                <textarea
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  placeholder="Schreibe deine Antwort hier …"
-                  className="min-h-44 w-full rounded-lg border border-slate-300 p-3 leading-7 outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-                  <span>
-                    {draft.trim().split(/\s+/).filter(Boolean).length} Wörter
-                  </span>
-                  <Button
-                    onClick={send}
-                    disabled={!draft.trim()}
-                    isLoading={busy}
-                  >
-                    <Send className="mr-2" size={16} />
-                    Antwort auswerten
-                  </Button>
-                </div>
+                <form onSubmit={handleResponseSubmit}>
+                  <textarea
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={handleResponseKeyDown}
+                    placeholder="Schreibe deine Antwort hier …"
+                    className="min-h-44 w-full rounded-lg border border-slate-300 p-3 leading-7 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                    <span>
+                      {draft.trim().split(/\s+/).filter(Boolean).length} Wörter
+                    </span>
+                    <Button
+                      type="submit"
+                      disabled={!draft.trim()}
+                      isLoading={busy}
+                    >
+                      <Send className="mr-2" size={16} />
+                      Antwort auswerten
+                    </Button>
+                  </div>
+                </form>
               </Card>
             ) : (
               <Card

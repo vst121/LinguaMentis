@@ -26,7 +26,7 @@ export default function MindQuestsPage() {
   }, []);
   async function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!topic.trim()) return;
+    if (creating || !topic.trim()) return;
     setCreating(true);
     setError("");
     try {
@@ -41,6 +41,17 @@ export default function MindQuestsPage() {
       );
     } finally {
       setCreating(false);
+    }
+  }
+  function handleFormKeyDown(e: React.KeyboardEvent<HTMLFormElement>) {
+    // Submit on Enter across all form inputs; do not submit when Shift+Enter is pressed
+    if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+      if (e.shiftKey) {
+        e.preventDefault();
+        return;
+      }
+      e.preventDefault();
+      e.currentTarget.requestSubmit();
     }
   }
   return (
@@ -60,7 +71,11 @@ export default function MindQuestsPage() {
           title="Neue MindQuest"
           description="Starte mit einem Thema, das dich wirklich interessiert."
         >
-          <form onSubmit={submit} className="space-y-4">
+          <form
+            onSubmit={submit}
+            onKeyDown={handleFormKeyDown}
+            className="space-y-4"
+          >
             <label className="block text-sm font-medium">
               Thema
               <input
