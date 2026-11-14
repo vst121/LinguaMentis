@@ -156,6 +156,12 @@ describe("Frontend pages (Home, MindQuests list, Reflection, Learning, History)"
     expect(screen.getByText("79")).toBeInTheDocument();
     expect(screen.getByText("Argumentation")).toBeInTheDocument();
     expect(screen.getByText("Grammatik")).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Radar-Diagramm Denkfähigkeiten" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Radar-Diagramm Deutsch" }),
+    ).toBeInTheDocument();
   });
 
   it("HistoryPage renders completed MindQuests and activity timeline", async () => {

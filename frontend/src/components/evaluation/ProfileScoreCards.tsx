@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
+import { ScoreRadarChart } from "@/components/evaluation/ScoreRadarChart";
 import { DimensionScore } from "@/types/learning";
 
 const DIMENSION_LABELS: Record<string, string> = {
@@ -19,32 +20,6 @@ const DIMENSION_LABELS: Record<string, string> = {
 
 export function formatDimensionName(name: string): string {
   return DIMENSION_LABELS[name] ?? name.replaceAll("_", " ");
-}
-
-export function ScoreBar({
-  label,
-  value,
-  barClassName = "bg-blue-600",
-}: {
-  label: string;
-  value: number;
-  barClassName?: string;
-}) {
-  const clamped = Math.max(0, Math.min(100, value));
-  return (
-    <div>
-      <div className="mb-1 flex justify-between text-sm">
-        <span>{label}</span>
-        <strong>{value} / 100</strong>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-        <div
-          className={`h-full rounded-full ${barClassName}`}
-          style={{ width: `${clamped}%` }}
-        />
-      </div>
-    </div>
-  );
 }
 
 interface ProfileMetricsSectionProps {
@@ -125,16 +100,15 @@ export function ProfileMetricsSection({
           bodyClassName="flex-1 space-y-4 md:overflow-y-auto"
         >
           {thinkingDimensions.length > 0 && (
-            <div className="space-y-3.5">
-              {thinkingDimensions.map((d) => (
-                <ScoreBar
-                  key={d.name}
-                  label={formatDimensionName(d.name)}
-                  value={d.score}
-                  barClassName="bg-blue-600"
-                />
-              ))}
-            </div>
+            <ScoreRadarChart
+              accent="blue"
+              ariaLabel="Radar-Diagramm Denkfähigkeiten"
+              dimensions={thinkingDimensions.map((d) => ({
+                key: d.name,
+                label: formatDimensionName(d.name),
+                score: d.score,
+              }))}
+            />
           )}
           {thinkingExtra}
         </Card>
@@ -150,16 +124,15 @@ export function ProfileMetricsSection({
           bodyClassName="flex-1 space-y-4 md:overflow-y-auto"
         >
           {germanDimensions.length > 0 && (
-            <div className="space-y-3.5">
-              {germanDimensions.map((d) => (
-                <ScoreBar
-                  key={d.name}
-                  label={formatDimensionName(d.name)}
-                  value={d.score}
-                  barClassName="bg-emerald-600"
-                />
-              ))}
-            </div>
+            <ScoreRadarChart
+              accent="emerald"
+              ariaLabel="Radar-Diagramm Deutsch"
+              dimensions={germanDimensions.map((d) => ({
+                key: d.name,
+                label: formatDimensionName(d.name),
+                score: d.score,
+              }))}
+            />
           )}
           {germanExtra}
         </Card>

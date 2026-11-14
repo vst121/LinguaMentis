@@ -167,6 +167,14 @@ describe("MindQuestPage interactive flow", () => {
     expect(screen.getByText("86 / 100")).toBeInTheDocument();
     expect(screen.getAllByText("78 / 100").length).toBeGreaterThanOrEqual(1);
     expect(
+      screen.getByRole("img", { name: "Radar-Diagramm Denken" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Radar-Diagramm Deutsch" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Relevanz")).toBeInTheDocument();
+    expect(screen.getByText("Niveau-Passung")).toBeInTheDocument();
+    expect(
       screen.getByText("Sprach-Upgrade: Elaborierte Antwort")
     ).toBeInTheDocument();
     expect(

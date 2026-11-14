@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { ArrowRight, Send } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
-import { ScoreBar } from "@/components/evaluation/ProfileScoreCards";
+import { ScoreRadarChart } from "@/components/evaluation/ScoreRadarChart";
 import { ResponsePropositionCard } from "@/components/evaluation/ResponsePropositionCard";
 import { HatIndicator } from "@/components/hats/HatIndicator";
 import { Button } from "@/components/ui/Button";
@@ -414,62 +414,86 @@ export default function MindQuestPage() {
               ) : (
                 <div className="grid gap-4 md:flex-1 md:min-h-0 md:grid-cols-2 md:auto-rows-max md:overflow-y-auto md:pr-1">
                   <Card title="Denken" bodyClassName="pt-3">
-                    <ScoreBar
-                      label="Gesamt"
-                      value={feedback.thinking_evaluation.score}
-                      barClassName="bg-blue-600"
-                    />
-                    <div className="mt-4 space-y-2.5">
-                      <ScoreBar
-                        label="Perspektiven-Fokus"
-                        value={feedback.thinking_evaluation.hat_adherence}
-                        barClassName="bg-blue-600"
-                      />
-                      <ScoreBar
-                        label="Argumentation"
-                        value={feedback.thinking_evaluation.reasoning}
-                        barClassName="bg-blue-600"
-                      />
-                      <ScoreBar
-                        label="Tiefe"
-                        value={feedback.thinking_evaluation.depth}
-                        barClassName="bg-blue-600"
-                      />
-                      <ScoreBar
-                        label="Spezifität"
-                        value={feedback.thinking_evaluation.specificity}
-                        barClassName="bg-blue-600"
-                      />
+                    <div className="mb-2 flex items-baseline justify-between">
+                      <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Gesamt
+                      </span>
+                      <strong className="text-lg font-bold text-blue-700">
+                        {feedback.thinking_evaluation.score} / 100
+                      </strong>
                     </div>
+                    <ScoreRadarChart
+                      accent="blue"
+                      ariaLabel="Radar-Diagramm Denken"
+                      dimensions={[
+                        {
+                          key: "hat_adherence",
+                          label: "Perspektiven-Fokus",
+                          score: feedback.thinking_evaluation.hat_adherence,
+                        },
+                        {
+                          key: "relevance",
+                          label: "Relevanz",
+                          score: feedback.thinking_evaluation.relevance,
+                        },
+                        {
+                          key: "reasoning",
+                          label: "Argumentation",
+                          score: feedback.thinking_evaluation.reasoning,
+                        },
+                        {
+                          key: "depth",
+                          label: "Tiefe",
+                          score: feedback.thinking_evaluation.depth,
+                        },
+                        {
+                          key: "specificity",
+                          label: "Spezifität",
+                          score: feedback.thinking_evaluation.specificity,
+                        },
+                      ]}
+                    />
                   </Card>
                   <Card title="Deutsch" bodyClassName="pt-3">
-                    <ScoreBar
-                      label="Gesamt"
-                      value={feedback.german_evaluation.score}
-                      barClassName="bg-emerald-600"
-                    />
-                    <div className="mt-4 space-y-2.5">
-                      <ScoreBar
-                        label="Grammatik"
-                        value={feedback.german_evaluation.grammar}
-                        barClassName="bg-emerald-600"
-                      />
-                      <ScoreBar
-                        label="Wortschatz"
-                        value={feedback.german_evaluation.vocabulary}
-                        barClassName="bg-emerald-600"
-                      />
-                      <ScoreBar
-                        label="Satzbau"
-                        value={feedback.german_evaluation.sentence_structure}
-                        barClassName="bg-emerald-600"
-                      />
-                      <ScoreBar
-                        label="Natürlichkeit"
-                        value={feedback.german_evaluation.naturalness}
-                        barClassName="bg-emerald-600"
-                      />
+                    <div className="mb-2 flex items-baseline justify-between">
+                      <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Gesamt
+                      </span>
+                      <strong className="text-lg font-bold text-emerald-700">
+                        {feedback.german_evaluation.score} / 100
+                      </strong>
                     </div>
+                    <ScoreRadarChart
+                      accent="emerald"
+                      ariaLabel="Radar-Diagramm Deutsch"
+                      dimensions={[
+                        {
+                          key: "grammar",
+                          label: "Grammatik",
+                          score: feedback.german_evaluation.grammar,
+                        },
+                        {
+                          key: "vocabulary",
+                          label: "Wortschatz",
+                          score: feedback.german_evaluation.vocabulary,
+                        },
+                        {
+                          key: "sentence_structure",
+                          label: "Satzbau",
+                          score: feedback.german_evaluation.sentence_structure,
+                        },
+                        {
+                          key: "naturalness",
+                          label: "Natürlichkeit",
+                          score: feedback.german_evaluation.naturalness,
+                        },
+                        {
+                          key: "level_appropriateness",
+                          label: "Niveau-Passung",
+                          score: feedback.german_evaluation.level_appropriateness,
+                        },
+                      ]}
+                    />
                   </Card>
                   {feedback.proposition && (
                     <ResponsePropositionCard

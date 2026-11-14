@@ -9,6 +9,7 @@ import {
   ResponsePropositionCard,
   buildHighlightedSegments,
 } from "@/components/evaluation/ResponsePropositionCard";
+import { ScoreRadarChart } from "@/components/evaluation/ScoreRadarChart";
 import { AppShell } from "@/components/layout/AppShell";
 import { HAT_METADATA, HatType } from "@/types/hat";
 import { mockUsePathname } from "../setup";
@@ -133,5 +134,27 @@ describe("UI and layout components", () => {
     expect(screen.getByText("Satzbau")).toBeInTheDocument();
     expect(screen.getByText("Wortschatz")).toBeInTheDocument();
     expect(screen.getByText("Gehobene Einleitung für ein Gegenargument.")).toBeInTheDocument();
+  });
+
+  it("renders ScoreRadarChart SVG polygon and all dimension labels/scores", () => {
+    const { container } = render(
+      <ScoreRadarChart
+        accent="blue"
+        ariaLabel="Radar-Diagramm Test"
+        dimensions={[
+          { key: "hat_adherence", label: "Perspektiven-Fokus", score: 90 },
+          { key: "relevance", label: "Relevanz", score: 85 },
+          { key: "reasoning", label: "Argumentation", score: 88 },
+          { key: "depth", label: "Tiefe", score: 80 },
+          { key: "specificity", label: "Spezifität", score: 84 },
+        ]}
+      />,
+    );
+    expect(screen.getByRole("img", { name: "Radar-Diagramm Test" })).toBeInTheDocument();
+    expect(container.querySelectorAll("circle")).toHaveLength(5);
+    expect(screen.getByText("Perspektiven-Fokus")).toBeInTheDocument();
+    expect(screen.getByText("Relevanz")).toBeInTheDocument();
+    expect(screen.getByText("90 / 100")).toBeInTheDocument();
+    expect(screen.getByText("85 / 100")).toBeInTheDocument();
   });
 });
