@@ -54,6 +54,7 @@ export default function MindQuestPage() {
   }, [id]);
   async function begin() {
     setBusy(true);
+    setError("");
     try {
       const result = await startMindQuest(id);
       setQuest(result.mindquest);
@@ -67,6 +68,7 @@ export default function MindQuestPage() {
   async function send() {
     if (!draft.trim()) return;
     setBusy(true);
+    setError("");
     try {
       setFeedback(await submitResponse(id, { response: draft.trim() }));
       setDraft("");
@@ -76,9 +78,22 @@ export default function MindQuestPage() {
       setBusy(false);
     }
   }
-  async function advance() {
+  async function nextStep() {
     setBusy(true);
+    setError("");
     try {
+      // If the current hat round needs another turn, load the follow-up turn without skipping the hat
+      if (feedback && !feedback.round_should_complete) {
+        const refreshed = await getMindQuest(id);
+        setQuest(refreshed);
+        const activeRound = refreshed.hat_rounds.find(
+          (r) => r.hat === refreshed.current_hat,
+        );
+        setTurn(activeRound?.turns.at(-1) ?? null);
+        setFeedback(null);
+        return;
+      }
+
       const result = await advanceMindQuest(id);
       setQuest(result.mindquest);
       setFeedback(null);
@@ -135,7 +150,18 @@ export default function MindQuestPage() {
           {error}
         </p>
       )}
-      {!turn ? (
+      {quest.status === "COMPLETED" ? (
+        <Card
+          title="MindQuest abgeschlossen"
+          description="Alle geplanten Perspektiven wurden beendet."
+        >
+          <Link href={`/mindquests/${id}/reflection`}>
+            <Button>
+              Abschlussreflexion ansehen <ArrowRight className="ml-2" size={16} />
+            </Button>
+          </Link>
+        </Card>
+      ) : !turn ? (
         <Card
           title="Bereit für deine erste Perspektive"
           description="Du bekommst eine fokussierte Frage und Feedback zu Denken und Sprache."
@@ -195,7 +221,7 @@ export default function MindQuestPage() {
                 <p className="mt-3 rounded-lg bg-emerald-50 p-4 text-sm leading-6 text-slate-700">
                   {feedback.feedback.german_feedback}
                 </p>
-                <Button className="mt-5" onClick={advance} isLoading={busy}>
+                <Button className="mt-5" onClick={nextStep} isLoading={busy}>
                   {feedback.round_should_complete
                     ? "Nächste Perspektive"
                     : "Nächste Herausforderung"}

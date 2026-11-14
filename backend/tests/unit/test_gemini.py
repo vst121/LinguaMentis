@@ -57,3 +57,41 @@ async def test_gemini_client_uses_native_api_and_parses_structured_output():
         ["type"]
         == "string"
     )
+
+
+@pytest.mark.asyncio
+async def test_gemini_client_retries_transient_timeout():
+    attempts = 0
+
+    def handle_request(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise httpx.ReadTimeout("timed out", request=request)
+        return httpx.Response(
+            200,
+            json={
+                "candidates": [
+                    {"content": {"parts": [{"text": '{"message":"recovered"}'}]}}
+                ]
+            },
+        )
+
+    http_client = httpx.AsyncClient(
+        transport=httpx.MockTransport(handle_request),
+        base_url="https://generativelanguage.googleapis.com",
+    )
+    client = GeminiClient(
+        Settings(gemini_api_key="test-key", ai_max_retries=1), http_client=http_client
+    )
+
+    result = await client.generate_structured(
+        system_prompt="Be concise",
+        user_prompt="Say hello",
+        response_model=SampleOutput,
+        model="gemini-test",
+    )
+    await http_client.aclose()
+
+    assert attempts == 2
+    assert result == SampleOutput(message="recovered")

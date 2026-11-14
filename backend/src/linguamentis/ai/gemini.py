@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import TypeVar
 from urllib.parse import quote
@@ -16,6 +17,8 @@ from linguamentis.shared.logging import get_logger
 logger = get_logger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
+
+_RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
 
 class GeminiClient:
@@ -105,15 +108,50 @@ class GeminiClient:
             },
         }
 
-        try:
-            response = await self._http.post(
-                f"/v1beta/models/{quote(model, safe='')}:generateContent",
-                headers={"x-goog-api-key": self._settings.gemini_api_key},
-                json=payload,
-            )
-            response.raise_for_status()
-        except httpx.HTTPError as exc:
-            raise AIProviderError(f"Gemini request failed: {exc}") from exc
+        last_exc: Exception | None = None
+        response: httpx.Response | None = None
+        for attempt in range(self._settings.ai_max_retries + 1):
+            try:
+                response = await self._http.post(
+                    f"/v1beta/models/{quote(model, safe='')}:generateContent",
+                    headers={"x-goog-api-key": self._settings.gemini_api_key},
+                    json=payload,
+                )
+                response.raise_for_status()
+                break
+            except httpx.HTTPStatusError as exc:
+                last_exc = exc
+                status_code = exc.response.status_code
+                if (
+                    status_code in _RETRYABLE_STATUS_CODES
+                    and attempt < self._settings.ai_max_retries
+                ):
+                    logger.warning(
+                        "ai.gemini.retryable_http_error",
+                        model=model,
+                        status_code=status_code,
+                        attempt=attempt,
+                    )
+                    await asyncio.sleep(0.5 * (attempt + 1))
+                    continue
+                raise AIProviderError(f"Gemini request failed: {exc}") from exc
+            except (httpx.TimeoutException, httpx.NetworkError) as exc:
+                last_exc = exc
+                if attempt < self._settings.ai_max_retries:
+                    logger.warning(
+                        "ai.gemini.retryable_transport_error",
+                        model=model,
+                        attempt=attempt,
+                        error=str(exc),
+                    )
+                    await asyncio.sleep(0.5 * (attempt + 1))
+                    continue
+                raise AIProviderError(f"Gemini request failed: {exc}") from exc
+            except httpx.HTTPError as exc:
+                raise AIProviderError(f"Gemini request failed: {exc}") from exc
+
+        if response is None:
+            raise AIProviderError(f"Gemini request failed: {last_exc}")
 
         data: dict = {}
         try:
