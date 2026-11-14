@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from linguamentis.api.dependencies import get_mindquest_service
 from linguamentis.api.v1.schemas import (
@@ -119,6 +119,15 @@ async def get_mindquest(
 ) -> MindQuestResponse:
     mq = await service.get_mindquest(id)
     return _map_mindquest(mq)
+
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_mindquest(
+    id: UUID,
+    service: Annotated[MindQuestService, Depends(get_mindquest_service)],
+) -> Response:
+    await service.delete_mindquest(id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/{id}/start", response_model=StartMindQuestResponse)

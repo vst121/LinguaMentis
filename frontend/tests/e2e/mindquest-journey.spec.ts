@@ -26,10 +26,9 @@ test.describe("LinguaMentis E2E MindQuest Journey", () => {
       .fill(topic);
     await page.getByRole("button", { name: /MindQuest erstellen/i }).click();
 
-    // 4. Verify redirect to active MindQuest detail page and start the quest
+    // 4. Verify redirect to active MindQuest detail page and immediate first question (no begin button)
     await expect(page).toHaveURL(/\/mindquests\/[0-9a-f-]+$/);
     await expect(page.getByRole("heading", { name: topic })).toBeVisible();
-    await page.getByRole("button", { name: /MindQuest beginnen/i }).click();
 
     // 5. Complete all 6 mandatory hats (WHITE -> YELLOW -> GREEN -> RED -> BLACK -> BLUE)
     for (let hatIdx = 0; hatIdx < 6; hatIdx++) {

@@ -2,12 +2,16 @@
 import { useEffect, useState, type SubmitEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Plus } from "lucide-react";
+import { ArrowRight, Plus, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { createMindQuest, listMindQuests } from "@/services/api/mindquests";
+import {
+  createMindQuest,
+  deleteMindQuest,
+  listMindQuests,
+} from "@/services/api/mindquests";
 import { MindQuest } from "@/types/mindquest";
 
 export default function MindQuestsPage() {
@@ -17,6 +21,7 @@ export default function MindQuestsPage() {
     [level, setLevel] = useState<"B2" | "C1">("B2"),
     [loading, setLoading] = useState(true),
     [creating, setCreating] = useState(false),
+    [deletingId, setDeletingId] = useState<string | null>(null),
     [error, setError] = useState("");
   useEffect(() => {
     listMindQuests()
@@ -52,6 +57,24 @@ export default function MindQuestsPage() {
       }
       e.preventDefault();
       e.currentTarget.requestSubmit();
+    }
+  }
+  async function handleDelete(
+    e: React.MouseEvent<HTMLButtonElement>,
+    questId: string,
+  ) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (deletingId === questId) return;
+    setDeletingId(questId);
+    setError("");
+    try {
+      await deleteMindQuest(questId);
+      setItems((prev) => prev.filter((item) => item.id !== questId));
+    } catch {
+      setError("MindQuest konnte nicht gelöscht werden.");
+    } finally {
+      setDeletingId(null);
     }
   }
   return (
@@ -141,7 +164,19 @@ export default function MindQuestsPage() {
                             Perspektiven abgeschlossen
                           </p>
                         </div>
-                        <ArrowRight className="shrink-0 text-slate-400" />
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => void handleDelete(e, q.id)}
+                            disabled={deletingId === q.id}
+                            aria-label={`MindQuest "${q.topic}" löschen`}
+                            title="MindQuest löschen"
+                            className="rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                          <ArrowRight className="text-slate-400" />
+                        </div>
                       </div>
                     </Card>
                   </Link>

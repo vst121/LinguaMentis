@@ -49,3 +49,9 @@ export async function advanceMindQuest(id: string): Promise<AdvanceMindQuestResp
 export async function getFinalReflection(id: string): Promise<FinalReflection> {
   return apiFetch<FinalReflection>(`/mindquests/${id}/reflection`);
 }
+
+export async function deleteMindQuest(id: string): Promise<void> {
+  return apiFetch<void>(`/mindquests/${id}`, {
+    method: "DELETE",
+  });
+}

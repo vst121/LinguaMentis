@@ -143,16 +143,15 @@ describe("MindQuestPage interactive flow", () => {
 
     render(<MindQuestPage />);
 
-    // 1. Wait for TOPIC_SELECTED view and click "MindQuest beginnen"
-    const startBtn = await screen.findByRole("button", { name: /MindQuest beginnen/i });
-    fireEvent.click(startBtn);
-
-    // 2. Active challenge appears
+    // 1. Auto-starts immediately without an intermediate "Bereit für deine erste Perspektive" step
     expect(
       await screen.findByText("Welche Risiken birgt ein sofortiges Plastikverbot?")
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Bereit für deine erste Perspektive")
+    ).not.toBeInTheDocument();
 
-    // 3. Enter response and submit
+    // 2. Enter response and submit
     const textarea = screen.getByPlaceholderText(/Schreibe deine Antwort hier/i);
     fireEvent.change(textarea, {
       target: { value: "Haltbarkeit von Lebensmitteln könnte sinken." },

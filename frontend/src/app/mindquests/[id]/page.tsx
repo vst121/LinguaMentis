@@ -17,7 +17,24 @@ import {
   advanceMindQuest,
 } from "@/services/api/mindquests";
 import { HAT_METADATA, HatType } from "@/types/hat";
-import { MindQuest, SubmitResponseResponse, Turn } from "@/types/mindquest";
+import {
+  MindQuest,
+  StartMindQuestResponse,
+  SubmitResponseResponse,
+  Turn,
+} from "@/types/mindquest";
+
+const inFlightStarts = new Map<string, Promise<StartMindQuestResponse>>();
+
+function startMindQuestOnce(questId: string): Promise<StartMindQuestResponse> {
+  const existing = inFlightStarts.get(questId);
+  if (existing) return existing;
+  const promise = startMindQuest(questId).finally(() => {
+    inFlightStarts.delete(questId);
+  });
+  inFlightStarts.set(questId, promise);
+  return promise;
+}
 
 const HAT_PROGRESS_COLORS: Record<
   HatType,
@@ -67,35 +84,57 @@ export default function MindQuestPage() {
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   useEffect(() => {
-    getMindQuest(id)
-      .then((q) => {
+    let cancelled = false;
+
+    async function loadQuest() {
+      try {
+        const q = await getMindQuest(id);
+        if (cancelled) return;
+
         if (q.status === "COMPLETED") {
           router.replace(`/mindquests/${id}/reflection`);
           return;
         }
-        setQuest(q);
+
         const round = q.hat_rounds.find((r) => r.hat === q.current_hat);
-        setTurn(round?.turns.at(-1) ?? null);
+        const existingTurn = round?.turns.at(-1) ?? null;
+
+        if (!existingTurn) {
+          const started = await startMindQuestOnce(id);
+          if (cancelled) return;
+          setQuest(started.mindquest);
+          setTurn(started.initial_turn);
+          if (
+            started.mindquest.planned_hats.length -
+              started.mindquest.completed_hats.length <=
+            1
+          ) {
+            router.prefetch(`/mindquests/${id}/reflection`);
+          }
+          return;
+        }
+
+        setQuest(q);
+        setTurn(existingTurn);
         if (q.planned_hats.length - q.completed_hats.length <= 1) {
           router.prefetch(`/mindquests/${id}/reflection`);
         }
-      })
-      .catch(() => setError("Diese MindQuest konnte nicht geladen werden."))
-      .finally(() => setLoading(false));
-  }, [id, router]);
-  async function begin() {
-    setBusy(true);
-    setError("");
-    try {
-      const result = await startMindQuest(id);
-      setQuest(result.mindquest);
-      setTurn(result.initial_turn);
-    } catch {
-      setError("Starten war nicht möglich.");
-    } finally {
-      setBusy(false);
+      } catch {
+        if (!cancelled) {
+          setError("Diese MindQuest konnte nicht geladen werden.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
     }
-  }
+
+    void loadQuest();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, router]);
   async function send() {
     if (busy || !draft.trim()) return;
     const submitted = draft.trim();
@@ -269,17 +308,7 @@ export default function MindQuestPage() {
             </Card>
           </div>
         ) : !turn ? (
-          <div className="md:flex md:flex-1 md:min-h-0 md:items-center md:justify-center">
-            <Card
-              title="Bereit für deine erste Perspektive"
-              description="Du bekommst eine fokussierte Frage und Feedback zu Denken und Sprache."
-              className="w-full max-w-xl"
-            >
-              <Button isLoading={busy} onClick={begin}>
-                MindQuest beginnen <ArrowRight className="ml-2" size={16} />
-              </Button>
-            </Card>
-          </div>
+          <p className="text-slate-500">Erste Perspektive wird vorbereitet …</p>
         ) : (
           <div
             className={`grid gap-5 md:flex-1 md:min-h-0 ${

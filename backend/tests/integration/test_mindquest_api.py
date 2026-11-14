@@ -184,3 +184,11 @@ async def test_api_error_handlers_and_edge_cases(async_client: AsyncClient, fake
     finally:
         fake_llm_client.error_to_raise = None
 
+    # 6. Delete MindQuest -> 204, then GET returns 404, second DELETE returns 404
+    del_resp = await async_client.delete(f"/api/v1/mindquests/{mq_id}")
+    assert del_resp.status_code == 204
+    after_del_get = await async_client.get(f"/api/v1/mindquests/{mq_id}")
+    assert after_del_get.status_code == 404
+    del_404 = await async_client.delete(f"/api/v1/mindquests/{missing_id}")
+    assert del_404.status_code == 404
+

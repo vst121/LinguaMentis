@@ -134,6 +134,11 @@ class MindQuestService:
     ) -> list[MindQuest]:
         return await self._mindquest_repo.list_by_user(user_id, limit=limit, offset=offset)
 
+    async def delete_mindquest(self, mindquest_id: UUID) -> None:
+        deleted = await self._mindquest_repo.delete(mindquest_id)
+        if not deleted:
+            raise NotFoundError("MindQuest", mindquest_id)
+
     async def start_mindquest(self, mindquest_id: UUID) -> StartMindQuestResult:
         """Begin MindQuest progress and activate the first hat round."""
         mq = await self.get_mindquest(mindquest_id)

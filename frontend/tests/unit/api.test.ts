@@ -3,6 +3,7 @@ import { apiFetch } from "@/services/api/client";
 import {
   advanceMindQuest,
   createMindQuest,
+  deleteMindQuest,
   getFinalReflection,
   getMindQuest,
   listMindQuests,
@@ -117,6 +118,19 @@ describe("API client and service functions", () => {
     expect(fetchMock).toHaveBeenLastCalledWith(
       "/api/v1/mindquests/mq-1/reflection",
       expect.anything()
+    );
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 204,
+      json: async () => {
+        throw new Error("should not parse 204 body");
+      },
+    });
+    await deleteMindQuest("mq-1");
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      "/api/v1/mindquests/mq-1",
+      expect.objectContaining({ method: "DELETE" })
     );
 
     await getLearningProfile("u-1");
