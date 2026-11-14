@@ -32,6 +32,7 @@ _TRANSITIONS: dict[MindQuestStatus, dict[MindQuestEvent, MindQuestStatus]] = {
         MindQuestEvent.ABANDON: MindQuestStatus.ABANDONED,
     },
     MindQuestStatus.HAT_ACTIVE: {
+        MindQuestEvent.ACTIVATE_HAT: MindQuestStatus.HAT_ACTIVE,
         MindQuestEvent.COMPLETE_HAT: MindQuestStatus.HAT_COMPLETED,
         MindQuestEvent.ABANDON: MindQuestStatus.ABANDONED,
     },

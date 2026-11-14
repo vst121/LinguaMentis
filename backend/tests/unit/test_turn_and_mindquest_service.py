@@ -218,13 +218,14 @@ async def test_full_six_hat_default_sequence_and_activity_logging(
 
 
 @pytest.mark.asyncio
-async def test_argue_mode_flow_locks_hat_until_above_80_and_forbids_blue_or_reuse(
+async def test_argue_mode_hat_switching_thresholds_and_read_only_solved_hats(
     db_session, fake_llm_client, fake_gateway, agent_registry
 ):
     user_repo, mq_service = _build_services(db_session, fake_gateway, agent_registry)
     user_id = uuid4()
     await user_repo.save(User(id=user_id, display_name="Debater"))
 
+    # --- Part A: C1 requires > 80%, allows hat switching with preserved state ---
     mq = await mq_service.create_mindquest(
         user_id=user_id,
         topic="Tempolimit auf Autobahnen",
@@ -239,15 +240,10 @@ async def test_argue_mode_flow_locks_hat_until_above_80_and_forbids_blue_or_reus
     with pytest.raises(DomainError, match="Blue Hat"):
         await mq_service.select_hat(mq.id, HatType.BLUE)
 
-    # Select BLACK hat first
-    sel = await mq_service.select_hat(mq.id, HatType.BLACK)
-    assert sel.active_hat == HatType.BLACK
+    # Select BLACK hat first and submit a weak answer (<= 80% -> rejected, Turn 2 created)
+    sel_black_1 = await mq_service.select_hat(mq.id, HatType.BLACK)
+    assert sel_black_1.active_hat == HatType.BLACK
 
-    # Cannot switch hat while current hat is active and below >80% average
-    with pytest.raises(DomainError, match="Cannot change hat"):
-        await mq_service.select_hat(mq.id, HatType.WHITE)
-
-    # Submit response with average <= 80% -> Perspective Challenger rejection, round stays open
     fake_llm_client.queue_response(ThinkingEvaluationOutput, _low_thinking_output())
     fake_llm_client.queue_response(
         GermanEvaluationOutput,
@@ -266,11 +262,20 @@ async def test_argue_mode_flow_locks_hat_until_above_80_and_forbids_blue_or_reus
     assert sub_reject.round_should_complete is False
     assert sub_reject.next_challenge is not None
 
-    # Still cannot switch hats while rejected
-    with pytest.raises(DomainError, match="Cannot change hat"):
-        await mq_service.select_hat(mq.id, HatType.YELLOW)
+    # Switch to WHITE hat mid-debate, then switch back to BLACK -> BLACK's Turn 2 state is preserved
+    sel_white = await mq_service.select_hat(mq.id, HatType.WHITE)
+    assert sel_white.active_hat == HatType.WHITE
+    assert sel_white.initial_turn.turn_number == 1
 
-    # Submit stronger response (>80% average with default FakeLLMClient 82.0)
+    sel_black_2 = await mq_service.select_hat(mq.id, HatType.BLACK)
+    assert sel_black_2.active_hat == HatType.BLACK
+    assert sel_black_2.is_read_only is False
+    assert sel_black_2.initial_turn.turn_number == 2
+    assert sel_black_2.last_answered_turn is not None
+    assert sel_black_2.last_answered_turn.user_response == "Es gibt Staus."
+    assert sel_black_2.last_average_score is not None
+
+    # Submit stronger response (> 80% average with default FakeLLMClient 82.0) -> BLACK solved!
     sub_pass = await mq_service.submit_response(
         mindquest_id=mq.id,
         user_response="Ein zentrales Risiko liegt in längeren Lieferzeiten im Güterverkehr.",
@@ -279,26 +284,87 @@ async def test_argue_mode_flow_locks_hat_until_above_80_and_forbids_blue_or_reus
     assert sub_pass.round_should_complete is True
     assert sub_pass.next_challenge is None
 
-    # Advance completes BLACK and waits for next user selection
-    adv1 = await mq_service.advance_mindquest(mq.id)
-    assert adv1.is_completed is False
-    assert adv1.next_hat is None
-    assert adv1.mindquest.status == MindQuestStatus.HAT_COMPLETED
+    # Selecting solved BLACK hat returns read-only state & scores, and blocks modifications
+    inspect_black = await mq_service.select_hat(mq.id, HatType.BLACK)
+    assert inspect_black.is_read_only is True
+    assert inspect_black.last_thinking_evaluation is not None
+    assert inspect_black.last_german_evaluation is not None
+    assert inspect_black.last_average_score is not None and inspect_black.last_average_score > 80.0
 
-    # Already-completed BLACK hat cannot be selected again
-    with pytest.raises(DomainError, match="already been completed"):
-        await mq_service.select_hat(mq.id, HatType.BLACK)
+    with pytest.raises(DomainError, match="No active hat round"):
+        await mq_service.submit_response(
+            mindquest_id=mq.id, user_response="Darf nicht mehr geändert werden."
+        )
 
-    # Complete the remaining 4 selectable hats (WHITE, YELLOW, GREEN, RED)
-    for remaining_hat in (HatType.WHITE, HatType.YELLOW, HatType.GREEN, HatType.RED):
+    # Complete the remaining 4 selectable hats (WHITE, YELLOW, GREEN, RED) -> auto-completes on 5th
+    for idx, remaining_hat in enumerate(
+        (HatType.WHITE, HatType.YELLOW, HatType.GREEN, HatType.RED)
+    ):
         await mq_service.select_hat(mq.id, remaining_hat)
         sub = await mq_service.submit_response(
             mindquest_id=mq.id,
             user_response="Differenzierte Argumentation mit präziser C1-Ausdrucksweise.",
         )
         assert sub.round_should_complete is True
-        adv = await mq_service.advance_mindquest(mq.id)
+        if idx == 3:
+            assert sub.final_reflection is not None
 
-    assert adv.is_completed is True
-    assert adv.final_reflection is not None
-    assert adv.mindquest.status == MindQuestStatus.COMPLETED
+    finished = await mq_service.get_mindquest(mq.id)
+    assert finished.status == MindQuestStatus.COMPLETED
+
+    # --- Part B: B2 requires only >= 10% average ---
+    mq_b2 = await mq_service.create_mindquest(
+        user_id=user_id,
+        topic="ÖPNV kostenlos machen",
+        target_level=LanguageLevel.B2,
+        mode=MindQuestMode.ARGUE,
+    )
+    await mq_service.select_hat(mq_b2.id, HatType.YELLOW)
+    fake_llm_client.queue_response(
+        ThinkingEvaluationOutput,
+        ThinkingEvaluationOutput(
+            hat_adherence=10,
+            relevance=10,
+            reasoning=10,
+            depth=10,
+            specificity=10,
+        ),
+    )
+    fake_llm_client.queue_response(
+        GermanEvaluationOutput,
+        GermanEvaluationOutput(
+            grammar=10,
+            vocabulary=10,
+            sentence_structure=10,
+            naturalness=10,
+            level_appropriateness=10,
+        ),
+    )
+    sub_b2_pass = await mq_service.submit_response(
+        mindquest_id=mq_b2.id, user_response="Busse wären für alle zugänglich."
+    )
+    assert sub_b2_pass.average_score == 10.0
+    assert sub_b2_pass.round_should_complete is True
+
+    await mq_service.select_hat(mq_b2.id, HatType.RED)
+    fake_llm_client.queue_response(
+        ThinkingEvaluationOutput,
+        ThinkingEvaluationOutput(
+            hat_adherence=5, relevance=5, reasoning=5, depth=5, specificity=5
+        ),
+    )
+    fake_llm_client.queue_response(
+        GermanEvaluationOutput,
+        GermanEvaluationOutput(
+            grammar=5,
+            vocabulary=5,
+            sentence_structure=5,
+            naturalness=5,
+            level_appropriateness=5,
+        ),
+    )
+    sub_b2_fail = await mq_service.submit_response(
+        mindquest_id=mq_b2.id, user_response="Hm."
+    )
+    assert sub_b2_fail.average_score == 5.0
+    assert sub_b2_fail.round_should_complete is False

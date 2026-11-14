@@ -66,6 +66,14 @@ export interface CreateMindQuestRequest {
   planned_hats?: HatType[];
 }
 
+export interface LastEvaluation {
+  turn: Turn;
+  thinking_evaluation?: ThinkingEvaluation | null;
+  german_evaluation?: GermanEvaluation | null;
+  proposition?: ResponseProposition | null;
+  average_score?: number | null;
+}
+
 export interface StartMindQuestResponse {
   mindquest: MindQuest;
   active_hat: HatType;
@@ -73,6 +81,8 @@ export interface StartMindQuestResponse {
   challenge_question: string;
   challenge_instruction: string;
   difficulty: number;
+  is_read_only?: boolean;
+  last_evaluation?: LastEvaluation | null;
 }
 
 export interface SubmitResponseRequest {
@@ -89,6 +99,7 @@ export interface SubmitResponseResponse {
   next_challenge_question?: string | null;
   next_challenge_instruction?: string | null;
   round_should_complete: boolean;
+  final_reflection?: FinalReflection | null;
 }
 
 export interface AdvanceMindQuestResponse {

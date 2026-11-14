@@ -126,12 +126,20 @@ class ConversationService:
         transitioned: HatType | None = None
         done = False
         if sub.round_should_complete:
-            adv = await self._mq.advance_mindquest(mindquest_id)
-            updated_mq = adv.mindquest
-            done = adv.is_completed
-            transitioned = adv.next_hat
-            turn = adv.initial_turn
-            next_q = turn.challenge_question if turn else None
+            mq_after_sub = await self._mq.get_mindquest(mindquest_id)
+            if mq_after_sub.status == MindQuestStatus.COMPLETED:
+                updated_mq = mq_after_sub
+                done = True
+                transitioned = None
+                turn = None
+                next_q = None
+            else:
+                adv = await self._mq.advance_mindquest(mindquest_id)
+                updated_mq = adv.mindquest
+                done = adv.is_completed
+                transitioned = adv.next_hat
+                turn = adv.initial_turn
+                next_q = turn.challenge_question if turn else None
         else:
             updated_mq = await self._mq.get_mindquest(mindquest_id)
             r = updated_mq.current_hat_round

@@ -26,6 +26,7 @@ from linguamentis.api.v1.schemas import (
     GermanEvaluationDTO,
     HatFeedbackDTO,
     HatRoundResponse,
+    LastEvaluationDTO,
     MindQuestResponse,
     PropositionHighlightDTO,
     ResponsePropositionDTO,
@@ -149,35 +150,8 @@ async def start_mindquest(
     )
 
 
-@router.post("/{id}/select-hat", response_model=StartMindQuestResponse)
-async def select_hat(
-    id: UUID,
-    body: SelectHatRequest,
-    service: Annotated[MindQuestService, Depends(get_mindquest_service)],
-) -> StartMindQuestResponse:
-    result = await service.select_hat(id, body.hat)
-    return StartMindQuestResponse(
-        mindquest=_map_mindquest(result.mindquest),
-        active_hat=result.active_hat,
-        initial_turn=_map_turn(result.initial_turn),
-        challenge_question=result.challenge.question,
-        challenge_instruction=result.challenge.instruction,
-        difficulty=result.challenge.difficulty,
-    )
-
-
-@router.post("/{id}/responses", response_model=SubmitResponseResponse)
-async def submit_response(
-    id: UUID,
-    body: SubmitResponseRequest,
-    service: Annotated[MindQuestService, Depends(get_mindquest_service)],
-) -> SubmitResponseResponse:
-    res = await service.submit_response(mindquest_id=id, user_response=body.response)
-
-    t_eval = res.thinking_evaluation
-    g_eval = res.german_evaluation
-
-    t_dto = ThinkingEvaluationDTO(
+def _map_thinking_dto(t_eval) -> ThinkingEvaluationDTO:
+    return ThinkingEvaluationDTO(
         id=t_eval.id,
         score=t_eval.score,
         score_anchor=t_eval.score_anchor(),
@@ -195,7 +169,9 @@ async def submit_response(
         recommendations=t_eval.recommendations,
     )
 
-    g_dto = GermanEvaluationDTO(
+
+def _map_german_dto(g_eval) -> GermanEvaluationDTO:
+    return GermanEvaluationDTO(
         id=g_eval.id,
         score=g_eval.score,
         score_anchor=g_eval.score_anchor(),
@@ -222,29 +198,85 @@ async def submit_response(
         recommendations=g_eval.recommendations,
     )
 
+
+def _map_proposition_dto(prop) -> ResponsePropositionDTO | None:
+    if prop is None:
+        return None
+    return ResponsePropositionDTO(
+        id=prop.id,
+        improved_response=prop.improved_response,
+        highlights=[
+            PropositionHighlightDTO(
+                upgraded_phrase=h.upgraded_phrase,
+                original_phrase=h.original_phrase,
+                explanation=h.explanation,
+                category=h.category,
+            )
+            for h in prop.highlights
+        ],
+    )
+
+
+@router.post("/{id}/select-hat", response_model=StartMindQuestResponse)
+async def select_hat(
+    id: UUID,
+    body: SelectHatRequest,
+    service: Annotated[MindQuestService, Depends(get_mindquest_service)],
+) -> StartMindQuestResponse:
+    result = await service.select_hat(id, body.hat)
+    last_eval = None
+    if result.last_answered_turn is not None:
+        last_eval = LastEvaluationDTO(
+            turn=_map_turn(result.last_answered_turn),
+            thinking_evaluation=(
+                _map_thinking_dto(result.last_thinking_evaluation)
+                if result.last_thinking_evaluation is not None
+                else None
+            ),
+            german_evaluation=(
+                _map_german_dto(result.last_german_evaluation)
+                if result.last_german_evaluation is not None
+                else None
+            ),
+            proposition=_map_proposition_dto(result.last_proposition),
+            average_score=result.last_average_score,
+        )
+    return StartMindQuestResponse(
+        mindquest=_map_mindquest(result.mindquest),
+        active_hat=result.active_hat,
+        initial_turn=_map_turn(result.initial_turn),
+        challenge_question=result.challenge.question,
+        challenge_instruction=result.challenge.instruction,
+        difficulty=result.challenge.difficulty,
+        is_read_only=result.is_read_only,
+        last_evaluation=last_eval,
+    )
+
+
+@router.post("/{id}/responses", response_model=SubmitResponseResponse)
+async def submit_response(
+    id: UUID,
+    body: SubmitResponseRequest,
+    service: Annotated[MindQuestService, Depends(get_mindquest_service)],
+) -> SubmitResponseResponse:
+    res = await service.submit_response(mindquest_id=id, user_response=body.response)
+
+    t_dto = _map_thinking_dto(res.thinking_evaluation)
+    g_dto = _map_german_dto(res.german_evaluation)
+
     f_dto = HatFeedbackDTO(
         thinking_feedback=res.feedback.thinking_feedback,
         german_feedback=res.feedback.german_feedback,
         encouragement=res.feedback.encouragement,
     )
 
-    p_dto = (
-        ResponsePropositionDTO(
-            id=res.proposition.id,
-            improved_response=res.proposition.improved_response,
-            highlights=[
-                PropositionHighlightDTO(
-                    upgraded_phrase=h.upgraded_phrase,
-                    original_phrase=h.original_phrase,
-                    explanation=h.explanation,
-                    category=h.category,
-                )
-                for h in res.proposition.highlights
-            ],
-        )
-        if res.proposition is not None
-        else None
-    )
+    p_dto = _map_proposition_dto(res.proposition)
+
+    reflection_dict = None
+    if res.final_reflection is not None:
+        mq = await service.get_mindquest(id)
+        metrics = await service.get_mindquest_evaluation_metrics(id)
+        reflection_dict = _map_reflection_payload(res.final_reflection, mq, metrics)
 
     return SubmitResponseResponse(
         turn=_map_turn(res.turn),
@@ -256,6 +288,7 @@ async def submit_response(
         next_challenge_question=res.next_challenge.question if res.next_challenge else None,
         next_challenge_instruction=res.next_challenge.instruction if res.next_challenge else None,
         round_should_complete=res.round_should_complete,
+        final_reflection=reflection_dict,
     )
 
 

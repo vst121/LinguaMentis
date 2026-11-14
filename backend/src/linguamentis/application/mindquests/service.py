@@ -16,7 +16,14 @@ from linguamentis.application.learning.service import (
     aggregate_evaluation_metrics,
 )
 from linguamentis.application.mindquests.prefetch import ChallengePrefetchCache
-from linguamentis.application.turns.service import TurnService, TurnSubmissionResult
+from linguamentis.application.turns.service import (
+    TurnService,
+    TurnSubmissionResult,
+    compute_response_average_score,
+)
+from linguamentis.domain.evaluations.german import GermanEvaluation
+from linguamentis.domain.evaluations.proposition import ResponseProposition
+from linguamentis.domain.evaluations.thinking import ThinkingEvaluation
 from linguamentis.domain.hats.types import (
     ARGUE_SELECTABLE_HATS,
     DEFAULT_HAT_SEQUENCE,
@@ -78,6 +85,12 @@ class StartMindQuestResult:
     active_hat: HatType
     initial_turn: Turn
     challenge: HatChallenge
+    is_read_only: bool = False
+    last_answered_turn: Turn | None = None
+    last_thinking_evaluation: ThinkingEvaluation | None = None
+    last_german_evaluation: GermanEvaluation | None = None
+    last_proposition: ResponseProposition | None = None
+    last_average_score: float | None = None
 
 
 @dataclass(slots=True)
@@ -248,7 +261,11 @@ class MindQuestService:
     async def select_hat(
         self, mindquest_id: UUID, hat: HatType
     ) -> StartMindQuestResult:
-        """Select and lock a hat in Argue Mode (never BLUE, never an already-completed hat)."""
+        """Select or switch to a hat in Argue Mode (never BLUE).
+
+        - Switching to an incomplete hat preserves its latest turn & prior evaluation.
+        - Switching to an already-completed hat returns read-only state & scores.
+        """
         mq = await self.get_mindquest(mindquest_id)
 
         if mq.mode != MindQuestMode.ARGUE:
@@ -257,13 +274,10 @@ class MindQuestService:
         if hat == HatType.BLUE or hat not in ARGUE_SELECTABLE_HATS:
             raise DomainError("Blue Hat cannot be selected in Argue Mode.")
 
-        if mq.status == MindQuestStatus.HAT_ACTIVE:
+        if mq.status in (MindQuestStatus.COMPLETED, MindQuestStatus.ABANDONED):
             raise DomainError(
-                "Cannot change hat while the current hat is active and below 80% average."
+                f"Cannot select a hat when MindQuest status is '{mq.status.value}'."
             )
-
-        if hat in mq.completed_hats:
-            raise DomainError(f"Hat '{hat.value}' has already been completed.")
 
         if mq.status == MindQuestStatus.CREATED:
             mq.select_topic(mq.topic, mq.planned_hats or ARGUE_SELECTABLE_HATS)
@@ -271,54 +285,131 @@ class MindQuestService:
         if mq.status == MindQuestStatus.TOPIC_SELECTED:
             mq.begin()
 
-        if mq.status not in (MindQuestStatus.IN_PROGRESS, MindQuestStatus.HAT_COMPLETED):
-            raise DomainError(
-                f"Cannot select a hat when MindQuest status is '{mq.status.value}'."
+        existing_round = next((r for r in mq.hat_rounds if r.hat == hat), None)
+        is_completed_hat = existing_round is not None and existing_round.is_completed
+
+        if is_completed_hat and existing_round is not None:
+            # Viewing a completed hat: never re-activate or allow editing, just point current_hat
+            mq.current_hat = hat
+            active_round = existing_round
+        else:
+            if mq.status not in (
+                MindQuestStatus.IN_PROGRESS,
+                MindQuestStatus.HAT_ACTIVE,
+                MindQuestStatus.HAT_COMPLETED,
+            ):
+                raise DomainError(
+                    f"Cannot select a hat when MindQuest status is '{mq.status.value}'."
+                )
+            active_round = mq.activate_hat(hat)
+
+        if not active_round.turns:
+            q_tpl, instr = _ARGUE_OPENING_PROMPTS[hat]
+            challenge = HatChallenge(
+                question=q_tpl.format(topic=mq.topic),
+                instruction=instr,
+                expected_thinking_mode=hat,
+                difficulty=4 if mq.target_level == LanguageLevel.C1 else 3,
+                rationale="Instant Argue Mode opening prompt",
             )
-
-        active_round = mq.activate_hat(hat)
-        q_tpl, instr = _ARGUE_OPENING_PROMPTS[hat]
-        challenge = HatChallenge(
-            question=q_tpl.format(topic=mq.topic),
-            instruction=instr,
-            expected_thinking_mode=hat,
-            difficulty=4 if mq.target_level == LanguageLevel.C1 else 3,
-            rationale="Instant Argue Mode opening prompt",
-        )
-
-        initial_turn = active_round.add_turn(
-            challenge_question=challenge.question,
-            challenge_instruction=challenge.instruction,
-            difficulty=challenge.difficulty,
-        )
+            current_turn = active_round.add_turn(
+                challenge_question=challenge.question,
+                challenge_instruction=challenge.instruction,
+                difficulty=challenge.difficulty,
+            )
+            await self._activity_repo.log_activity(
+                user_id=mq.user_id,
+                activity_type=ActivityType.HAT_SELECTED,
+                mindquest_id=mq.id,
+                payload={"hat": hat.value},
+            )
+        else:
+            latest = active_round.latest_turn
+            assert latest is not None
+            current_turn = latest
+            challenge = HatChallenge(
+                question=latest.challenge_question,
+                instruction=latest.challenge_instruction,
+                expected_thinking_mode=hat,
+                difficulty=latest.difficulty,
+                rationale="Restored existing turn",
+            )
 
         await self._mindquest_repo.save(mq)
 
-        await self._activity_repo.log_activity(
-            user_id=mq.user_id,
-            activity_type=ActivityType.HAT_SELECTED,
-            mindquest_id=mq.id,
-            payload={"hat": hat.value},
+        last_answered = next(
+            (t for t in reversed(active_round.turns) if t.is_answered), None
         )
+        last_thinking: ThinkingEvaluation | None = None
+        last_german: GermanEvaluation | None = None
+        last_prop: ResponseProposition | None = None
+        last_avg: float | None = None
+        if last_answered is not None:
+            last_thinking = await self._evaluation_repo.get_thinking_by_turn(
+                last_answered.id
+            )
+            last_german = await self._evaluation_repo.get_german_by_turn(
+                last_answered.id
+            )
+            last_prop = await self._evaluation_repo.get_proposition_by_turn(
+                last_answered.id
+            )
+            if last_thinking is not None and last_german is not None:
+                last_avg = compute_response_average_score(last_thinking, last_german)
 
         return StartMindQuestResult(
             mindquest=mq,
             active_hat=hat,
-            initial_turn=initial_turn,
+            initial_turn=current_turn,
             challenge=challenge,
+            is_read_only=is_completed_hat,
+            last_answered_turn=last_answered,
+            last_thinking_evaluation=last_thinking,
+            last_german_evaluation=last_german,
+            last_proposition=last_prop,
+            last_average_score=last_avg,
         )
 
     async def submit_response(
         self, mindquest_id: UUID, user_response: str
     ) -> TurnSubmissionResult:
         mq = await self.get_mindquest(mindquest_id)
-        return await self._turn_service.submit_response(
+        res = await self._turn_service.submit_response(
             mindquest=mq, user_response=user_response
         )
+        if (
+            mq.mode == MindQuestMode.ARGUE
+            and res.round_should_complete
+            and mq.all_planned_hats_completed()
+            and mq.status == MindQuestStatus.HAT_COMPLETED
+        ):
+            mq.finish_all_hats()
+            mq.start_final_evaluation()
+            reflection = await self._generate_and_save_final_reflection(mq)
+            mq.complete()
+            await self._mindquest_repo.save(mq)
+            await self._activity_repo.log_activity(
+                user_id=mq.user_id,
+                activity_type=ActivityType.MINDQUEST_COMPLETED,
+                mindquest_id=mq.id,
+                payload={"completed_hats": [h.value for h in mq.completed_hats]},
+            )
+            res.final_reflection = reflection
+        return res
 
     async def advance_mindquest(self, mindquest_id: UUID) -> AdvanceMindQuestResult:
         """Advance to the next hat in sequence, or finish the MindQuest if all hats done."""
         mq = await self.get_mindquest(mindquest_id)
+
+        if mq.status == MindQuestStatus.COMPLETED:
+            return AdvanceMindQuestResult(
+                mindquest=mq,
+                next_hat=None,
+                initial_turn=None,
+                challenge=None,
+                is_completed=True,
+                final_reflection=await self.get_final_reflection(mindquest_id),
+            )
 
         if mq.status == MindQuestStatus.HAT_ACTIVE:
             mq.complete_current_hat()

@@ -68,15 +68,6 @@ class MindQuestResponse(BaseModel):
     completed_at: datetime | None = None
 
 
-class StartMindQuestResponse(BaseModel):
-    mindquest: MindQuestResponse
-    active_hat: HatType
-    initial_turn: TurnResponse
-    challenge_question: str
-    challenge_instruction: str
-    difficulty: int
-
-
 class SubmitResponseRequest(BaseModel):
     response: str = Field(min_length=1, description="Learner response in German.")
 
@@ -144,6 +135,25 @@ class ResponsePropositionDTO(BaseModel):
     highlights: list[PropositionHighlightDTO]
 
 
+class LastEvaluationDTO(BaseModel):
+    turn: TurnResponse
+    thinking_evaluation: ThinkingEvaluationDTO | None = None
+    german_evaluation: GermanEvaluationDTO | None = None
+    proposition: ResponsePropositionDTO | None = None
+    average_score: float | None = None
+
+
+class StartMindQuestResponse(BaseModel):
+    mindquest: MindQuestResponse
+    active_hat: HatType
+    initial_turn: TurnResponse
+    challenge_question: str
+    challenge_instruction: str
+    difficulty: int
+    is_read_only: bool = False
+    last_evaluation: LastEvaluationDTO | None = None
+
+
 class SubmitResponseResponse(BaseModel):
     turn: TurnResponse
     thinking_evaluation: ThinkingEvaluationDTO
@@ -154,6 +164,7 @@ class SubmitResponseResponse(BaseModel):
     next_challenge_question: str | None = None
     next_challenge_instruction: str | None = None
     round_should_complete: bool
+    final_reflection: dict | None = None
 
 
 class AdvanceMindQuestResponse(BaseModel):

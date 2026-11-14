@@ -100,6 +100,8 @@ export default function MindQuestPage() {
   const [quest, setQuest] = useState<MindQuest | null>(null),
     [turn, setTurn] = useState<Turn | null>(null),
     [draft, setDraft] = useState(""),
+    [draftsByHat, setDraftsByHat] = useState<Record<string, string>>({}),
+    [isReadOnlyHat, setIsReadOnlyHat] = useState(false),
     [pendingResponse, setPendingResponse] = useState<string | null>(null),
     [feedback, setFeedback] = useState<SubmitResponseResponse | null>(null),
     [loading, setLoading] = useState(true),
@@ -119,6 +121,49 @@ export default function MindQuestPage() {
       window.clearInterval(timer);
     };
   }, [pendingResponse, busy]);
+  const applySelectHatResult = useCallback(
+    (
+      result: StartMindQuestResponse,
+      savedDrafts: Record<string, string>,
+    ) => {
+      setQuest(result.mindquest);
+      setTurn(result.initial_turn);
+      const readOnly = Boolean(result.is_read_only);
+      setIsReadOnlyHat(readOnly);
+
+      const lastEval = result.last_evaluation;
+      if (readOnly && lastEval?.thinking_evaluation && lastEval?.german_evaluation) {
+        setFeedback({
+          turn: lastEval.turn,
+          thinking_evaluation: lastEval.thinking_evaluation,
+          german_evaluation: lastEval.german_evaluation,
+          feedback: {
+            thinking_feedback:
+              lastEval.thinking_evaluation.strengths[0] ||
+              "Diese Perspektive wurde erfolgreich abgeschlossen.",
+            german_feedback:
+              lastEval.german_evaluation.strengths[0] ||
+              "Sprachliche Bewertung abgeschlossen.",
+            encouragement: "Abgeschlossen · Nur Ansicht",
+          },
+          proposition: lastEval.proposition ?? null,
+          average_score: lastEval.average_score ?? undefined,
+          round_should_complete: true,
+        });
+        setDraft("");
+      } else {
+        setFeedback(null);
+        const restoredDraft =
+          savedDrafts[result.active_hat] ||
+          (result.initial_turn.turn_number > 1
+            ? lastEval?.turn.user_response ?? ""
+            : "");
+        setDraft(restoredDraft);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     let cancelled = false;
 
@@ -132,21 +177,23 @@ export default function MindQuestPage() {
           return;
         }
 
-        const isActiveHat = q.status === "HAT_ACTIVE";
-        const round = isActiveHat
-          ? q.hat_rounds.find((r) => r.hat === q.current_hat)
-          : undefined;
-        const existingTurn = round?.turns.at(-1) ?? null;
-
         if (q.mode === "ARGUE") {
-          // Argue Mode waits for manual hat selection whenever no hat is active
-          setQuest(q);
-          setTurn(existingTurn);
+          if (q.current_hat && q.hat_rounds.some((r) => r.hat === q.current_hat)) {
+            const restored = await selectHat(id, q.current_hat);
+            if (cancelled) return;
+            applySelectHatResult(restored, {});
+          } else {
+            setQuest(q);
+            setTurn(null);
+          }
           if (q.planned_hats.length - q.completed_hats.length <= 1) {
             router.prefetch(`/mindquests/${id}/reflection`);
           }
           return;
         }
+
+        const round = q.hat_rounds.find((r) => r.hat === q.current_hat);
+        const existingTurn = round?.turns.at(-1) ?? null;
 
         if (!existingTurn) {
           const started = await startMindQuestOnce(id);
@@ -183,18 +230,36 @@ export default function MindQuestPage() {
     return () => {
       cancelled = true;
     };
-  }, [id, router]);
+  }, [applySelectHatResult, id, router]);
   async function chooseHat(hat: HatType) {
-    if (busy) return;
+    if (busy || pendingResponse) return;
+    if (isRecording) {
+      await stopRecording();
+    }
+    const updatedDrafts = { ...draftsByHat };
+    if (quest?.current_hat && !isReadOnlyHat) {
+      const valueToKeep =
+        draft.trim().length > 0
+          ? draft
+          : feedback && !feedback.round_should_complete
+            ? (feedback.turn.user_response ?? "")
+            : "";
+      if (valueToKeep) {
+        updatedDrafts[quest.current_hat] = valueToKeep;
+      } else {
+        delete updatedDrafts[quest.current_hat];
+      }
+      setDraftsByHat(updatedDrafts);
+    }
     setElapsedSeconds(0);
     setBusy(true);
     setError("");
     try {
       const result = await selectHat(id, hat);
-      setQuest(result.mindquest);
-      setTurn(result.initial_turn);
-      setFeedback(null);
-      setDraft("");
+      if (result.is_read_only && experienceMode === "conversation") {
+        setExperienceMode("written");
+      }
+      applySelectHatResult(result, updatedDrafts);
     } catch {
       setError("Hut konnte nicht ausgewählt werden.");
     } finally {
@@ -265,6 +330,43 @@ export default function MindQuestPage() {
     setDraft("");
     try {
       const res = await submitResponse(id, { response: submitted });
+      if (quest?.mode === "ARGUE" && quest.current_hat) {
+        setDraftsByHat((prev) => {
+          const next = { ...prev };
+          delete next[quest.current_hat!];
+          return next;
+        });
+      }
+      if (res.round_should_complete && quest?.mode === "ARGUE") {
+        const activeHat = quest.current_hat;
+        const nextCompleted =
+          activeHat && !quest.completed_hats.includes(activeHat)
+            ? [...quest.completed_hats, activeHat]
+            : quest.completed_hats;
+        const allDone = quest.planned_hats.every((h) =>
+          nextCompleted.includes(h),
+        );
+        if (allDone || res.final_reflection) {
+          if (res.final_reflection) {
+            try {
+              sessionStorage.setItem(
+                `linguamentis:reflection:${id}`,
+                JSON.stringify(res.final_reflection),
+              );
+            } catch {
+              // Ignore storage errors
+            }
+          }
+          router.replace(`/mindquests/${id}/reflection`);
+          return;
+        }
+        setQuest({
+          ...quest,
+          status: "HAT_COMPLETED",
+          completed_hats: nextCompleted,
+        });
+        setIsReadOnlyHat(true);
+      }
       setFeedback(res);
       setPendingResponse(null);
       if (
@@ -333,6 +435,14 @@ export default function MindQuestPage() {
       return;
     }
 
+    if (quest?.mode === "ARGUE" && remainingHats.length > 0) {
+      setFeedback(null);
+      setTurn(null);
+      setIsReadOnlyHat(false);
+      setQuest((prev) => (prev ? { ...prev, current_hat: null } : prev));
+      return;
+    }
+
     setElapsedSeconds(0);
     setBusy(true);
     try {
@@ -388,11 +498,12 @@ export default function MindQuestPage() {
       </AppShell>
     );
   const currentHat =
-    quest.status === "HAT_ACTIVE"
+    quest.status === "HAT_ACTIVE" || (isArgue && turn !== null)
       ? quest.current_hat || quest.planned_hats[0]
       : isArgue
         ? null
         : quest.current_hat || quest.planned_hats[0];
+  const argueTargetText = quest.target_level === "B2" ? "≥ 10 %" : "> 80 %";
   const remainingHats = quest.planned_hats.filter(
     (h) => !quest.completed_hats.includes(h),
   );
@@ -406,7 +517,7 @@ export default function MindQuestPage() {
         size="md"
         className="shrink-0 bg-emerald-600 text-white shadow-md ring-2 ring-emerald-400/60 hover:bg-emerald-500"
       >
-        {isLastHat ? "Abschlussreflexion ansehen" : "Nächste Perspektive"}
+        {isLastHat && !isArgue ? "Abschlussreflexion ansehen" : "Nächste Perspektive"}
         <ArrowRight className="ml-2" size={16} />
       </Button>
     ) : (
@@ -496,20 +607,28 @@ export default function MindQuestPage() {
                 const isDone = quest.completed_hats.includes(h);
                 const isCurrent = h === currentHat;
                 return (
-                  <div
+                  <button
                     key={h}
+                    type="button"
+                    disabled={busy || Boolean(pendingResponse)}
+                    onClick={() => void chooseHat(h)}
+                    data-testid={`hat-pill-${h}`}
                     title={`${meta.nameGerman} — ${
-                      isDone ? "Erledigt" : isCurrent ? "Aktuell" : "Offen"
+                      isDone
+                        ? "Erledigt (Punkte ansehen)"
+                        : isCurrent
+                          ? "Aktuell"
+                          : "Offen (wechseln)"
                     }`}
                     aria-label={`${meta.nameGerman}: ${
                       isDone ? "erledigt" : isCurrent ? "aktuell" : "offen"
                     }`}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition ${
+                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition disabled:opacity-60 ${
                       isCurrent
                         ? "border-indigo-300 bg-indigo-600 text-white ring-2 ring-indigo-300/70 shadow-sm"
                         : isDone
-                          ? "border-emerald-400/60 bg-emerald-900/50 text-emerald-200"
-                          : "border-slate-500 bg-slate-700/80 text-slate-200"
+                          ? "border-emerald-400/60 bg-emerald-900/50 text-emerald-200 hover:bg-emerald-800/60"
+                          : "border-slate-500 bg-slate-700/80 text-slate-200 hover:border-indigo-400 hover:bg-slate-600/80"
                     }`}
                   >
                     <span
@@ -523,7 +642,7 @@ export default function MindQuestPage() {
                     ) : (
                       <CircleDashed size={13} className="text-slate-400" />
                     )}
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -583,7 +702,7 @@ export default function MindQuestPage() {
         ) : !turn && isArgue ? (
             <Card
               title="Perspektive wählen (Argue Mode)"
-              description="Wähle einen der 5 Hüte. Einmal gewählt, bleibt der Hut gesperrt, bis dein Gesamtschnitt über 80 % liegt."
+              description={`Wähle einen der 5 Hüte. Du kannst jederzeit oben zwischen offenen Hüten wechseln (Ziel ${quest.target_level}: ${argueTargetText}).`}
             >
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {ARGUE_HATS.map((hat) => {
@@ -593,11 +712,12 @@ export default function MindQuestPage() {
                     <button
                       key={hat}
                       type="button"
-                      disabled={isCompleted || busy}
+                      disabled={busy}
+                      data-testid={`hat-card-${hat}`}
                       onClick={() => void chooseHat(hat)}
                       className={`flex flex-col justify-between rounded-xl border p-3.5 text-left transition ${
                         isCompleted
-                          ? "cursor-not-allowed border-slate-600/60 bg-slate-800/40 opacity-55"
+                          ? "border-emerald-500/50 bg-emerald-950/30 hover:border-emerald-400 hover:bg-emerald-900/35"
                           : "border-slate-500 bg-slate-800/80 hover:border-indigo-400 hover:bg-slate-600/80"
                       }`}
                     >
@@ -624,9 +744,13 @@ export default function MindQuestPage() {
                           {meta.question}
                         </p>
                       </div>
-                      <span className="mt-3 text-[11px] font-medium text-indigo-300">
+                      <span
+                        className={`mt-3 text-[11px] font-medium ${
+                          isCompleted ? "text-emerald-300" : "text-indigo-300"
+                        }`}
+                      >
                         {isCompleted
-                          ? "Bereits gemeistert"
+                          ? "Erledigt · Punktzahl ansehen →"
                           : "Hut wählen & argumentieren →"}
                       </span>
                     </button>
@@ -669,8 +793,14 @@ export default function MindQuestPage() {
                     VERSUCH {turn.turn_number} · {currentHat && <span>{currentHat}</span>}
                   </p>
                   <span className="inline-flex items-center gap-1 text-[11px] text-slate-300">
-                    <Lock size={11} />
-                    Gesperrt bis &gt; 80 %
+                    {isReadOnlyHat ? (
+                      <>
+                        <Lock size={11} />
+                        Abgeschlossen · Nur Ansicht
+                      </>
+                    ) : (
+                      <>Ziel: {argueTargetText}</>
+                    )}
                   </span>
                 </div>
                 {turn.turn_number === 1 && (
@@ -710,7 +840,7 @@ export default function MindQuestPage() {
               ) : (
                 <Card
                   title="Deine Argumentation"
-                  description={`Formuliere deine Begründung zu „${quest.topic}“ — Ziel: > 80 % Durchschnitt.`}
+                  description={`Formuliere deine Begründung zu „${quest.topic}“ — Ziel (${quest.target_level}): ${argueTargetText} Durchschnitt.`}
                   headerAction={
                     <SpeechModeToggle
                       mode={inputMode}
@@ -807,8 +937,8 @@ export default function MindQuestPage() {
                       <strong className="text-white">Einsprechen</strong> /{" "}
                       <strong className="text-white">Gesprächsmodus</strong>). Der
                       Perspective Challenger prüft deine Logik und dein Deutsch, bis
-                      dein Gesamtschnitt über{" "}
-                      <strong className="text-white">80 %</strong> liegt.
+                      dein Gesamtschnitt{" "}
+                      <strong className="text-white">{argueTargetText}</strong> erreicht.
                     </p>
                   </Card>
                 )
@@ -817,8 +947,8 @@ export default function MindQuestPage() {
                   <Card
                     title={
                       feedback.round_should_complete
-                        ? `Akzeptiert (${feedback.average_score ?? "—"} % > 80 %)`
-                        : `Abgelehnt (${feedback.average_score ?? "—"} % · > 80 % nötig)`
+                        ? `Akzeptiert (${feedback.average_score ?? "—"} % · Ziel ${argueTargetText})`
+                        : `Abgelehnt (${feedback.average_score ?? "—"} % · Ziel ${argueTargetText})`
                     }
                     description={feedback.feedback.encouragement}
                     bodyClassName="flex flex-col gap-3"

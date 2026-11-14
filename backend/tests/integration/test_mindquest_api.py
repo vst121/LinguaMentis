@@ -288,12 +288,16 @@ async def test_argue_mode_api_endpoints(async_client: AsyncClient):
     assert sub_resp.json()["average_score"] > 80.0
     assert sub_resp.json()["round_should_complete"] is True
 
-    # Complete RED so we can test spoken conversation mode on a newly selected hat (BLACK)
-    adv_resp = await async_client.post(f"/api/v1/mindquests/{mq_id}/advance")
-    assert adv_resp.status_code == 200
-    assert adv_resp.json()["mindquest"]["status"] == "HAT_COMPLETED"
+    # Selecting solved RED returns read-only state and scores
+    inspect_red = await async_client.post(
+        f"/api/v1/mindquests/{mq_id}/select-hat",
+        json={"hat": "RED"},
+    )
+    assert inspect_red.status_code == 200
+    assert inspect_red.json()["is_read_only"] is True
+    assert inspect_red.json()["last_evaluation"]["average_score"] > 80.0
 
-    # Opening spoken conversation without selecting a hat first fails cleanly (400)
+    # Select BLACK and test spoken conversation mode
     await async_client.post(f"/api/v1/mindquests/{mq_id}/select-hat", json={"hat": "BLACK"})
     conv_open = await async_client.post(f"/api/v1/mindquests/{mq_id}/conversation/opening")
     assert conv_open.status_code == 200

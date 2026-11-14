@@ -171,7 +171,7 @@ export default function MindQuestsPage() {
                     >
                       <span className="block font-semibold">Argue Mode</span>
                       <span className="mt-0.5 block opacity-75">
-                        Perspective Challenger · &gt; 80 %
+                        Perspective Challenger · {level === "B2" ? "≥ 10 %" : "> 80 %"}
                       </span>
                     </button>
                   </div>

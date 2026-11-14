@@ -21,6 +21,7 @@ from linguamentis.domain.hats.types import HatType
 from linguamentis.domain.mindquests.entities import MindQuest, Turn
 from linguamentis.domain.mindquests.enums import (
     ActivityType,
+    LanguageLevel,
     MindQuestMode,
     MindQuestStatus,
 )
@@ -38,7 +39,15 @@ logger = get_logger(__name__)
 
 COMPLETION_SCORE_THRESHOLD = 75
 MAX_TURNS_PER_HAT_ROUND = 1
-ARGUE_PASS_AVERAGE_THRESHOLD = 80.0
+ARGUE_B2_PASS_AVERAGE_THRESHOLD = 10.0
+ARGUE_C1_PASS_AVERAGE_THRESHOLD = 80.0
+
+
+def argue_threshold_passed(target_level: LanguageLevel, raw_avg: float) -> bool:
+    """B2 requires >= 10% average; C1 requires > 80% average."""
+    if target_level == LanguageLevel.B2:
+        return raw_avg >= ARGUE_B2_PASS_AVERAGE_THRESHOLD
+    return raw_avg > ARGUE_C1_PASS_AVERAGE_THRESHOLD
 
 
 def compute_response_average_score(
@@ -70,6 +79,7 @@ class TurnSubmissionResult:
     round_should_complete: bool
     proposition: ResponseProposition | None = None
     average_score: float = 0.0
+    final_reflection: object | None = None
 
 
 class TurnService:
@@ -160,7 +170,7 @@ class TurnService:
         average_score = compute_response_average_score(thinking_eval, german_eval)
 
         if mindquest.mode == MindQuestMode.ARGUE:
-            # Argue Mode: strictly > 80% average across all 10 classifications required
+            # Argue Mode: B2 requires >= 10% average; C1 requires > 80% average
             raw_avg = (
                 thinking_eval.hat_adherence
                 + thinking_eval.relevance
@@ -173,7 +183,9 @@ class TurnService:
                 + german_eval.naturalness
                 + german_eval.level_appropriateness
             ) / 10.0
-            round_should_complete = raw_avg > ARGUE_PASS_AVERAGE_THRESHOLD
+            round_should_complete = argue_threshold_passed(
+                mindquest.target_level, raw_avg
+            )
         else:
             # Answering Mode: single round per hat (one question + one evaluated response)
             turn_count = len(active_round.turns)
@@ -235,8 +247,18 @@ class TurnService:
                 difficulty=follow_up_challenge.difficulty,
             )
         else:
-            # Prefetch next challenge (Answering Mode) or final reflection if all hats done
-            self._schedule_post_round_prefetch(mindquest, active_round.hat)
+            if mindquest.mode == MindQuestMode.ARGUE:
+                # In Argue Mode, immediately mark this hat solved so switching hats preserves it
+                mindquest.complete_current_hat()
+                await self._activity_repo.log_activity(
+                    user_id=mindquest.user_id,
+                    activity_type=ActivityType.HAT_COMPLETED,
+                    mindquest_id=mindquest.id,
+                    payload={"hat": active_round.hat.value},
+                )
+            else:
+                # Prefetch next challenge (Answering Mode) or final reflection if all hats done
+                self._schedule_post_round_prefetch(mindquest, active_round.hat)
             proposition, feedback = await asyncio.gather(prop_task, feedback_task)
 
         await self._evaluation_service.persist_evaluations(

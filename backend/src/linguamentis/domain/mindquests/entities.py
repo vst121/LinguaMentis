@@ -130,6 +130,9 @@ class MindQuest:
     def activate_hat(self, hat: HatType) -> HatRound:
         self._apply(MindQuestEvent.ACTIVATE_HAT)
         self.current_hat = hat
+        existing = next((r for r in self.hat_rounds if r.hat == hat), None)
+        if existing is not None:
+            return existing
         round_ = HatRound(
             id=uuid4(),
             mindquest_id=self.id,
@@ -164,9 +167,11 @@ class MindQuest:
 
     @property
     def current_hat_round(self) -> HatRound | None:
-        if not self.hat_rounds:
-            return None
-        return self.hat_rounds[-1]
+        if self.current_hat is not None:
+            for r in reversed(self.hat_rounds):
+                if r.hat == self.current_hat:
+                    return r
+        return self.hat_rounds[-1] if self.hat_rounds else None
 
     @property
     def completed_hats(self) -> tuple[HatType, ...]:

@@ -263,8 +263,8 @@ def argue_rejection_system_prompt(contract: HatContract) -> str:
     return (
         f"{_APPLICATION_FRAME}\n\n"
         "You are operating in ARGUE MODE as a demanding Perspective Challenger for the "
-        "hat contract below. The learner's response did NOT reach the required >80% "
-        "overall average across thinking and German quality, so it MUST BE REJECTED "
+        "hat contract below. The learner's response did NOT reach the required target "
+        "average across thinking and German quality, so it MUST BE REJECTED "
         "with a sharp, well-reasoned counter-argument.\n\n"
         f"{_format_contract(contract)}\n\n"
         "Rules:\n"
@@ -273,7 +273,7 @@ def argue_rejection_system_prompt(contract: HatContract) -> str:
         "their exact claim with a concrete counter-argument, point out the biggest logical "
         "or hat-adherence gap and/or linguistic weakness, and demand a stronger revision.\n"
         "- In `instruction`, give a concise, actionable directive telling the learner what "
-        "must be improved in their next revision to convince you (and reach >80%).\n"
+        "must be improved in their next revision to convince you and meet the target.\n"
         "- Stay strictly within this hat's perspective and never mention scores or contracts."
     )
 
@@ -287,12 +287,13 @@ def argue_rejection_user_prompt(
     thinking_weaknesses: list[str],
     german_weaknesses: list[str],
 ) -> str:
+    required_rule = ">= 10.0" if context.target_level == "B2" else "> 80.0"
     return (
         f"Topic: {context.topic}\n"
         f"Target language level: {context.target_level}\n"
         f"Current hat: {context.current_hat.value}\n"
         f"Attempt number: {context.current_turn_number}\n"
-        f"Average score achieved: {average_score}/100 (required: > 80.0)\n"
+        f"Average score achieved: {average_score}/100 (required: {required_rule})\n"
         f"Challenge/prompt answered: {previous_challenge}\n"
         f"Learner's response (German):\n{user_response}\n\n"
         f"Observed thinking gaps: {', '.join(thinking_weaknesses) or 'needs deeper reasoning'}\n"

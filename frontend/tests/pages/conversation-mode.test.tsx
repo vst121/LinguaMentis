@@ -306,7 +306,7 @@ describe("Spoken Conversation Mode (ConversationAgent UI)", () => {
     fireEvent.click(convToggle);
 
     // Must still let user select from the 5 hats first
-    fireEvent.click(await screen.findByRole("button", { name: /Schwarzer Hut/i }));
+    fireEvent.click(await screen.findByTestId("hat-card-BLACK"));
     expect(await screen.findByTestId("conversation-view")).toBeInTheDocument();
     expect(
       screen.getByText(/Mündlicher Argue Mode · Perspective Challenger/i)
@@ -329,9 +329,9 @@ describe("Spoken Conversation Mode (ConversationAgent UI)", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: /Fertig gesprochen/i }));
-    // After mastering >80% in Argue Mode, returns to 5-hat selector with BLACK disabled
-    const blackBtn = await screen.findByRole("button", { name: /Schwarzer Hut/i });
-    expect(blackBtn).toBeDisabled();
+    // After mastering >80% in Argue Mode, returns to 5-hat selector with BLACK marked completed
+    const blackBtn = await screen.findByTestId("hat-card-BLACK");
+    expect(blackBtn).toHaveTextContent(/Erledigt/i);
 
     delete (window as unknown as Record<string, unknown>).SpeechRecognition;
   });

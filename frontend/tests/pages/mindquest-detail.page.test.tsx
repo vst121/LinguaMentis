@@ -374,7 +374,7 @@ describe("MindQuestPage interactive flow", () => {
     delete (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
   });
 
-  it("Argue Mode switches to dark theme, shows 5 hats (no Blue), enforces Perspective Challenger until >80%, and disables completed hats", async () => {
+  it("Argue Mode switches to dark theme, allows hat switching via top-left pills preserving state, shows solved hats read-only, and finishes on last hat", async () => {
     const argueQuest: MindQuest = {
       id: "mq-argue",
       user_id: "u-1",
@@ -400,7 +400,18 @@ describe("MindQuestPage interactive flow", () => {
       created_at: "2026-11-14T10:01:00Z",
     };
 
+    const whiteTurn = {
+      id: "t-argue-w1",
+      turn_number: 1,
+      hat: "WHITE" as const,
+      challenge_question: "Welche Fakten gibt es zum Tempolimit?",
+      challenge_instruction: "Nur gesicherte Fakten.",
+      difficulty: 4,
+      created_at: "2026-11-14T10:02:00Z",
+    };
+
     vi.mocked(mqApi.getMindQuest).mockResolvedValueOnce(argueQuest);
+    // 1. Select BLACK initially
     vi.mocked(mqApi.selectHat).mockResolvedValueOnce({
       mindquest: {
         ...argueQuest,
@@ -421,6 +432,112 @@ describe("MindQuestPage interactive flow", () => {
       challenge_question: blackTurn.challenge_question,
       challenge_instruction: blackTurn.challenge_instruction,
       difficulty: 4,
+      is_read_only: false,
+    });
+    // 2. Switch mid-debate to WHITE via top-left pill
+    vi.mocked(mqApi.selectHat).mockResolvedValueOnce({
+      mindquest: {
+        ...argueQuest,
+        status: "HAT_ACTIVE",
+        current_hat: "WHITE",
+        hat_rounds: [
+          {
+            id: "r-argue-1",
+            hat: "BLACK",
+            sequence_index: 0,
+            turns: [{ ...blackTurn, user_response: "Es gibt Staus." }],
+            started_at: "2026-11-14T10:01:00Z",
+          },
+          {
+            id: "r-argue-w",
+            hat: "WHITE",
+            sequence_index: 1,
+            turns: [whiteTurn],
+            started_at: "2026-11-14T10:02:00Z",
+          },
+        ],
+      },
+      active_hat: "WHITE",
+      initial_turn: whiteTurn,
+      challenge_question: whiteTurn.challenge_question,
+      challenge_instruction: whiteTurn.challenge_instruction,
+      difficulty: 4,
+      is_read_only: false,
+    });
+    // 3. Switch back to BLACK -> preserves Turn 2 counter-argument & previous answer
+    const blackTurn2 = {
+      ...blackTurn,
+      turn_number: 2,
+      challenge_question: "Das überzeugt noch nicht: Welche konkreten volkswirtschaftlichen Folgen entstehen?",
+      challenge_instruction: "Belege deine Kritik mit einem konkreten Mechanismus.",
+    };
+    vi.mocked(mqApi.selectHat).mockResolvedValueOnce({
+      mindquest: {
+        ...argueQuest,
+        status: "HAT_ACTIVE",
+        current_hat: "BLACK",
+      },
+      active_hat: "BLACK",
+      initial_turn: blackTurn2,
+      challenge_question: blackTurn2.challenge_question,
+      challenge_instruction: blackTurn2.challenge_instruction,
+      difficulty: 4,
+      is_read_only: false,
+      last_evaluation: {
+        turn: { ...blackTurn, user_response: "Es gibt Staus." },
+        average_score: 65,
+      },
+    });
+    // 4. Inspect completed BLACK hat later -> read-only view with scores
+    vi.mocked(mqApi.selectHat).mockResolvedValueOnce({
+      mindquest: {
+        ...argueQuest,
+        status: "HAT_COMPLETED",
+        current_hat: "BLACK",
+        completed_hats: ["BLACK"],
+      },
+      active_hat: "BLACK",
+      initial_turn: blackTurn2,
+      challenge_question: blackTurn2.challenge_question,
+      challenge_instruction: blackTurn2.challenge_instruction,
+      difficulty: 4,
+      is_read_only: true,
+      last_evaluation: {
+        turn: {
+          ...blackTurn2,
+          user_response: "Ein zentrales Risiko liegt in höheren Transportkosten durch längere Fahrzeiten.",
+        },
+        thinking_evaluation: {
+          id: "te-a2",
+          score: 88,
+          score_anchor: "Strong",
+          hat_adherence: 90,
+          relevance: 88,
+          reasoning: 88,
+          depth: 85,
+          specificity: 89,
+          evidence: [],
+          strengths: ["Starkes Risikoargument."],
+          weaknesses: [],
+          recommendations: [],
+        },
+        german_evaluation: {
+          id: "ge-a2",
+          score: 86,
+          score_anchor: "Strong",
+          grammar: 86,
+          vocabulary: 86,
+          sentence_structure: 86,
+          naturalness: 86,
+          level_appropriateness: 86,
+          evidence: [],
+          corrections: [],
+          strengths: ["Überzeugendes C1-Deutsch."],
+          weaknesses: [],
+          recommendations: [],
+        },
+        average_score: 87,
+      },
     });
 
     // First attempt fails <= 80% -> Perspective Challenger rejection
@@ -461,16 +578,15 @@ describe("MindQuestPage interactive flow", () => {
         encouragement: "Schärfe dein Argument.",
       },
       average_score: 65,
-      next_challenge_question: "Das überzeugt noch nicht: Welche konkreten volkswirtschaftlichen Folgen entstehen?",
-      next_challenge_instruction: "Belege deine Kritik mit einem konkreten Mechanismus.",
+      next_challenge_question: blackTurn2.challenge_question,
+      next_challenge_instruction: blackTurn2.challenge_instruction,
       round_should_complete: false,
     });
 
     // Second attempt succeeds > 80%
     vi.mocked(mqApi.submitResponse).mockResolvedValueOnce({
       turn: {
-        ...blackTurn,
-        turn_number: 2,
+        ...blackTurn2,
         user_response: "Ein zentrales Risiko liegt in höheren Transportkosten durch längere Fahrzeiten.",
       },
       thinking_evaluation: {
@@ -511,15 +627,6 @@ describe("MindQuestPage interactive flow", () => {
       round_should_complete: true,
     });
 
-    vi.mocked(mqApi.advanceMindQuest).mockResolvedValueOnce({
-      mindquest: {
-        ...argueQuest,
-        status: "HAT_COMPLETED",
-        completed_hats: ["BLACK"],
-      },
-      is_completed: false,
-    });
-
     render(<MindQuestPage />);
 
     // 1. Dark theme active and 5 hats visible (Blauer Hut must NOT be present)
@@ -536,32 +643,41 @@ describe("MindQuestPage interactive flow", () => {
     expect(screen.getByText("Schwarzer Hut")).toBeInTheDocument();
     expect(screen.queryByText("Blauer Hut")).not.toBeInTheDocument();
 
-    // 2. Select Schwarzer Hut -> locked into BLACK, shows SpeechModeToggle, and highlighted in top hat icons
-    fireEvent.click(screen.getByRole("button", { name: /Schwarzer Hut/i }));
+    // 2. Select Schwarzer Hut -> shows SpeechModeToggle & top-left active pill
+    fireEvent.click(screen.getByTestId("hat-card-BLACK"));
     expect(
       await screen.findByText("Welche Risiken hat ein generelles Tempolimit?")
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Einsprechen/i })).toBeInTheDocument();
-    expect(screen.getByLabelText("Schwarzer Hut: aktuell")).toBeInTheDocument();
-    expect(screen.getByLabelText("Weißer Hut: offen")).toBeInTheDocument();
+    expect(screen.getByTestId("hat-pill-BLACK")).toHaveAttribute(
+      "aria-label",
+      "Schwarzer Hut: aktuell"
+    );
 
-    // 3. Submit weak answer -> Perspective Challenger rejection
+    // 3. Submit weak answer -> rejected (<= 80% for C1)
     fireEvent.change(screen.getByPlaceholderText(/Schreibe deine Antwort hier/i), {
       target: { value: "Es gibt Staus." },
     });
     fireEvent.click(screen.getByRole("button", { name: /Antwort auswerten/i }));
 
     expect(
-      await screen.findByText(/Abgelehnt \(65 % · > 80 % nötig\)/i)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Das überzeugt noch nicht: Welche konkreten volkswirtschaftlichen Folgen entstehen\?/i)
+      await screen.findByText(/Abgelehnt \(65 % · Ziel > 80 %\)/i)
     ).toBeInTheDocument();
 
-    // 4. Revise answer via always-visible top-right button and pass > 80%
-    fireEvent.click(screen.getByRole("button", { name: /Antwort überarbeiten/i }));
+    // 4. Switch to WHITE via top-left pill mid-debate, then switch back to BLACK -> preserves Turn 2!
+    fireEvent.click(screen.getByTestId("hat-pill-WHITE"));
+    expect(
+      await screen.findByText("Welche Fakten gibt es zum Tempolimit?")
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("hat-pill-BLACK"));
+    expect(
+      await screen.findByText(blackTurn2.challenge_question)
+    ).toBeInTheDocument();
     const textarea = screen.getByPlaceholderText(/Schreibe deine Antwort hier/i);
     expect(textarea).toHaveValue("Es gibt Staus.");
+
+    // 5. Submit stronger response -> accepted (> 80%)
     fireEvent.change(textarea, {
       target: {
         value:
@@ -571,14 +687,20 @@ describe("MindQuestPage interactive flow", () => {
     fireEvent.click(screen.getByRole("button", { name: /Antwort auswerten/i }));
 
     expect(
-      await screen.findByText(/Akzeptiert \(87 % > 80 %\)/i)
+      await screen.findByText(/Akzeptiert \(87 % · Ziel > 80 %\)/i)
     ).toBeInTheDocument();
 
-    // 5. Return to 5-hat selector via top-right "Nächste Perspektive" -> Schwarzer Hut is completed & disabled
+    // 6. Click "Nächste Perspektive" -> selector shows BLACK completed, still clickable to view score read-only
     fireEvent.click(screen.getByRole("button", { name: /Nächste Perspektive/i }));
-    const blackBtn = await screen.findByRole("button", { name: /Schwarzer Hut/i });
-    expect(blackBtn).toBeDisabled();
-    expect(screen.getByLabelText("Schwarzer Hut: erledigt")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Weißer Hut/i })).not.toBeDisabled();
+    const blackCard = await screen.findByTestId("hat-card-BLACK");
+    expect(blackCard).not.toBeDisabled();
+    expect(screen.getByText(/Erledigt · Punktzahl ansehen/i)).toBeInTheDocument();
+
+    fireEvent.click(blackCard);
+    expect(
+      (await screen.findAllByText(/Abgeschlossen · Nur Ansicht/i)).length
+    ).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("88 / 100")).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/Schreibe deine Antwort hier/i)).not.toBeInTheDocument();
   });
 });
