@@ -52,34 +52,34 @@ export function ProfileMetricsSection({
   germanExtra,
 }: ProfileMetricsSectionProps) {
   return (
-    <div className="flex flex-col gap-5 md:flex-1 md:min-h-0">
-      <div className="grid shrink-0 gap-4 md:grid-cols-3">
-        <Card bodyClassName="p-4 md:p-5">
-          <p className="text-sm text-slate-500">{primaryCardLabel}</p>
-          <p className="mt-1.5 text-2xl font-bold md:text-3xl">
+    <div className="flex flex-col gap-4">
+      <div className="grid gap-3 md:grid-cols-3">
+        <Card bodyClassName="p-3 md:p-3.5">
+          <p className="text-xs text-slate-500">{primaryCardLabel}</p>
+          <p className="mt-1 text-xl font-bold md:text-2xl">
             {primaryCardValue}
           </p>
         </Card>
-        <Card bodyClassName="p-4 md:p-5">
-          <p className="text-sm text-slate-500">Denken</p>
-          <p className="mt-1.5 text-2xl font-bold md:text-3xl">
+        <Card bodyClassName="p-3 md:p-3.5">
+          <p className="text-xs text-slate-500">Denken</p>
+          <p className="mt-1 text-xl font-bold md:text-2xl">
             {thinkingOverall !== null && thinkingOverall !== undefined ? (
               <>
                 {thinkingOverall}{" "}
-                <span className="text-base font-medium text-slate-400">/ 100</span>
+                <span className="text-sm font-medium text-slate-400">/ 100</span>
               </>
             ) : (
               "—"
             )}
           </p>
         </Card>
-        <Card bodyClassName="p-4 md:p-5">
-          <p className="text-sm text-slate-500">Deutsch</p>
-          <p className="mt-1.5 text-2xl font-bold md:text-3xl">
+        <Card bodyClassName="p-3 md:p-3.5">
+          <p className="text-xs text-slate-500">Deutsch</p>
+          <p className="mt-1 text-xl font-bold md:text-2xl">
             {germanOverall !== null && germanOverall !== undefined ? (
               <>
                 {germanOverall}{" "}
-                <span className="text-base font-medium text-slate-400">/ 100</span>
+                <span className="text-sm font-medium text-slate-400">/ 100</span>
               </>
             ) : (
               "—"
@@ -88,7 +88,7 @@ export function ProfileMetricsSection({
         </Card>
       </div>
 
-      <div className="grid gap-5 md:flex-1 md:min-h-0 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 md:items-start">
         <Card
           title="Denkfähigkeiten"
           description={
@@ -96,8 +96,7 @@ export function ProfileMetricsSection({
               ? `Stärke: ${formatDimensionName(strongestThinking)} · Fokus: ${formatDimensionName(weakestThinking)}`
               : "Deine Werte erscheinen nach der ersten Auswertung."
           }
-          className="flex flex-col md:h-full md:min-h-0"
-          bodyClassName="flex-1 space-y-4 md:overflow-y-auto"
+          bodyClassName="space-y-3"
         >
           {thinkingDimensions.length > 0 && (
             <ScoreRadarChart
@@ -120,8 +119,7 @@ export function ProfileMetricsSection({
               ? `Stärke: ${formatDimensionName(strongestGerman)} · Fokus: ${formatDimensionName(weakestGerman)}`
               : "Deine Werte erscheinen nach der ersten Auswertung."
           }
-          className="flex flex-col md:h-full md:min-h-0"
-          bodyClassName="flex-1 space-y-4 md:overflow-y-auto"
+          bodyClassName="space-y-3"
         >
           {germanDimensions.length > 0 && (
             <ScoreRadarChart

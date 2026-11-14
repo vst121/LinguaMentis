@@ -15,12 +15,12 @@ const navigation = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   return (
-    <div className="flex min-h-dvh flex-col bg-slate-50 text-slate-900 md:h-dvh md:overflow-hidden">
+    <div className="flex min-h-dvh flex-col bg-slate-50 text-slate-900">
       <header className="sticky top-0 z-20 shrink-0 border-b border-slate-200/80 bg-slate-50/90 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-[1600px] items-center justify-between px-4 sm:px-6 md:h-16">
-          <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-slate-900 text-white">
-              <Brain size={18} />
+        <div className="mx-auto flex h-12 max-w-[1600px] items-center justify-between px-4 sm:px-6">
+          <Link href="/" className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+            <span className="grid h-7 w-7 place-items-center rounded-lg bg-slate-900 text-white">
+              <Brain size={15} />
             </span>
             LinguaMentis
           </Link>
@@ -30,20 +30,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition",
+                  "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition sm:text-sm",
                   pathname === href || (href !== "/" && pathname.startsWith(href))
                     ? "bg-slate-900 text-white"
                     : "text-slate-600 hover:bg-slate-200",
                 )}
               >
-                <Icon size={16} />
+                <Icon size={15} />
                 <span className="hidden sm:block">{label}</span>
               </Link>
             ))}
           </nav>
         </div>
       </header>
-      <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-4 py-4 sm:px-6 md:min-h-0 md:overflow-hidden md:py-5">
+      <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-4 py-3 sm:px-6 md:py-4">
         {children}
       </main>
     </div>

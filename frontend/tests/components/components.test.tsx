@@ -154,7 +154,8 @@ describe("UI and layout components", () => {
     expect(container.querySelectorAll("circle")).toHaveLength(5);
     expect(screen.getByText("Perspektiven-Fokus")).toBeInTheDocument();
     expect(screen.getByText("Relevanz")).toBeInTheDocument();
-    expect(screen.getByText("90 / 100")).toBeInTheDocument();
-    expect(screen.getByText("85 / 100")).toBeInTheDocument();
+    expect(screen.getByText("90")).toBeInTheDocument();
+    expect(screen.getByText("85")).toBeInTheDocument();
+    expect(screen.queryByText("90 / 100")).not.toBeInTheDocument();
   });
 });

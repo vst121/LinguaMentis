@@ -251,25 +251,30 @@ export default function MindQuestPage() {
   const isLastHat = remainingHats.length <= 1;
   return (
     <AppShell>
-      <div className="flex flex-col gap-4 md:flex-1 md:min-h-0">
+      <div className="flex flex-col gap-3">
         <div className="shrink-0">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="min-w-0">
-              <Link
-                href="/mindquests"
-                className="text-sm text-blue-700 hover:underline"
-              >
-                ← Alle MindQuests
-              </Link>
-              <h1 className="mt-1 truncate text-2xl font-bold md:text-3xl">{quest.topic}</h1>
-              <p className="mt-0.5 text-sm text-slate-600">
-                Sprachniveau {quest.target_level} · {quest.completed_hats.length}/
-                {quest.planned_hats.length} Perspektiven
-              </p>
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <Link
+                  href="/mindquests"
+                  className="font-medium text-blue-700 hover:underline"
+                >
+                  ← Alle MindQuests
+                </Link>
+                <span>·</span>
+                <span>
+                  Niveau {quest.target_level} · {quest.completed_hats.length}/
+                  {quest.planned_hats.length} Perspektiven
+                </span>
+              </div>
+              <h1 className="mt-0.5 truncate text-lg font-bold md:text-xl">
+                {quest.topic}
+              </h1>
             </div>
             {currentHat && <HatIndicator hat={currentHat} detail />}
           </div>
-          <div className="mt-4 flex gap-1.5">
+          <div className="mt-2 flex gap-1">
             {quest.planned_hats.map((h) => {
               const colors = HAT_PROGRESS_COLORS[h];
               const stateClass = quest.completed_hats.includes(h)
@@ -281,20 +286,20 @@ export default function MindQuestPage() {
                 <div
                   key={h}
                   title={HAT_METADATA[h]?.nameGerman ?? h}
-                  className={`h-2.5 flex-1 rounded-full transition-all ${stateClass}`}
+                  className={`h-1.5 flex-1 rounded-full transition-all ${stateClass}`}
                 />
               );
             })}
           </div>
           {error && (
-            <p className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
+            <p className="mt-2 rounded-lg bg-rose-50 p-2.5 text-sm text-rose-700">
               {error}
             </p>
           )}
         </div>
 
         {quest.status === "COMPLETED" ? (
-          <div className="md:flex md:flex-1 md:min-h-0 md:items-center md:justify-center">
+          <div className="flex items-center justify-center py-8">
             <Card
               title="MindQuest abgeschlossen"
               description="Alle geplanten Perspektiven wurden beendet."
@@ -311,23 +316,23 @@ export default function MindQuestPage() {
           <p className="text-slate-500">Erste Perspektive wird vorbereitet …</p>
         ) : (
           <div
-            className={`grid gap-5 md:flex-1 md:min-h-0 ${
+            className={`grid gap-4 md:items-start ${
               feedback
-                ? "md:grid-cols-[.95fr_1.05fr]"
+                ? "md:grid-cols-[.9fr_1.1fr]"
                 : "md:grid-cols-[.9fr_1.1fr]"
             }`}
           >
             {/* Left column: Challenge prompt (and Feedback summary when evaluated) */}
-            <div className="flex flex-col gap-4 md:min-h-0 md:overflow-y-auto md:pr-1">
-              <Card className={feedback ? "shrink-0" : "md:flex-1 md:flex md:flex-col"}>
-                <p className="text-xs font-semibold text-blue-700 md:text-sm">
+            <div className="flex flex-col gap-3">
+              <Card>
+                <p className="text-xs font-semibold text-blue-700">
                   RUNDE {turn.turn_number} ·{" "}
                   {currentHat && <span>{currentHat}</span>}
                 </p>
-                <h2 className="mt-2.5 text-lg font-semibold leading-7 md:text-[clamp(1.05rem,1.4vw,1.35rem)] md:leading-relaxed">
+                <h2 className="mt-1.5 text-base font-semibold leading-6 md:text-lg md:leading-7">
                   {turn.challenge_question}
                 </h2>
-                <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm leading-6 text-slate-600">
+                <p className="mt-2.5 rounded-lg bg-slate-50 p-2.5 text-xs leading-5 text-slate-600 md:text-sm md:leading-6">
                   {turn.challenge_instruction}
                 </p>
               </Card>
@@ -336,14 +341,13 @@ export default function MindQuestPage() {
                 <Card
                   title="Dein Feedback"
                   description={feedback.feedback.encouragement}
-                  className="flex flex-col md:flex-1 md:min-h-0"
-                  bodyClassName="flex flex-1 flex-col justify-between gap-4"
+                  bodyClassName="flex flex-col gap-3"
                 >
-                  <div className="space-y-3">
-                    <p className="rounded-lg bg-blue-50 p-3.5 text-sm leading-6 text-slate-700">
+                  <div className="space-y-2.5">
+                    <p className="rounded-lg bg-blue-50 p-3 text-sm leading-6 text-slate-700">
                       {feedback.feedback.thinking_feedback}
                     </p>
-                    <p className="rounded-lg bg-emerald-50 p-3.5 text-sm leading-6 text-slate-700">
+                    <p className="rounded-lg bg-emerald-50 p-3 text-sm leading-6 text-slate-700">
                       {feedback.feedback.german_feedback}
                     </p>
                   </div>
@@ -361,16 +365,15 @@ export default function MindQuestPage() {
               )}
             </div>
 
-            {/* Right column: Response editor, pending state, or horizontal score + corrections panel */}
-            <div className="flex flex-col md:min-h-0">
+            {/* Right column: Response editor, pending state, or radar charts + proposition + corrections */}
+            <div className="flex flex-col">
               {pendingResponse ? (
                 <Card
                   title="Deine Antwort"
                   description="Denken und Deutsch werden gleichzeitig ausgewertet …"
-                  className="md:flex md:h-full md:flex-col"
-                  bodyClassName="flex flex-1 flex-col justify-between gap-4"
+                  bodyClassName="flex flex-col gap-3"
                 >
-                  <p className="rounded-lg bg-slate-50 p-4 text-sm leading-6 text-slate-700">
+                  <p className="rounded-lg bg-slate-50 p-3.5 text-sm leading-6 text-slate-700">
                     {pendingResponse}
                   </p>
                   <div className="flex items-center gap-2 text-sm text-blue-700">
@@ -382,21 +385,19 @@ export default function MindQuestPage() {
                 <Card
                   title="Deine Antwort"
                   description="Formuliere deine Gedanken auf Deutsch. Qualität ist wichtiger als Länge."
-                  className="flex flex-col md:h-full md:min-h-0"
-                  bodyClassName="flex flex-1 flex-col md:min-h-0"
                 >
                   <form
                     onSubmit={handleResponseSubmit}
-                    className="flex flex-1 flex-col md:min-h-0"
+                    className="flex flex-col"
                   >
                     <textarea
                       value={draft}
                       onChange={(e) => setDraft(e.target.value)}
                       onKeyDown={handleResponseKeyDown}
                       placeholder="Schreibe deine Antwort hier …"
-                      className="min-h-44 w-full flex-1 resize-none rounded-lg border border-slate-300 p-3 leading-7 outline-none focus:ring-2 focus:ring-blue-500 md:min-h-0"
+                      className="min-h-56 w-full resize-y rounded-lg border border-slate-300 p-3 leading-7 outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <div className="mt-3 flex shrink-0 items-center justify-between text-xs text-slate-500">
+                    <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
                       <span>
                         {draft.trim().split(/\s+/).filter(Boolean).length} Wörter
                       </span>
@@ -412,7 +413,7 @@ export default function MindQuestPage() {
                   </form>
                 </Card>
               ) : (
-                <div className="grid gap-4 md:flex-1 md:min-h-0 md:grid-cols-2 md:auto-rows-max md:overflow-y-auto md:pr-1">
+                <div className="grid gap-3 md:grid-cols-2 md:auto-rows-max">
                   <Card title="Denken" bodyClassName="pt-3">
                     <div className="mb-2 flex items-baseline justify-between">
                       <span className="text-xs font-medium uppercase tracking-wide text-slate-500">

@@ -16,13 +16,13 @@ export default function LearningPage() {
   }, []);
   return (
     <AppShell>
-      <div className="flex flex-col gap-5 md:flex-1 md:min-h-0">
-        <div className="shrink-0">
-          <p className="text-xs font-semibold text-blue-700 md:text-sm">LERNPROFIL</p>
-          <h1 className="mt-1 text-2xl font-bold md:text-3xl">
+      <div className="flex flex-col gap-3">
+        <div>
+          <p className="text-xs font-semibold text-blue-700">LERNPROFIL</p>
+          <h1 className="mt-0.5 text-xl font-bold md:text-2xl">
             Deine Entwicklung im Blick
           </h1>
-          <p className="mt-1 text-sm text-slate-600 md:text-base">
+          <p className="mt-0.5 text-xs text-slate-600 md:text-sm">
             Denken und Sprache sind zwei eigene Fähigkeiten — hier siehst du beide.
           </p>
         </div>

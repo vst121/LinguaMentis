@@ -49,12 +49,12 @@ export function ScoreRadarChart({
     );
   }
 
-  const width = 420;
-  const height = 286;
+  const width = 400;
+  const height = 248;
   const cx = width / 2;
-  const cy = 146;
-  const radius = 78;
-  const labelRadius = 96;
+  const cy = 128;
+  const radius = 70;
+  const labelRadius = 86;
 
   // Use at least 5 radial grid spokes so the radar polygon remains legible even
   // when a partial/mock dataset has fewer than 3 dimensions.
@@ -112,7 +112,7 @@ export function ScoreRadarChart({
     <div className="w-full" data-testid="score-radar-chart">
       <svg
         viewBox={`0 0 ${width} ${height}`}
-        className="mx-auto h-auto w-full max-w-[420px] overflow-visible select-none"
+        className="mx-auto h-auto w-full max-w-[380px] overflow-visible select-none"
         role="img"
         aria-label={ariaLabel}
       >
@@ -179,6 +179,7 @@ export function ScoreRadarChart({
         {/* Data points and perimeter labels */}
         {dataPoints.map((p, idx) => {
           const isHovered = hoveredIdx === idx;
+          const displayScore = Math.round(p.clamped * 10) / 10;
           return (
             <g
               key={p.key}
@@ -186,7 +187,7 @@ export function ScoreRadarChart({
               onMouseLeave={() => setHoveredIdx(null)}
               className="cursor-pointer"
             >
-              <title>{`${p.label}: ${p.clamped} / 100`}</title>
+              <title>{`${p.label}: ${displayScore}`}</title>
               <circle
                 cx={p.x}
                 cy={p.y}
@@ -209,7 +210,7 @@ export function ScoreRadarChart({
                 textAnchor={p.textAnchor}
                 className={`text-[11px] font-bold ${palette.scoreText}`}
               >
-                {`${Math.round(p.clamped * 10) / 10} / 100`}
+                {String(displayScore)}
               </text>
             </g>
           );

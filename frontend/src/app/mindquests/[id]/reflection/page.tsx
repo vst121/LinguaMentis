@@ -77,22 +77,22 @@ export default function ReflectionPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col gap-5 md:flex-1 md:min-h-0">
-        <div className="flex shrink-0 flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-blue-700 md:text-sm">
+            <p className="text-xs font-semibold text-blue-700">
               ABSCHLUSS{r.topic ? ` · ${r.topic}` : ""}
               {r.target_level ? ` (${r.target_level})` : ""}
             </p>
-            <h1 className="mt-1 text-2xl font-bold md:text-3xl">
+            <h1 className="mt-0.5 text-xl font-bold md:text-2xl">
               Deine MindQuest-Reflexion
             </h1>
-            <p className="mt-1.5 max-w-3xl text-sm text-slate-600 md:text-base">
+            <p className="mt-1 max-w-3xl text-xs text-slate-600 md:text-sm">
               {r.closing_message}
             </p>
           </div>
           <Link href="/mindquests" className="shrink-0">
-            <Button>Neue MindQuest starten</Button>
+            <Button size="sm">Neue MindQuest starten</Button>
           </Link>
         </div>
 

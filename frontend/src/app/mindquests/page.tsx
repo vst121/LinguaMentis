@@ -79,28 +79,26 @@ export default function MindQuestsPage() {
   }
   return (
     <AppShell>
-      <div className="flex flex-col gap-5 md:flex-1 md:min-h-0">
-        <div className="shrink-0">
-          <p className="text-xs font-semibold text-blue-700 md:text-sm">MINQUESTS</p>
-          <h1 className="mt-1 text-2xl font-bold md:text-3xl">
+      <div className="flex flex-col gap-4">
+        <div>
+          <p className="text-xs font-semibold text-blue-700">MINDQUESTS</p>
+          <h1 className="mt-0.5 text-xl font-bold md:text-2xl">
             Woran möchtest du heute denken?
           </h1>
-          <p className="mt-1 text-sm text-slate-600 md:text-base">
+          <p className="mt-0.5 text-xs text-slate-600 md:text-sm">
             Wähle ein relevantes Thema und nimm es Perspektive für Perspektive
             unter die Lupe.
           </p>
         </div>
-        <div className="grid gap-6 md:flex-1 md:min-h-0 md:grid-cols-[minmax(290px,.8fr)_1.2fr] md:items-stretch">
+        <div className="grid gap-5 md:grid-cols-[minmax(290px,.8fr)_1.2fr] md:items-start">
           <Card
             title="Neue MindQuest"
             description="Starte mit einem Thema, das dich wirklich interessiert."
-            className="flex flex-col md:h-full md:min-h-0"
-            bodyClassName="flex-1 overflow-y-auto"
           >
             <form
               onSubmit={submit}
               onKeyDown={handleFormKeyDown}
-              className="flex h-full flex-col justify-between gap-4"
+              className="flex flex-col gap-4"
             >
               <div className="space-y-4">
                 <label className="block text-sm font-medium">
@@ -131,8 +129,8 @@ export default function MindQuestsPage() {
               </Button>
             </form>
           </Card>
-          <div className="flex flex-col md:min-h-0">
-            <h2 className="mb-3 shrink-0 text-lg font-semibold">Deine MindQuests</h2>
+          <div className="flex flex-col">
+            <h2 className="mb-2.5 text-base font-semibold md:text-lg">Deine MindQuests</h2>
             {loading ? (
               <p className="text-slate-500">Wird geladen …</p>
             ) : items.length === 0 ? (
@@ -142,7 +140,7 @@ export default function MindQuestsPage() {
                 </p>
               </Card>
             ) : (
-              <div className="grid gap-3 md:flex-1 md:auto-rows-max md:grid-cols-1 md:overflow-y-auto md:pr-1 lg:grid-cols-2">
+              <div className="grid gap-3 md:grid-cols-1 lg:grid-cols-2">
                 {items.map((q) => (
                   <Link href={`/mindquests/${q.id}`} key={q.id} className="block">
                     <Card className="h-full transition hover:border-blue-300 hover:shadow-md">
