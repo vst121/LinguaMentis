@@ -1,13 +1,10 @@
-.PHONY: help dev dev-container test test-backend test-frontend test-e2e test-eval lint clean
+.PHONY: help dev test test-backend test-frontend test-e2e test-eval lint clean
 
 help: ## Zeigt alle verfügbaren Make-Befehle
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
-dev: ## Startet PostgreSQL (Docker), Backend und Frontend auf dem Host
-	./scripts/start.sh
-
-dev-container: ## Startet Backend und Frontend innerhalb des Devcontainers
-	./scripts/start-container.sh
+dev: ## Startet Backend (FastAPI) und Frontend (Next.js) im Devcontainer
+	./scripts/dev.sh
 
 test: test-backend test-frontend ## Führt alle Backend- und Frontend-Tests aus
 

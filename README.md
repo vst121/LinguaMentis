@@ -212,37 +212,37 @@ The key architectural principle is:
 ## Project Structure
 
 ```text
-
 linguamentis/
-│
+├── .devcontainer/
+│   ├── Dockerfile
+│   ├── devcontainer.json
+│   └── docker-compose.yml
 ├── backend/
-│   ├── src/
-│   │   └── linguamentis/
-│   │       ├── api/
-│   │       ├── application/
-│   │       ├── domain/
-│   │       ├── agents/
-│   │       ├── ai/
-│   │       └── infrastructure/
-│   │
+│   ├── src/linguamentis/
+│   │   ├── agents/
+│   │   ├── ai/
+│   │   ├── api/
+│   │   ├── application/
+│   │   ├── domain/
+│   │   ├── infrastructure/
+│   │   └── shared/
 │   └── tests/
-│
 ├── frontend/
-│   └── src/
-│       ├── app/
-│       ├── components/
-│       ├── services/
-│       └── types/
-│
+│   ├── src/
+│   │   ├── app/
+│   │   ├── components/
+│   │   ├── lib/
+│   │   ├── services/
+│   │   └── types/
+│   └── tests/
 ├── docs/
 │   ├── PRD.md
 │   ├── Architecture.md
 │   ├── HatContracts.md
-│   ├── EvaluationRubric.md
-│   └── AIContracts.md
-│
-└── docker-compose.yml
-
+│   └── EvaluationRubric.md
+├── scripts/
+│   └── dev.sh
+└── Makefile
 ```
 
 ---
@@ -329,50 +329,17 @@ Once this flow works end-to-end, the remaining hats can be added.
 
 ---
 
-## Running Locally
+## Development (Dev Container)
 
-### Option A: Dev Container (Isolated in Docker)
+LinguaMentis uses a **VS Code Dev Container** as the standard development environment (`.devcontainer/`). It provides Python 3.12, `uv`, Node.js, `pnpm`, and a dedicated PostgreSQL 17 service (`postgres:5432`) out of the box.
 
-1. Open the project in VS Code and select **Dev Containers: Reopen in Container** (builds the `app` and `postgres` containers and automatically installs backend and frontend dependencies).
-2. Ensure `GEMINI_API_KEY` is set in `backend/.env` (`DATABASE_URL` points to `postgres:5432` inside the container network).
-3. Start Backend and Frontend inside the container terminal:
-
-```bash
-make dev-container
-# or: ./scripts/start-container.sh
-```
-
-### Option B: Host Setup
+1. Open the repository in VS Code and run **Dev Containers: Reopen in Container**.
+2. Set `GEMINI_API_KEY` in `backend/.env` (created automatically from `backend/.env.example`).
+3. Start both Backend (`http://localhost:8000`) and Frontend (`http://localhost:3000`):
 
 ```bash
 make dev
-# or: ./scripts/start.sh
-```
-
-Or start each service manually:
-
-#### Backend
-
-```bash
-cd backend
-uv sync
-uv run uvicorn linguamentis.main:app --reload
-```
-
-#### Frontend
-
-```bash
-cd frontend
-pnpm install
-pnpm run dev
-```
-
-#### Database
-
-PostgreSQL can be started with:
-
-```bash
-docker compose up -d postgres
+# or: ./scripts/dev.sh
 ```
 
 ---
@@ -415,7 +382,7 @@ To use LinguaMentis, the end user needs:
 Create a `.env` file for the backend.
 
 ```env
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5438/linguamentis
+DATABASE_URL=postgresql+asyncpg://linguamentis:linguamentis@postgres:5432/linguamentis
 GEMINI_API_KEY=your-gemini-api-key
 
 AI_MODEL_BLUE=gemini-2.5-flash

@@ -19,7 +19,7 @@
     }
   },
   "initializeCommand": "mkdir -p backend/.venv frontend/node_modules",
-  "postCreateCommand": "sudo chown -R vscode:vscode backend/.venv frontend/node_modules && ([ -f backend/.env ] || (cp backend/.env.example backend/.env && sed -i 's|@localhost:5438/|@postgres:5432/|g' backend/.env)) && (cd backend && uv sync --extra dev) && (cd frontend && pnpm install)",
+  "postCreateCommand": "sudo chown -R vscode:vscode backend/.venv frontend/node_modules && ([ -f backend/.env ] || cp backend/.env.example backend/.env) && (cd backend && uv sync --extra dev) && (cd frontend && pnpm install)",
   "customizations": {
     "vscode": {
       "extensions": [

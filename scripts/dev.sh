@@ -8,7 +8,7 @@ for arg in "$@"; do
       SKIP_SYNC=true
       ;;
     --help|-h)
-      echo "Usage: ./scripts/start-container.sh [--skip-sync]"
+      echo "Usage: ./scripts/dev.sh [--skip-sync]"
       exit 0
       ;;
     *)
@@ -91,8 +91,7 @@ log_step "Checking backend environment configuration (.env)..."
 if [ ! -f "$ENV_FILE" ]; then
   if [ -f "$ENV_EXAMPLE_FILE" ]; then
     cp "$ENV_EXAMPLE_FILE" "$ENV_FILE"
-    sed -i 's|@localhost:5438/|@postgres:5432/|g' "$ENV_FILE"
-    echo "Warning: Created backend/.env from .env.example (adjusted DATABASE_URL for container network). Set GEMINI_API_KEY before using AI features."
+    echo "Warning: Created backend/.env from .env.example. Set GEMINI_API_KEY before using AI features."
   else
     echo "Error: Neither backend/.env nor backend/.env.example was found." >&2
     exit 1
@@ -125,6 +124,9 @@ start_backend() {
 }
 
 start_frontend() {
+  if [ -f "$FRONTEND_DIR/.next/BUILD_ID" ]; then
+    rm -rf "$FRONTEND_DIR/.next"
+  fi
   (cd "$FRONTEND_DIR" && HOSTNAME=0.0.0.0 exec "$PKG_MANAGER" run dev) &
   FRONTEND_PID=$!
 }
