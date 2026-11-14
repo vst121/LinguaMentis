@@ -98,25 +98,17 @@ async def test_multi_turn_hat_round_and_multi_hat_progression(
     assert start_res.active_hat == HatType.WHITE
     assert start_res.initial_turn.turn_number == 1
 
-    # Turn 1 gets a low thinking score (< 75) -> follow-up Turn 2 is created
+    # Even with a low thinking score (< 75), each hat has strictly one turn/round
     fake_llm_client.queue_response(ThinkingEvaluationOutput, _low_thinking_output())
     sub1 = await mq_service.submit_response(
         mindquest_id=mq.id, user_response="Es gibt viele Studien zur Nutzung."
     )
     assert sub1.thinking_evaluation.score < 75
-    assert sub1.round_should_complete is False
-    assert sub1.next_challenge is not None
+    assert sub1.round_should_complete is True
+    assert sub1.next_challenge is None
 
     updated_mq = await mq_service.get_mindquest(mq.id)
-    assert len(updated_mq.hat_rounds[0].turns) == 2
-
-    # Turn 2 gets default score (>= 75) -> round completes
-    sub2 = await mq_service.submit_response(
-        mindquest_id=mq.id,
-        user_response="Krankenhäuser berichten von 20 Prozent schnellerer Auswertung.",
-    )
-    assert sub2.round_should_complete is True
-    assert sub2.next_challenge is None
+    assert len(updated_mq.hat_rounds[0].turns) == 1
 
     # Advance through remaining mandatory hats: YELLOW -> GREEN -> RED -> BLACK -> BLUE
     remaining_hats = (

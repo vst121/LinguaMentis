@@ -32,7 +32,7 @@ from linguamentis.shared.logging import get_logger
 logger = get_logger(__name__)
 
 COMPLETION_SCORE_THRESHOLD = 75
-MAX_TURNS_PER_HAT_ROUND = 3
+MAX_TURNS_PER_HAT_ROUND = 1
 
 
 @dataclass(slots=True)
@@ -126,14 +126,9 @@ class TurnService:
             ),
         )
 
-        # Check if the hat round has reached completion threshold
-        thinking_score = thinking_eval.score
+        # Each hat color has a single round (one question + one evaluated response)
         turn_count = len(active_round.turns)
-
-        round_should_complete = (
-            thinking_score >= COMPLETION_SCORE_THRESHOLD
-            or turn_count >= MAX_TURNS_PER_HAT_ROUND
-        )
+        round_should_complete = turn_count >= MAX_TURNS_PER_HAT_ROUND
 
         feedback_task = self._evaluation_service.generate_feedback(
             challenge_question=latest_turn.challenge_question,
