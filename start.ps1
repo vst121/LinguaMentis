@@ -124,6 +124,15 @@ function Start-BackendProcess {
 }
 
 function Start-FrontendProcess([string]$PackageManager) {
+    $nextBin = Join-Path $FrontendDir "node_modules" "next" "dist" "bin" "next"
+    if (Test-Path $nextBin) {
+        return Start-Process -FilePath "node" `
+            -ArgumentList @($nextBin, "dev") `
+            -WorkingDirectory $FrontendDir `
+            -NoNewWindow `
+            -PassThru
+    }
+
     $cmdString = "$PackageManager run dev"
     if ($RunningOnWindows) {
         return Start-Process -FilePath "cmd.exe" `
