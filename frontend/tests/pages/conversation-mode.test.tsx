@@ -63,6 +63,27 @@ describe("Spoken Conversation Mode (ConversationAgent UI)", () => {
     };
 
     vi.mocked(mqApi.getMindQuest).mockResolvedValueOnce(baseQuest);
+    vi.mocked(mqApi.startMindQuest).mockResolvedValueOnce({
+      mindquest: {
+        ...baseQuest,
+        status: "HAT_ACTIVE",
+        current_hat: "WHITE",
+        hat_rounds: [
+          {
+            id: "r-1",
+            hat: "WHITE",
+            sequence_index: 0,
+            turns: [turn1],
+            started_at: "2026-11-14T10:01:00Z",
+          },
+        ],
+      },
+      active_hat: "WHITE",
+      initial_turn: turn1,
+      challenge_question: turn1.challenge_question,
+      challenge_instruction: turn1.challenge_instruction,
+      difficulty: 2,
+    });
     vi.mocked(convApi.openConversation).mockResolvedValueOnce({
       mindquest: { ...baseQuest, status: "HAT_ACTIVE", current_hat: "WHITE" },
       active_hat: "WHITE",
@@ -120,7 +141,7 @@ describe("Spoken Conversation Mode (ConversationAgent UI)", () => {
 
     render(<MindQuestPage />);
     const startConvBtn = await screen.findByRole("button", {
-      name: /Mündliches Gespräch starten/i,
+      name: /Gesprächsmodus/i,
     });
     fireEvent.click(startConvBtn);
 

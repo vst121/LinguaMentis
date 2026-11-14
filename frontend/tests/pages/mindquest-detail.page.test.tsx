@@ -229,7 +229,6 @@ describe("MindQuestPage interactive flow", () => {
     expect(textarea).toHaveValue("Entwurf bleibt erhalten");
   });
 
-<<<<<<< HEAD
   it("redirects immediately to reflection when opening an already COMPLETED MindQuest and counts words accurately", async () => {
     vi.mocked(mqApi.getMindQuest).mockResolvedValueOnce({
       ...baseQuest,
@@ -373,7 +372,8 @@ describe("MindQuestPage interactive flow", () => {
     expect(textarea).toHaveValue("Die Statistik zeigt einen Anstieg um zehn Prozent.");
 
     delete (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
-=======
+  });
+
   it("Argue Mode switches to dark theme, shows 5 hats (no Blue), enforces Devil's Advocate until >80%, and disables completed hats", async () => {
     const argueQuest: MindQuest = {
       id: "mq-argue",
@@ -577,6 +577,5 @@ describe("MindQuestPage interactive flow", () => {
     expect(blackBtn).toBeDisabled();
     expect(screen.getByLabelText("Schwarzer Hut: erledigt")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Weißer Hut/i })).not.toBeDisabled();
->>>>>>> feature_propositions
   });
 });

@@ -3,17 +3,6 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
-<<<<<<< HEAD
-import { ArrowRight, MessageSquareText, Send, Volume2 } from "lucide-react";
-import { AppShell } from "@/components/layout/AppShell";
-import { ConversationView } from "@/components/conversation/ConversationView";
-import { ScoreBar } from "@/components/evaluation/ProfileScoreCards";
-import { HatIndicator } from "@/components/hats/HatIndicator";
-import {
-  SpeechModeToggle,
-  SpeechRecordingBanner,
-} from "@/components/speech/SpeechInputControls";
-=======
 import {
   ArrowRight,
   CheckCircle2,
@@ -21,15 +10,21 @@ import {
   Flame,
   Loader2,
   Lock,
+  MessageSquareText,
   RotateCcw,
   Send,
+  Volume2,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { ConversationView } from "@/components/conversation/ConversationView";
 import { ScoreRadarChart } from "@/components/evaluation/ScoreRadarChart";
 import { ResponsePropositionCard } from "@/components/evaluation/ResponsePropositionCard";
 import { HatIndicator } from "@/components/hats/HatIndicator";
+import {
+  SpeechModeToggle,
+  SpeechRecordingBanner,
+} from "@/components/speech/SpeechInputControls";
 import { Badge } from "@/components/ui/Badge";
->>>>>>> feature_propositions
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useConversationSession } from "@/hooks/useConversationSession";
@@ -109,13 +104,9 @@ export default function MindQuestPage() {
     [feedback, setFeedback] = useState<SubmitResponseResponse | null>(null),
     [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
-<<<<<<< HEAD
+    [elapsedSeconds, setElapsedSeconds] = useState(0),
     [error, setError] = useState(""),
     [experienceMode, setExperienceMode] = useState<"written" | "conversation">("written");
-=======
-    [elapsedSeconds, setElapsedSeconds] = useState(0),
-    [error, setError] = useState("");
->>>>>>> feature_propositions
   useEffect(() => {
     if (!pendingResponse && !busy) {
       return;
@@ -222,7 +213,7 @@ export default function MindQuestPage() {
     isRecording,
     isTranscribing,
     interimText,
-    elapsedSeconds,
+    elapsedSeconds: speechElapsedSeconds,
     audioLevels,
     speechError,
     startRecording,
@@ -444,67 +435,46 @@ export default function MindQuestPage() {
               </span>
             </div>
             <div className="flex shrink-0 items-center gap-2">
+              {!isArgue && (
+                <div
+                  role="group"
+                  aria-label="MindQuest-Modus"
+                  className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-xs font-medium"
+                >
+                  <button
+                    type="button"
+                    aria-pressed={experienceMode === "written"}
+                    onClick={() => setExperienceMode("written")}
+                    className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 transition cursor-pointer ${
+                      experienceMode === "written"
+                        ? "bg-white text-slate-900 shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    <MessageSquareText size={13} />
+                    Schriftlich
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={experienceMode === "conversation"}
+                    onClick={() => {
+                      if (isRecording) void stopRecording();
+                      setExperienceMode("conversation");
+                    }}
+                    className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 transition cursor-pointer ${
+                      experienceMode === "conversation"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    <Volume2 size={13} />
+                    Gesprächsmodus
+                  </button>
+                </div>
+              )}
               {!isArgue && currentHat && <HatIndicator hat={currentHat} />}
               {topActionButton}
             </div>
-<<<<<<< HEAD
-            <div className="flex flex-wrap items-center gap-2.5">
-              <div
-                role="group"
-                aria-label="MindQuest-Modus"
-                className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-xs font-medium"
-              >
-                <button
-                  type="button"
-                  aria-pressed={experienceMode === "written"}
-                  onClick={() => setExperienceMode("written")}
-                  className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition cursor-pointer ${
-                    experienceMode === "written"
-                      ? "bg-white text-slate-900 shadow-xs"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  <MessageSquareText size={14} />
-                  Schriftlich
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={experienceMode === "conversation"}
-                  onClick={() => {
-                    if (isRecording) void stopRecording();
-                    setExperienceMode("conversation");
-                  }}
-                  className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition cursor-pointer ${
-                    experienceMode === "conversation"
-                      ? "bg-blue-600 text-white shadow-xs"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  <Volume2 size={14} />
-                  Gesprächsmodus
-                </button>
-              </div>
-              {currentHat && <HatIndicator hat={currentHat} detail />}
-            </div>
-          </div>
-          <div className="mt-4 flex gap-1.5">
-            {quest.planned_hats.map((h) => {
-              const colors = HAT_PROGRESS_COLORS[h];
-              const stateClass = quest.completed_hats.includes(h)
-                ? colors.completed
-                : h === currentHat
-                  ? colors.active
-                  : colors.upcoming;
-              return (
-                <div
-                  key={h}
-                  title={HAT_METADATA[h]?.nameGerman ?? h}
-                  className={`h-2.5 flex-1 rounded-full transition-all ${stateClass}`}
-                />
-              );
-            })}
-=======
->>>>>>> feature_propositions
           </div>
 
           {isArgue ? (
@@ -622,20 +592,6 @@ export default function MindQuestPage() {
               title="Perspektive wählen (Argue Mode)"
               description="Wähle einen der 5 Hüte. Einmal gewählt, bleibt der Hut gesperrt, bis dein Gesamtschnitt über 80 % liegt."
             >
-<<<<<<< HEAD
-              <div className="flex flex-wrap gap-3">
-                <Button isLoading={busy} onClick={begin}>
-                  MindQuest beginnen <ArrowRight className="ml-2" size={16} />
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={busy}
-                  onClick={() => setExperienceMode("conversation")}
-                >
-                  <Volume2 className="mr-2" size={16} />
-                  Mündliches Gespräch starten
-                </Button>
-=======
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {ARGUE_HATS.map((hat) => {
                   const meta = HAT_METADATA[hat];
@@ -683,7 +639,6 @@ export default function MindQuestPage() {
                     </button>
                   );
                 })}
->>>>>>> feature_propositions
               </div>
             </Card>
           ) : (
@@ -1016,9 +971,6 @@ export default function MindQuestPage() {
                 <Card
                   title="Deine Antwort"
                   description="Formuliere deine Gedanken auf Deutsch. Qualität ist wichtiger als Länge."
-<<<<<<< HEAD
-                  className="flex flex-col md:h-full md:min-h-0"
-                  bodyClassName="flex flex-1 flex-col md:min-h-0"
                   headerAction={
                     <SpeechModeToggle
                       mode={inputMode}
@@ -1028,56 +980,40 @@ export default function MindQuestPage() {
                     />
                   }
                 >
-                  <form
-                    onSubmit={handleResponseSubmit}
-                    className="flex flex-1 flex-col md:min-h-0"
-                  >
+                  <form onSubmit={handleResponseSubmit} className="flex flex-col">
                     <SpeechRecordingBanner
                       isRecording={isRecording}
                       isTranscribing={isTranscribing}
-                      elapsedSeconds={elapsedSeconds}
+                      elapsedSeconds={speechElapsedSeconds}
                       audioLevels={audioLevels}
                       interimText={interimText}
                       speechError={speechError}
                       onStopSpeaking={() => void stopRecording()}
                     />
-=======
-                >
-                  <form onSubmit={handleResponseSubmit} className="flex flex-col">
->>>>>>> feature_propositions
                     <textarea
                       value={draft}
                       onChange={(e) => setDraft(e.target.value)}
                       onKeyDown={handleResponseKeyDown}
-<<<<<<< HEAD
                       placeholder={
                         isRecording
                           ? "Sprich jetzt ins Mikrofon — dein Text erscheint hier …"
                           : "Schreibe deine Antwort hier …"
                       }
-                      className={`min-h-44 w-full flex-1 resize-none rounded-lg border p-3 leading-7 outline-none md:min-h-0 ${
+                      className={`min-h-56 w-full resize-y rounded-lg border bg-white p-3 leading-7 text-slate-900 outline-none ${
                         isRecording
-                          ? "border-rose-400 bg-rose-50/20 ring-2 ring-rose-200 focus:ring-rose-400"
+                          ? "border-amber-400 bg-amber-50/20 ring-2 ring-amber-200 focus:ring-amber-400"
                           : "border-slate-300 focus:ring-2 focus:ring-blue-500"
                       }`}
-=======
-                      placeholder="Schreibe deine Antwort hier …"
-                      className="min-h-56 w-full resize-y rounded-lg border border-slate-300 bg-white p-3 leading-7 text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
->>>>>>> feature_propositions
                     />
                     <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
                       <span>
                         {draft.trim().split(/\s+/).filter(Boolean).length} Wörter
                       </span>
-<<<<<<< HEAD
                       <Button
                         type="submit"
                         disabled={!draft.trim() || isTranscribing}
                         isLoading={busy || isTranscribing}
                       >
-=======
-                      <Button type="submit" disabled={!draft.trim()} isLoading={busy}>
->>>>>>> feature_propositions
                         <Send className="mr-2" size={16} />
                         Antwort auswerten
                       </Button>
